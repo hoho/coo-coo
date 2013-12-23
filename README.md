@@ -1,4 +1,4 @@
 coo-coo
 =======
 
-Domain specific language for MVC applications
+Domain specific language to create MVC applications
