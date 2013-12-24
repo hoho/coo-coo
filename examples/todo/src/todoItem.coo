@@ -1,5 +1,6 @@
 TEMPLATE TodoItem
     TYPE "conkitty"
+    NAME "todo-item"
     PARAM title
     PARAM completed
 
