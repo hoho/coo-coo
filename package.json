@@ -1,0 +1,33 @@
+{
+    "name": "coo-coo",
+    "version": "0.0.0",
+    "description": "Domain specific language to create MVC applications",
+    "main": "coo-coo.js",
+    "directories": {
+        "test": "test"
+    },
+    "scripts": {
+        "test": "grunt"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git://github.com/hoho/coo-coo.git"
+    },
+    "keywords": [
+        "MVC",
+        "DSL"
+    ],
+    "author": "Marat Abdullin <dakota@brokenpipe.ru>",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/hoho/coo-coo/issues"
+    },
+    "dependencies": {},
+    "devDependencies": {
+        "grunt": "~0.4.1",
+        "grunt-contrib-concat": "~0.3.0",
+        "grunt-contrib-jshint": "~0.6.4",
+        "grunt-contrib-qunit": "~0.3.0",
+        "qunitjs": "~1.12.0"
+    }
+}
