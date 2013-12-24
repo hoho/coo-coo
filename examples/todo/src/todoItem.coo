@@ -60,7 +60,7 @@ VIEW TodoItem
         DOM (input) TRIGGER focus
 
     METHOD close
-        VAR val
+        SET val
             +DOM (input) VALUE
 
         JS
