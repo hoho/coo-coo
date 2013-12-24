@@ -1,0 +1,27 @@
+COLLECTION TodoList
+    MODEL TodoItem
+
+
+TEMPLATE TodoPage
+    TYPE "conkitty"
+
+
+VIEW TodoPage
+    PROPERTY todoList
+    PROPERTY itemsContainer
+
+    RENDER
+        +TEMPLATE TodoPage APPLY
+            ON items node
+                SET itemsContainer (node)
+
+        SET todoList
+            +COLLECTION TodoList CREATE
+                ON add m
+                    VIEW CALL addOne (m)
+
+    METHOD addOne m
+        DOM (itemsContainer) APPEND
+            VAR item
+                +VIEW TodoItem CREATE (m)
+            +VIEW (item) RENDER
