@@ -4,6 +4,7 @@ COLLECTION TodoList
 
 TEMPLATE TodoPage
     TYPE "conkitty"
+    NAME "todo-page"
 
 
 VIEW TodoPage
