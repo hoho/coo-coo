@@ -6,6 +6,7 @@ var CooCoo = function() {
 
 };
 
+
 CooCoo.cmd = {};
 
 module.exports = CooCoo;
