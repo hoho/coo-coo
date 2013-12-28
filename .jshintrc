@@ -13,7 +13,6 @@
     "trailing": true,
     "undef": true,
     "unused": true,
-    "jquery": true,
     "expr": true,
     "loopfunc": true,
     "node": true,
