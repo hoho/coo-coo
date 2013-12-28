@@ -17,9 +17,18 @@ module.exports = function(grunt) {
             dist: {
                 src: [
                     'src/core.js',
-                    'src/**/!(*_).js'
+                    'src/**/!(*_|util).js'
                 ],
-                dest: 'coo-coo.js'
+                dest: 'dist/coo-coo.js'
+            }
+        },
+
+        copy: {
+            main: {
+                expand: true,
+                flatten: true,
+                src: ['src/**/*_.js', 'src/util.js'],
+                dest: 'dist/'
             }
         },
 
@@ -29,8 +38,14 @@ module.exports = function(grunt) {
     });
 
     grunt.loadNpmTasks('grunt-contrib-concat');
+    grunt.loadNpmTasks('grunt-contrib-copy');
     grunt.loadNpmTasks('grunt-contrib-jshint');
     grunt.loadNpmTasks('grunt-contrib-qunit');
 
-    grunt.registerTask('default', ['jshint', 'concat'/*, 'qunit'*/]);
+    grunt.registerTask('test', function() {
+        var run = require('./test/test.js');
+        run();
+    });
+
+    grunt.registerTask('default', ['jshint', 'concat', 'copy', 'test'/*, 'qunit'*/]);
 };
