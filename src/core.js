@@ -132,8 +132,7 @@ CooFile.prototype = {
 
                     if (parts.length > 1) { this.errorUnexpectedPart(parts[1]); }
 
-                    this.lineAt++;
-                    this.charAt = 0;
+                    this.nextLine();
                 } else {
                     this.errorUnexpectedPart(parts[0]);
                 }
@@ -144,8 +143,7 @@ CooFile.prototype = {
                 if (cmd.hasSubblock()||1) {
                     this.readBlock(cmd);
                 } else {
-                    this.lineAt++;
-                    this.charAt = 0;
+                    this.nextLine();
                 }
             }
         } else {
@@ -210,17 +208,15 @@ CooFile.prototype = {
     },
 
     readBlock: function(parent) {
-        this.lineAt++;
-        this.charAt = 0;
-
-        if (!this.skipEmptyLines()) { return false; }
+        if (!this.nextLine()) {
+            return false;
+        }
 
         var oldIndent = this.blockIndent,
             indent,
             curIndent;
 
-        indent = 0;
-        while (this.code[this.lineAt][indent] === INDENT_WITH) { indent++; }
+        indent = this.getIndent();
 
         if (indent > oldIndent) {
             this.blockIndent = indent;
@@ -229,17 +225,28 @@ CooFile.prototype = {
 
             while (curIndent === indent) {
                 this.readCommand(parent);
-                this.lineAt++;
-                this.charAt = 0;
-
-                curIndent = 0;
-                if (this.skipEmptyLines()) {
-                    while (this.code[this.lineAt][curIndent] === INDENT_WITH) { curIndent++; }
-                }
+                curIndent = this.nextLine() ? this.getIndent() : 0;
             }
 
             this.blockIndent = oldIndent;
         }
+    },
+
+    nextLine: function() {
+        this.lineAt++;
+        this.charAt = 0;
+
+        return this.skipEmptyLines();
+    },
+
+    getIndent: function() {
+        var indent = 0;
+
+        while (this.code[this.lineAt][indent] === INDENT_WITH) {
+            indent++;
+        }
+
+        return indent;
     },
 
     skipWhitespaces: function() {
