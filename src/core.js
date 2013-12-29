@@ -39,7 +39,7 @@ function CooCommandPart(type, lineAt, charAt) {
 
 CooCommandPart.prototype = {
     type: function() { return this._type; },
-    value: function(val) { return CooCommand.prototype._setget.call(this, val); }
+    value: function(val) { return CooCommand.prototype._setget.call(this, '_value', val); }
 };
 
 
@@ -140,7 +140,7 @@ CooFile.prototype = {
                 // Match command and run it's callback.
                 // TODO: Implement.
 
-                if (cmd.hasSubblock()||1) {
+                if (cmd.hasSubblock() || 1) {
                     this.readBlock(cmd);
                 } else {
                     this.nextLine();
@@ -179,9 +179,34 @@ CooFile.prototype = {
     },
 
     readString: function() {
-        var part = new CooCommandPart(COO_COMMAND_PART_STRING, this.lineAt, this.charAt);
+        var part = new CooCommandPart(COO_COMMAND_PART_STRING, this.lineAt, this.charAt),
+            line = this.code[this.lineAt],
+            startPos = this.charAt,
+            starter = line[startPos];
+
+        /* jshint -W109 */
+        if (starter !== '"' && starter !== "'") {
+        /* jshint +W109 */
+            this.errorUnexpectedSymbol();
+        }
 
         this.charAt++;
+
+        while (this.charAt < line.length) {
+            if (line[this.charAt] === starter && line[this.charAt - 1] !== '\\') {
+                break;
+            } else {
+                this.charAt++;
+            }
+        }
+
+        if (this.charAt < line.length) {
+            part.value(line.substring(startPos, this.charAt + 1));
+            this.charAt++;
+            this.skipWhitespaces();
+        } else {
+            this.error('Unterminated string', startPos);
+        }
 
         return part;
     },
@@ -191,18 +216,93 @@ CooFile.prototype = {
             val = [];
 
         if (!indent) {
+            if (this.code[this.lineAt][this.charAt] !== '(') {
+                this.errorUnexpectedSymbol();
+            }
+
+            var brackets,
+                startLine = this.lineAt,
+                startChar = this.charAt,
+                inString;
+
+            brackets = 1;
             this.charAt++;
+
+            if ((this.charAt === this.code[this.lineAt].length) && !this.nextLine()) {
+                this.error('Unterminated expression', startChar, startLine);
+            }
+
+            while (brackets > 0 && (this.charAt < this.code[this.lineAt].length)) {
+                if (!inString) {
+                    if (this.code[this.lineAt][this.charAt] === '(') {
+                        brackets++;
+                    } else if (this.code[this.lineAt][this.charAt] === ')') {
+                        brackets--;
+
+                        if (brackets === 0) {
+                            this.charAt++;
+                            break;
+                        }
+                    /* jshint -W109 */
+                    } else if (this.code[this.lineAt][this.charAt] === '"' ||
+                               this.code[this.lineAt][this.charAt] === "'")
+                    /* jshint +W109 */
+                    {
+                        inString = this.code[this.lineAt][this.charAt];
+                    }
+                } else {
+                    if (this.code[this.lineAt][this.charAt] === inString &&
+                        this.code[this.lineAt][this.charAt - 1] !== '\\')
+                    {
+                        inString = false;
+                    }
+                }
+
+                val.push(this.code[this.lineAt][this.charAt]);
+
+                this.charAt++;
+
+                if (this.charAt === this.code[this.lineAt].length) {
+                    val.push('\n');
+
+                    if (!this.nextLine()) {
+                        this.error('Unterminated expression', startChar, startLine);
+                    }
+                }
+            }
+
+            this.charAt++;
+            this.skipWhitespaces();
+        } else {
+            while (this.nextLine() && this.getIndent() > indent) {
+                val.push(this.code[this.lineAt].substring(indent + 1));
+            }
         }
 
-        part.value(val);
+        part.value(val.join(indent ? '\n' : ''));
 
         return part;
     },
 
     readIdentifier: function() {
-        var part = new CooCommandPart(COO_COMMAND_PART_IDENTIFIER, this.lineAt, this.charAt);
+        var part = new CooCommandPart(COO_COMMAND_PART_IDENTIFIER, this.lineAt, this.charAt),
+            line = this.code[this.lineAt],
+            val = [line[this.charAt]];
+
+        if (!line[this.charAt].match(/[a-zA-Z_]/)) {
+            this.errorUnexpectedSymbol();
+        }
 
         this.charAt++;
+
+        while (this.charAt < line.length && line[this.charAt].match(/[a-zA-Z0-9_]/)) {
+            val.push(line[this.charAt]);
+            this.charAt++;
+        }
+
+        this.skipWhitespaces();
+
+        part.value(val.join(''));
 
         return part;
     },
@@ -225,7 +325,7 @@ CooFile.prototype = {
 
             while (curIndent === indent) {
                 this.readCommand(parent);
-                curIndent = this.nextLine() ? this.getIndent() : 0;
+                curIndent = this.getIndent();
             }
 
             this.blockIndent = oldIndent;
@@ -250,7 +350,10 @@ CooFile.prototype = {
     },
 
     skipWhitespaces: function() {
-
+        var line = this.code[this.lineAt];
+        while (this.charAt < line.length && line[this.charAt].match(/[\x20\t\r\n\f]/)) {
+            this.charAt++;
+        }
     },
 
     error: function(msg, charAt, lineAt) {
@@ -266,7 +369,7 @@ CooFile.prototype = {
     },
 
     errorUnexpectedSymbol: function(charAt) {
-        this.error('Unexpected symbol', charAt);
+        this.error('Unexpected symbol', charAt === undefined ? this.charAt : charAt);
     },
 
     errorUnexpectedPart: function(part) {
