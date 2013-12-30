@@ -14,32 +14,32 @@ var INDENT_WITH = ' ',
     COO_COMMAND_PART_IDENTIFIER = 'identifier';
 
 
-function CooCommand() {
-
+function CooCommand(parent) {
+    if (parent) { this.root = parent.root || parent; }
+    this.parent = parent;
 }
 
 CooCommand.prototype = {
-    _setget: function(name, val) {
-        if (val === undefined) { return this[name]; }
-        else { this[name] = val; }
-    },
-
-    valuePusher: function(val) { return this._setget('_valuePusher', val); },
-    valueRequired: function(val) { return this._setget('_valueRequired', val); },
-    hasSubblock: function(val) { return this._setget('_hasSubblock', val); },
-    parts: function(val) { return this._setget('_parts', val); }
+    root: null,
+    valuePusher: false,
+    valueRequired: false,
+    hasSubblock: false,
+    parts: null,
+    processChild: null,
+    data: null
 };
 
 
 function CooCommandPart(type, lineAt, charAt) {
-    this._type = type;
+    this.type = type;
     this._lineAt = lineAt;
     this._charAt = charAt;
 }
 
 CooCommandPart.prototype = {
-    type: function() { return this._type; },
-    value: function(val) { return CooCommand.prototype._setget.call(this, '_value', val); }
+    type: null,
+    value: null,
+    error: null
 };
 
 
@@ -90,7 +90,7 @@ CooFile.prototype = {
     readCommand: function(parent) {
         var i,
             line = this.code[this.lineAt],
-            cmd = new CooCommand();
+            cmd = new CooCommand(parent);
 
         for (i = 0; i < this.blockIndent; i++) {
             if (line[i] !== INDENT_WITH) {
@@ -101,33 +101,31 @@ CooFile.prototype = {
         i = this.blockIndent;
 
         if (line[i] === '+') {
-            if (!parent || !parent.valueRequired()) {
+            if (!parent || !parent.valueRequired) {
                 // Pretty dumb error messages.
                 this.error(
                     parent ?
-                        '"' + parent.name + '" command does not require return value.'
+                        '"' + parent.name + '" command does not require return value'
                         :
-                        'No place to return value to.',
+                        'No place to return value to',
                     i
                 );
             } else {
                 // This command pushes value to parent one.
-                cmd.valuePusher(true);
+                cmd.valuePusher = true;
                 i++;
             }
         }
 
         if (line[i].match(/[a-zA-Z"'(_]/)) {
-            var parts = this.readCommandParts(i);
+            var parts = cmd.parts = this.readCommandParts(i);
 
-            cmd.parts(parts);
-
-            if (parts[0].type() === COO_COMMAND_PART_STRING ||
-                parts[0].type() === COO_COMMAND_PART_JS)
+            if (parts[0].type === COO_COMMAND_PART_STRING ||
+                parts[0].type === COO_COMMAND_PART_JS)
             {
                 // Check for certain conditions in case command begins with
                 // a string or with a JavaScript expression.
-                if (parent && parent.valueRequired() && cmd.valuePusher()) {
+                if (parent && parent.valueRequired && cmd.valuePusher) {
                     // TODO: Implement.
 
                     if (parts.length > 1) { this.errorUnexpectedPart(parts[1]); }
@@ -138,9 +136,25 @@ CooFile.prototype = {
                 }
             } else {
                 // Match command and run it's callback.
-                // TODO: Implement.
+                var errorPart;
 
-                if (cmd.hasSubblock() || 1) {
+                cmd.name = parts[0].value;
+
+                if (parent && parent.processChild) {
+                    errorPart = parent.processChild(cmd);
+                } else {
+                    var cb = CooCoo.cmd[cmd.name];
+
+                    if (cb) {
+                        errorPart = cb(cmd);
+                    }
+                }
+
+                if (errorPart) {
+                    this.errorUnexpectedPart(errorPart);
+                }
+
+                if (cmd.hasSubblock) {
                     this.readBlock(cmd);
                 } else {
                     this.nextLine();
@@ -201,8 +215,10 @@ CooFile.prototype = {
         }
 
         if (this.charAt < line.length) {
-            part.value(line.substring(startPos, this.charAt + 1));
+            part.value = line.substring(startPos, this.charAt + 1);
             this.charAt++;
+            part._lineEnd = this.lineAt;
+            part._charEnd = this.charAt + 1;
             this.skipWhitespaces();
         } else {
             this.error('Unterminated string', startPos);
@@ -272,14 +288,19 @@ CooFile.prototype = {
             }
 
             this.charAt++;
+            part._lineEnd = this.lineAt;
+            part._charEnd = this.charAt + 1;
             this.skipWhitespaces();
+
+            val.unshift('(');
+            val.push(')');
         } else {
             while (this.nextLine() && this.getIndent() > indent) {
                 val.push(this.code[this.lineAt].substring(indent + 1));
             }
         }
 
-        part.value(val.join(indent ? '\n' : ''));
+        part.value = val.join(indent ? '\n' : '');
 
         return part;
     },
@@ -300,9 +321,11 @@ CooFile.prototype = {
             this.charAt++;
         }
 
+        part._lineEnd = this.lineAt;
+        part._charEnd = this.charAt + 1;
         this.skipWhitespaces();
 
-        part.value(val.join(''));
+        part.value = val.join('');
 
         return part;
     },
@@ -350,8 +373,14 @@ CooFile.prototype = {
     },
 
     skipWhitespaces: function() {
-        var line = this.code[this.lineAt];
-        while (this.charAt < line.length && line[this.charAt].match(/[\x20\t\r\n\f]/)) {
+        var line = this.code[this.lineAt],
+            whitespace = /[\x20\t\r\n\f]/;
+
+        if (this.charAt < line.length && !line[this.charAt].match(whitespace)) {
+            this.errorUnexpectedSymbol();
+        }
+
+        while (this.charAt < line.length && line[this.charAt].match(whitespace)) {
             this.charAt++;
         }
     },
@@ -373,7 +402,7 @@ CooFile.prototype = {
     },
 
     errorUnexpectedPart: function(part) {
-        this.error('Unexpected ' + part.type(), part._charAt, part._lineAt);
+        this.error(part.error || ('Unexpected ' + part.type), part._charAt, part._lineAt);
     }
 };
 
@@ -429,6 +458,64 @@ function CooCoo(filenames, commons, project) {
 
     console.log(commons, project, code.join('\n'));
 }
+
+/* exported cooMatchCommand */
+function cooMatchCommand(parts, patterns, pos) {
+    var part = parts[(pos = pos || 0)],
+        error,
+        unexpected = true;
+
+    if (part) {
+        switch (part.type) {
+            case COO_COMMAND_PART_STRING:
+                /* jshint -W061 */
+                var val = JSON.stringify(eval(part.value));
+                /* jshint +W061 */
+
+                if (patterns[val]) {
+                    error = cooMatchCommand(parts, patterns[val], pos + 1);
+                    unexpected = false;
+                }
+
+                if ((error || unexpected) && patterns['"']) {
+                    error = cooMatchCommand(parts, patterns['"'], pos + 1);
+                    unexpected = false;
+                }
+
+                return unexpected ? part : error;
+
+            case COO_COMMAND_PART_JS:
+                return patterns['('] ?
+                    cooMatchCommand(parts, patterns['('], pos + 1)
+                    :
+                    part;
+
+            case COO_COMMAND_PART_IDENTIFIER:
+                if (patterns[part.value]) {
+                    error = cooMatchCommand(parts, patterns[part.value], pos + 1);
+                    unexpected = false;
+                }
+
+                if ((error || unexpected) && patterns['']) {
+                    error = cooMatchCommand(parts, patterns[''], pos + 1);
+                    unexpected = false;
+                }
+
+                return unexpected ? part : error;
+        }
+    } else {
+        if (typeof patterns === 'function') {
+            patterns();
+        } else {
+            // Incomplete command.
+            part = parts[parts.length - 1];
+            error = new CooCommandPart(null, part._lineEnd, part._charEnd);
+            error.error = 'Incomplete command';
+            return error;
+        }
+    }
+}
+
 
 CooCoo.cmd = {};
 
