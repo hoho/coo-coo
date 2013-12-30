@@ -10,7 +10,7 @@ var INDENT_WITH = ' ',
     INDENT = INDENT_WITH + INDENT_WITH + INDENT_WITH + INDENT_WITH,
 
     COO_COMMAND_PART_STRING = 'string',
-    COO_COMMAND_PART_JS = 'javascript',
+    COO_COMMAND_PART_JS = 'JavaScript',
     COO_COMMAND_PART_IDENTIFIER = 'identifier';
 
 
@@ -465,6 +465,31 @@ function cooMatchCommand(parts, patterns, pos) {
         error,
         unexpected = true;
 
+    /*
+
+    `patterns` is an object like:
+    {
+        something: callback,
+        something: {something: callback},
+        something: {something: {something: callback}}
+        something: ...,
+        ...
+    }
+
+    Where `something`:
+        '' in case of any identifier,
+        'Identifier' in case of exact identifier,
+        '"' in case of any string,
+        '"string"' in case of exact string,
+        '(' in case of JavaScript,
+        '*' in case of any number of identifiers,
+        '#' in case of any number of strings or JavaScripts,
+        '@' in case of callback.
+
+    And `callback` is a callback to call when pattern is matched.
+
+     */
+
     if (part) {
         switch (part.type) {
             case COO_COMMAND_PART_STRING:
@@ -482,13 +507,25 @@ function cooMatchCommand(parts, patterns, pos) {
                     unexpected = false;
                 }
 
+                if ((error || unexpected) && patterns['#']) {
+                    error = cooMatchCommand(parts, patterns, pos + 1);
+                    unexpected = false;
+                }
+
                 return unexpected ? part : error;
 
             case COO_COMMAND_PART_JS:
-                return patterns['('] ?
-                    cooMatchCommand(parts, patterns['('], pos + 1)
-                    :
-                    part;
+                if (patterns['(']) {
+                    error = cooMatchCommand(parts, patterns['('], pos + 1);
+                    unexpected = false;
+                }
+
+                if ((error || unexpected) && patterns['#']) {
+                    error = cooMatchCommand(parts, patterns, pos + 1);
+                    unexpected = false;
+                }
+
+                return unexpected ? part : error;
 
             case COO_COMMAND_PART_IDENTIFIER:
                 if (patterns[part.value]) {
@@ -501,11 +538,22 @@ function cooMatchCommand(parts, patterns, pos) {
                     unexpected = false;
                 }
 
+                if ((error || unexpected) && patterns['*']) {
+                    error = cooMatchCommand(parts, patterns, pos + 1);
+                    unexpected = false;
+                }
+
                 return unexpected ? part : error;
         }
     } else {
-        if (typeof patterns === 'function') {
-            patterns();
+        if (patterns['*']) {
+            return patterns['*'].apply(null, parts);
+        } else if (patterns['#']) {
+            return patterns['#'].apply(null, parts);
+        } else if (patterns['@']) {
+            return patterns['@'].apply(null, parts);
+        } else if (typeof patterns === 'function') {
+            return patterns.apply(null, parts);
         } else {
             // Incomplete command.
             part = parts[parts.length - 1];
@@ -514,6 +562,27 @@ function cooMatchCommand(parts, patterns, pos) {
             return error;
         }
     }
+}
+
+
+/* exported cooExtractParamNames */
+function cooExtractParamNames(parts, start) {
+    var params = {},
+        i,
+        part;
+
+    for (i = start; i < parts.length; i++) {
+        part = parts[i];
+
+        if (part.value in params) {
+            part.error = 'Duplicate parameter name';
+            return {error: part};
+        }
+
+        params[part.value] = true;
+    }
+
+    return {params: params};
 }
 
 

@@ -1,11 +1,18 @@
 (function() {
     function templateProcess(cmd) {
+
+
         if (cmd.parent) {
-            cmd.processChild = templateProcessEvent;
+            cmd.processChild = templateProcessParamsAndEvents;
         } else {
             // Template declaration.
             cmd.processChild = templateProcessDecl;
-            cmd.data = {type: null, name: null};
+
+            cmd.template = {
+                type: null,
+                name: null,
+                params: {}
+            };
         }
 
         cmd.hasSubblock = true;
@@ -13,31 +20,60 @@
 
 
     function templateProcessDecl(cmd) {
-        switch (cmd.name) {
-            case 'TYPE':
-                if (cmd.parent.data.type !== null) { return cmd.parts[0]; }
-                break;
-
-            case 'NAME':
-                if (cmd.parent.data.name !== null) { return cmd.parts[0]; }
-                break;
-
-            default:
-                return cmd.parts[0];
-        }
-
         /* global cooMatchCommand */
-        var error = cooMatchCommand(cmd.parts, {
-            'TYPE': {'"': function() { console.log(1010); }},
-            'NAME': {'"': function() {}}
-        });
+        return cooMatchCommand(cmd.parts, {
+            'TYPE': {
+                '"': function(_, type) {
+                    if (cmd.parent.template.type !== null) {
+                        type.error = 'Duplicate type';
+                        return type;
+                    }
+                    cmd.parent.template.type = type.value;
+                }
+            },
 
-        return error;
+            'NAME': {
+                '"': function(_, name) {
+                    if (cmd.parent.template.name !== null) {
+                        name.error = 'Duplicate name';
+                        return name;
+                    }
+                    cmd.parent.template.name = name.value;
+                }
+            }
+        });
     }
 
 
-    function templateProcessEvent(cmd) {
-        console.log(cmd);
+    function templateProcessParamsAndEvents(cmd) {
+        return cooMatchCommand(cmd.parts, {
+            PARAM: {
+                '': {
+                    '@': function() {
+                        cmd.hasSubblock = true;
+                        cmd.valueRequired = true;
+                    },
+
+                    '(': function() {
+                    },
+
+                    '"': function() {
+                    }
+                }
+            },
+
+            ON: {
+                '': {
+                    '@': function() {
+                        cmd.hasSubblock = true;
+                    },
+
+                    '*': function() {
+                        cmd.hasSubblock = true;
+                    }
+                }
+            }
+        });
     }
 
 
