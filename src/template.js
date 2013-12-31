@@ -40,6 +40,14 @@
                     }
                     cmd.parent.template.name = name.value;
                 }
+            },
+
+            'PARAM': {
+                '': {
+                    '@': function() {},
+                    '(': function() {},
+                    '"': function() {}
+                }
             }
         });
     }

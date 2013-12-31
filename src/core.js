@@ -15,12 +15,17 @@ var INDENT_WITH = ' ',
 
 
 function CooCommand(parent) {
-    if (parent) { this.root = parent.root || parent; }
+    if (parent) {
+        this.root = parent.root || parent;
+        this.method = parent.method;
+    }
+
     this.parent = parent;
 }
 
 CooCommand.prototype = {
     root: null,
+    method: null,
     valuePusher: false,
     valueRequired: false,
     hasSubblock: false,
@@ -287,7 +292,6 @@ CooFile.prototype = {
                 }
             }
 
-            this.charAt++;
             part._lineEnd = this.lineAt;
             part._charEnd = this.charAt + 1;
             this.skipWhitespaces();
@@ -365,8 +369,10 @@ CooFile.prototype = {
     getIndent: function() {
         var indent = 0;
 
-        while (this.code[this.lineAt][indent] === INDENT_WITH) {
-            indent++;
+        if (this.lineAt < this.code.length) {
+            while (this.code[this.lineAt][indent] === INDENT_WITH) {
+                indent++;
+            }
         }
 
         return indent;

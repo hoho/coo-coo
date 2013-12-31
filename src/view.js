@@ -4,6 +4,7 @@
 
     function viewProcess(cmd) {
         if (cmd.parent) {
+            return viewProcessCommand(cmd);
         } else {
             // Template declaration.
             cmd.hasSubblock = true;
@@ -23,6 +24,8 @@
     function viewProcessDecl(cmd) {
         cmd.hasSubblock = true;
         cmd.valueRequired = true;
+
+        cmd.method = {};
 
         return cooMatchCommand(cmd.parts, {
             CONSTRUCT: {
@@ -80,6 +83,51 @@
                         if (params.error) { return params.error; } else { params = params.params; }
 
                         console.log('mmmmm');
+                    }
+                }
+            }
+        });
+    }
+
+
+    function viewProcessCommand(cmd) {
+        return cooMatchCommand(cmd.parts, {
+            'VIEW': {
+                '': {
+                    'CREATE': {
+                        '#': function() {
+                            cmd.hasSubblock = true;
+                            cmd.valueRequired = true;
+                            console.log('view create');
+                        }
+                    }
+                },
+
+                'SET': {
+                    '': {
+                        '@': function() {
+                            cmd.hasSubblock = true;
+                            cmd.valueRequired = true;
+                        },
+                        '(': function() {},
+                        '"': function() {}
+                    }
+                },
+
+                'CALL': {
+                    '': {
+                        '#': function() {
+                            cmd.hasSubblock = true;
+                            cmd.valueRequired = true;
+                        }
+                    }
+                },
+
+                '(': {
+                    'RENDER': {
+                        '#': function() {
+                            cmd.hasSubblock = true;
+                        }
                     }
                 }
             }

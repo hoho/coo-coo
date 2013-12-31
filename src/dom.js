@@ -1,10 +1,20 @@
 (function() {
+    /* global cooMatchCommand */
+
     function domProcess(cmd) {
-        if (cmd.parent) {
-        } else {
-            // Template declaration.
-            cmd.hasSubblock(true);
-        }
+        return cooMatchCommand(cmd.parts, {
+            'DOM': {
+                '(': {
+                    'APPEND': {
+                        '@': function() {
+                            cmd.hasSubblock = true;
+                            cmd.valueRequired = true;
+                        },
+                        '(': function() {}
+                    }
+                }
+            }
+        });
     }
 
 
