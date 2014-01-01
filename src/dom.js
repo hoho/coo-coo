@@ -2,7 +2,7 @@
     /* global cooMatchCommand */
 
     function domProcess(cmd) {
-        return cooMatchCommand(cmd.parts, {
+        return cooMatchCommand(cmd, {
             'DOM': {
                 '(': {
                     'APPEND': {
@@ -10,7 +10,10 @@
                             cmd.hasSubblock = true;
                             cmd.valueRequired = true;
                         },
-                        '(': function() {}
+
+                        '(': function() {
+
+                        }
                     }
                 }
             }

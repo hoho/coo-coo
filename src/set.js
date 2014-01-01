@@ -2,7 +2,7 @@
     /* global cooMatchCommand */
 
     function setProcess(cmd) {
-        return cooMatchCommand(cmd.parts, {
+        return cooMatchCommand(cmd, {
             'SET': {
                 '': {
                     '@': function() {
@@ -10,8 +10,13 @@
                         cmd.valueRequired = true;
                     },
 
-                    '(': function() {},
-                    '"': function() {}
+                    '(': function() {
+
+                    },
+
+                    '"': function() {
+
+                    }
                 }
             }
         });

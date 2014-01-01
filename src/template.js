@@ -21,7 +21,7 @@
 
     function templateProcessDecl(cmd) {
         /* global cooMatchCommand */
-        return cooMatchCommand(cmd.parts, {
+        return cooMatchCommand(cmd, {
             'TYPE': {
                 '"': function(_, type) {
                     if (cmd.parent.template.type !== null) {
@@ -54,7 +54,7 @@
 
 
     function templateProcessParamsAndEvents(cmd) {
-        return cooMatchCommand(cmd.parts, {
+        return cooMatchCommand(cmd, {
             PARAM: {
                 '': {
                     '@': function() {

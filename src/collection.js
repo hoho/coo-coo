@@ -1,30 +1,33 @@
 (function() {
+    /* global cooModelViewCollectionBase */
     /* global cooMatchCommand */
 
-    function collectionProcess(cmd) {
-        if (cmd.parent) {
-            return collectionProcessCommand(cmd);
-        } else {
-            // Collection declaration.
-            cmd.hasSubblock = true;
+    cooModelViewCollectionBase('COLLECTION', {
+        MODEL: {
+            '': function() {},
+            '"': function() {},
+            '(': function() {}
         }
-    }
+    }, {
+    }, {
+        decl: {
 
+        },
 
-    function collectionProcessCommand(cmd) {
-        return cooMatchCommand(cmd.parts, {
-            'COLLECTION': {
-                '': {
-                    'CREATE': {
-                        '#': function() {
-                            cmd.hasSubblock = true;
-                            cmd.processChild = collectionProcessParamsAndEvents;
-                        }
-                    }
-                }
+        cmd: {
+            construct: function(cmd, params) {
+                this.before = null;
+                this.after = null;
+
+                console.log(params);
+            },
+
+            create: function(cmd, params) {
+                console.log(params);
+                cmd.processChild = collectionProcessParamsAndEvents;
             }
-        });
-    }
+        }
+    });
 
 
     function collectionProcessParamsAndEvents(cmd) {
@@ -57,7 +60,4 @@
             }
         });
     }
-
-
-    CooCoo.cmd.COLLECTION = collectionProcess;
 })();

@@ -1,12 +1,18 @@
 (function() {
-    function modelProcess(cmd) {
-        if (cmd.parent) {
-        } else {
-            // Template declaration.
-            cmd.hasSubblock = true;
+    /* global cooModelViewCollectionBase */
+
+    cooModelViewCollectionBase('MODEL', {}, {}, {
+        decl: {
+
+        },
+
+        cmd: {
+            construct: function(params) {
+                this.before = null;
+                this.after = null;
+
+                console.log(params);
+            }
         }
-    }
-
-
-    CooCoo.cmd.MODEL = modelProcess;
+    });
 })();
