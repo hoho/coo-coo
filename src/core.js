@@ -49,6 +49,113 @@ CooCommandPart.prototype = {
 };
 
 
+/* exported cooMatchCommand */
+function cooMatchCommand(cmd, patterns, pos) {
+    var parts = cmd.parts,
+        part = parts[(pos = pos || 0)],
+        error,
+        unexpected = true;
+
+    /*
+
+     `patterns` is an object like:
+     {
+     something: callback,
+     something: {something: callback},
+     something: {something: {something: callback}}
+     something: ...,
+     ...
+     }
+
+     Where `something`:
+     '' in case of any identifier,
+     'Identifier' in case of exact identifier,
+     '"' in case of any string,
+     '"string"' in case of exact string,
+     '(' in case of JavaScript,
+     '*' in case of any number of identifiers,
+     '#' in case of any number of strings or JavaScripts,
+     '@' in case of callback.
+
+     And `callback` is a callback to call when pattern is matched.
+
+     */
+
+    if (part) {
+        switch (part.type) {
+            case COO_COMMAND_PART_STRING:
+                /* jshint -W061 */
+                var val = JSON.stringify(eval(part.value));
+                /* jshint +W061 */
+
+                if (patterns[val]) {
+                    error = cooMatchCommand(cmd, patterns[val], pos + 1);
+                    unexpected = false;
+                }
+
+                if ((error || unexpected) && patterns['"']) {
+                    error = cooMatchCommand(cmd, patterns['"'], pos + 1);
+                    unexpected = false;
+                }
+
+                if ((error || unexpected) && patterns['#']) {
+                    error = cooMatchCommand(cmd, patterns, pos + 1);
+                    unexpected = false;
+                }
+
+                return unexpected ? part : error;
+
+            case COO_COMMAND_PART_JS:
+                if (patterns['(']) {
+                    error = cooMatchCommand(cmd, patterns['('], pos + 1);
+                    unexpected = false;
+                }
+
+                if ((error || unexpected) && patterns['#']) {
+                    error = cooMatchCommand(cmd, patterns, pos + 1);
+                    unexpected = false;
+                }
+
+                return unexpected ? part : error;
+
+            case COO_COMMAND_PART_IDENTIFIER:
+                if (patterns[part.value]) {
+                    error = cooMatchCommand(cmd, patterns[part.value], pos + 1);
+                    unexpected = false;
+                }
+
+                if ((error || unexpected) && patterns['']) {
+                    error = cooMatchCommand(cmd, patterns[''], pos + 1);
+                    unexpected = false;
+                }
+
+                if ((error || unexpected) && patterns['*']) {
+                    error = cooMatchCommand(cmd, patterns, pos + 1);
+                    unexpected = false;
+                }
+
+                return unexpected ? part : error;
+        }
+    } else {
+        if (patterns['*']) {
+            return patterns['*'].apply(cmd, parts);
+        } else if (patterns['#']) {
+            return patterns['#'].apply(cmd, parts);
+        } else if (patterns['@']) {
+            return patterns['@'].apply(cmd, parts);
+        } else if (typeof patterns === 'function') {
+            return patterns.apply(cmd, parts);
+        } else {
+            // Incomplete command.
+            part = parts[parts.length - 1];
+            error = new CooCommandPart(null, part._lineEnd, part._charEnd);
+            error.error = 'Incomplete command';
+            return error;
+        }
+    }
+}
+
+
 function CooFile(filename) {
     var data = fs.readFileSync(filename, {encoding: 'utf8'});
 
@@ -148,11 +255,22 @@ CooFile.prototype = {
 
                 if (parent && parent.processChild) {
                     errorPart = parent.processChild(cmd);
+                } else if (cmd.name === 'JS') {
+                    var self = this;
+
+                    errorPart = cooMatchCommand(cmd, {
+                        'JS': function() {
+                            var val = self.readJS(self.blockIndent);
+                            console.log(val.value);
+                        }
+                    });
                 } else {
                     var cb = CooCoo.cmd[cmd.name];
 
                     if (cb) {
                         errorPart = cb(cmd);
+                    } else {
+                        errorPart = parts[0];
                     }
                 }
 
@@ -301,8 +419,14 @@ CooFile.prototype = {
             val.push(')');
         } else {
             while (this.nextLine() && this.getIndent() > indent) {
-                val.push(this.code[this.lineAt].substring(indent + 1));
+                val.push(this.code[this.lineAt].substring(indent));
             }
+
+            this.lineAt--;
+            this.charAt = this.code[this.lineAt].length;
+
+            part._lineEnd = this.lineAt;
+            part._charEnd = this.charAt;
         }
 
         part.value = val.join(indent ? '\n' : '');
@@ -466,112 +590,6 @@ function CooCoo(filenames, commons, project) {
     console.log(commons, project, code.join('\n'));
 }
 
-/* exported cooMatchCommand */
-function cooMatchCommand(cmd, patterns, pos) {
-    var parts = cmd.parts,
-        part = parts[(pos = pos || 0)],
-        error,
-        unexpected = true;
-
-    /*
-
-    `patterns` is an object like:
-    {
-        something: callback,
-        something: {something: callback},
-        something: {something: {something: callback}}
-        something: ...,
-        ...
-    }
-
-    Where `something`:
-        '' in case of any identifier,
-        'Identifier' in case of exact identifier,
-        '"' in case of any string,
-        '"string"' in case of exact string,
-        '(' in case of JavaScript,
-        '*' in case of any number of identifiers,
-        '#' in case of any number of strings or JavaScripts,
-        '@' in case of callback.
-
-    And `callback` is a callback to call when pattern is matched.
-
-     */
-
-    if (part) {
-        switch (part.type) {
-            case COO_COMMAND_PART_STRING:
-                /* jshint -W061 */
-                var val = JSON.stringify(eval(part.value));
-                /* jshint +W061 */
-
-                if (patterns[val]) {
-                    error = cooMatchCommand(cmd, patterns[val], pos + 1);
-                    unexpected = false;
-                }
-
-                if ((error || unexpected) && patterns['"']) {
-                    error = cooMatchCommand(cmd, patterns['"'], pos + 1);
-                    unexpected = false;
-                }
-
-                if ((error || unexpected) && patterns['#']) {
-                    error = cooMatchCommand(cmd, patterns, pos + 1);
-                    unexpected = false;
-                }
-
-                return unexpected ? part : error;
-
-            case COO_COMMAND_PART_JS:
-                if (patterns['(']) {
-                    error = cooMatchCommand(cmd, patterns['('], pos + 1);
-                    unexpected = false;
-                }
-
-                if ((error || unexpected) && patterns['#']) {
-                    error = cooMatchCommand(cmd, patterns, pos + 1);
-                    unexpected = false;
-                }
-
-                return unexpected ? part : error;
-
-            case COO_COMMAND_PART_IDENTIFIER:
-                if (patterns[part.value]) {
-                    error = cooMatchCommand(cmd, patterns[part.value], pos + 1);
-                    unexpected = false;
-                }
-
-                if ((error || unexpected) && patterns['']) {
-                    error = cooMatchCommand(cmd, patterns[''], pos + 1);
-                    unexpected = false;
-                }
-
-                if ((error || unexpected) && patterns['*']) {
-                    error = cooMatchCommand(cmd, patterns, pos + 1);
-                    unexpected = false;
-                }
-
-                return unexpected ? part : error;
-        }
-    } else {
-        if (patterns['*']) {
-            return patterns['*'].apply(cmd, parts);
-        } else if (patterns['#']) {
-            return patterns['#'].apply(cmd, parts);
-        } else if (patterns['@']) {
-            return patterns['@'].apply(cmd, parts);
-        } else if (typeof patterns === 'function') {
-            return patterns.apply(cmd, parts);
-        } else {
-            // Incomplete command.
-            part = parts[parts.length - 1];
-            error = new CooCommandPart(null, part._lineEnd, part._charEnd);
-            error.error = 'Incomplete command';
-            return error;
-        }
-    }
-}
-
 
 /* exported cooExtractParamNames */
 function cooExtractParamNames(parts, start) {
@@ -595,7 +613,7 @@ function cooExtractParamNames(parts, start) {
 
 
 /* exported cooModelViewCollectionBase */
-function cooModelViewCollectionBase(name, declExt, commandExt, callbacks) {
+function cooModelViewCollectionBase(name, declExt, commandExt) {
     function cmdProcess(cmd) {
         if (cmd.parent) {
             return cmdProcessCommand(cmd);
@@ -621,7 +639,7 @@ function cooModelViewCollectionBase(name, declExt, commandExt, callbacks) {
         cmd.method = {};
 
         return cooMatchCommand(cmd, extend({
-            CONSTRUCT: {
+            'CONSTRUCT': {
                 '*': function() {
                     if (cmd.parent[name].construct) {
                         cmd.parts[0].error = 'Duplicate constructor';
@@ -633,18 +651,16 @@ function cooModelViewCollectionBase(name, declExt, commandExt, callbacks) {
 
                     cmd.parent[name].construct = true;
 
-                    callbacks.cmd.construct(cmd, params);
-
                     cmd.valueRequired = false;
                 }
             },
 
-            DESTRUCT: function() {
+            'DESTRUCT': function() {
                 cmd.valueRequired = false;
                 console.log('dede');
             },
 
-            PROPERTY: {
+            'PROPERTY': {
                 '': {
                     '@': function() {
                         console.log('propro1');
@@ -662,7 +678,7 @@ function cooModelViewCollectionBase(name, declExt, commandExt, callbacks) {
                 }
             },
 
-            METHOD: {
+            'METHOD': {
                 '': {
                     '*': function() {
                         var params = cooExtractParamNames(cmd.parts, 2);
@@ -682,21 +698,181 @@ function cooModelViewCollectionBase(name, declExt, commandExt, callbacks) {
         pattern[name] = {
             '': {
                 'CREATE': {
-                    '#': function() {
+                    '@': function() {
                         cmd.hasSubblock = true;
                         cmd.valueRequired = false;
 
-                        console.log('mcv create');
+                        cmd.processChild = cmdProcessParamsAndEvents;
+                    },
+
+                    '#': function() {
+                        // `NAME` identifier CREATE (expr1) (expr2) ...
+                        //     ...
+
+                        cmd.hasSubblock = true;
+                        cmd.valueRequired = false;
 
                         var params = cooExtractParamNames(cmd.parts, 2);
                         if (params.error) { return params.error; } else { params = params.params; }
 
-                        callbacks.cmd.create(cmd, params);
+                        cmd.processChild = cmdProcessEvents;
                     }
                 }
             },
 
+            '(': {
+                '@': function() {
+                    // `NAME` (expr)
+                    //     ...
+
+                    cmd.hasSubblock = true;
+                    cmd.valueRequired = false;
+
+                    cmd.processChild = cmdProcessEvents;
+                },
+
+                'SET': {
+                    '@': function() {
+                        // `NAME` (something) SET
+                        //     ...
+                    },
+
+                    '(': function() {
+                        // `NAME` (something) SET (expr)
+                    },
+
+                    '"': function() {
+                        // `NAME` (something) SET "text"
+                    },
+
+                    '': {
+                        '@': function() {
+                            // `NAME` (something) SET identifier
+
+                            cmd.hasSubblock = true;
+                            cmd.valueRequired = true;
+                        },
+
+                        '(': function() {
+                            // `NAME` (something) SET identifier (expr)
+                        },
+
+                        '"': function() {
+                            // `NAME` (something) SET identifier "text"
+                        }
+                    }
+                },
+
+                'GET': {
+                    '@': function() {
+                        // `NAME` (something) GET
+                    },
+
+                    '': function() {
+                        // `NAME` (something) GET identifier
+                    }
+                },
+
+                'CALL': {
+                    '': {
+                        '@': function() {
+                            cmd.hasSubblock = true;
+                            cmd.valueRequired = true;
+
+                            cmd.processChild = cmdProcessParams;
+                        },
+
+                        '#': function() {
+                        }
+                    }
+                },
+
+                'DESTROY': function() {
+
+                }
+            },
+
             'SET': {
+                '@': function() {
+                    // `NAME` SET
+                    //     ...
+                },
+
+                '(': function() {
+                    // `NAME` SET (expr)
+                },
+
+                '"': function() {
+                    // `NAME` SET "text"
+                },
+
+                '': {
+                    '@': function() {
+                        // `NAME` SET identifier
+                        //     ...
+                        cmd.hasSubblock = true;
+                        cmd.valueRequired = true;
+                    },
+
+                    '(': function() {
+                        // `NAME` SET identifier (expr)
+                    },
+
+                    '"': function() {
+                        // `NAME` SET identifier "text"
+                    }
+                }
+            },
+
+            'GET': {
+                '@': function() {
+                    // `NAME` GET
+                },
+
+                '': function() {
+                    // `NAME` GET identifier
+                }
+            },
+
+            'CALL': {
+                '': {
+                    '@': function() {
+                        cmd.hasSubblock = true;
+                        cmd.valueRequired = true;
+
+                        cmd.processChild = cmdProcessParams;
+                    },
+
+                    '#': function() {
+                    }
+                }
+            },
+
+            'DESTROY': function() {
+
+            }
+        };
+
+        return cooMatchCommand(cmd, extend(pattern, commandExt));
+    }
+
+
+    function cmdProcessEvents(cmd) {
+        return cooMatchCommand(cmd, {
+            'ON': {
+                '': {
+                    '*': function() {
+                        cmd.hasSubblock = true;
+                    }
+                }
+            }
+        });
+    }
+
+
+    function cmdProcessParams(cmd) {
+        return cooMatchCommand(cmd, {
+            'PARAM': {
                 '': {
                     '@': function() {
                         cmd.hasSubblock = true;
@@ -704,26 +880,25 @@ function cooModelViewCollectionBase(name, declExt, commandExt, callbacks) {
                     },
 
                     '(': function() {
-
                     },
 
                     '"': function() {
-
-                    }
-                }
-            },
-
-            'CALL': {
-                '': {
-                    '#': function() {
-                        cmd.hasSubblock = true;
-                        cmd.valueRequired = true;
                     }
                 }
             }
-        };
+        });
+    }
 
-        return cooMatchCommand(cmd, extend(pattern, commandExt));
+
+    function cmdProcessParamsAndEvents(cmd) {
+        var ret = cmdProcessEvents(cmd),
+            ret2;
+
+        if (ret) {
+            ret2 = cmdProcessParams(cmd);
+        }
+
+        return ret2 ? ret : ret2;
     }
 
 

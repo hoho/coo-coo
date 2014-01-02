@@ -18,7 +18,7 @@ VIEW TodoItem
     PROPERTY container
     PROPERTY input
 
-    INITIALIZE m
+    CONSTRUCT m
         VIEW SET model (m)
 
         MODEL (m)
@@ -62,7 +62,7 @@ VIEW TodoItem
 
     METHOD close
         SET val
-            +DOM (input) VALUE
+            +DOM (input) VALUE GET
 
         JS
             val = (val || '').replace(/^\s+|\s+$/g, '');

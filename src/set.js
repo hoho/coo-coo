@@ -6,16 +6,18 @@
             'SET': {
                 '': {
                     '@': function() {
+                        // SET identifier
+                        //     ...
                         cmd.hasSubblock = true;
                         cmd.valueRequired = true;
                     },
 
                     '(': function() {
-
+                        // SET identifier (expr)
                     },
 
                     '"': function() {
-
+                        // SET identifier "text"
                     }
                 }
             }

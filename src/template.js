@@ -24,6 +24,7 @@
         return cooMatchCommand(cmd, {
             'TYPE': {
                 '"': function(_, type) {
+                    // TYPE "text"
                     if (cmd.parent.template.type !== null) {
                         type.error = 'Duplicate type';
                         return type;
@@ -34,6 +35,7 @@
 
             'NAME': {
                 '"': function(_, name) {
+                    // NAME "text"
                     if (cmd.parent.template.name !== null) {
                         name.error = 'Duplicate name';
                         return name;

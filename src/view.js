@@ -5,6 +5,7 @@
     cooModelViewCollectionBase('VIEW', {
         RENDER: {
             '*': function() {
+                // RENDER identifier identifier2 ...
                 var params = cooExtractParamNames(this.parts, 1);
                 if (params.error) { return params.error; } else { params = params.params; }
 
@@ -16,22 +17,10 @@
             '(': {
                 'RENDER': {
                     '#': function() {
+                        // VIEW (expr) RENDER (expr2) (expr3) ...
                         this.hasSubblock = true;
                     }
                 }
-            }
-        }
-    }, {
-        decl: {
-
-        },
-
-        cmd: {
-            construct: function(params) {
-                this.before = null;
-                this.after = null;
-
-                console.log(params);
             }
         }
     });
