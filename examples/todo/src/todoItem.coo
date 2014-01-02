@@ -21,16 +21,16 @@ VIEW TodoItem
     CONSTRUCT m
         VIEW SET model (m)
 
-        MODEL (m)
+        MODEL TodoItem (m)
             ON remove
                 VIEW DESTROY
 
     RENDER
         +TEMPLATE TodoItem APPLY
             PARAM title
-                +MODEL (model) GET title
+                +MODEL TodoItem (model) GET title
             PARAM completed
-                +MODEL (model) GET completed
+                +MODEL TodoItem (model) GET completed
 
             ON container node
                 VIEW SET container (node)
@@ -46,7 +46,7 @@ VIEW TodoItem
             ON toggle node
                 DOM (node)
                     ON click
-                        MODEL (model) CALL toggle
+                        MODEL TodoItem (model) CALL toggle
 
             ON title node
                 DOM (node)
@@ -69,7 +69,7 @@ VIEW TodoItem
 
         CHOOSE
             WHEN (val)
-                MODEL (model) SET title (val)
+                MODEL TodoItem (model) SET title (val)
             OTHERWISE
                 VIEW CALL clear
 
@@ -80,4 +80,4 @@ VIEW TodoItem
             VIEW CALL close
 
     METHOD clear
-        MODEL (model) DESTROY
+        MODEL TodoItem (model) DESTROY

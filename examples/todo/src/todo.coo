@@ -26,4 +26,4 @@ VIEW TodoPage
             SET item
                 +VIEW TodoItem CREATE (m)
 
-            +VIEW (item) RENDER
+            +VIEW TodoItem (item) RENDER

@@ -14,11 +14,13 @@
         }
     }, {
         'VIEW': {
-            '(': {
-                'RENDER': {
-                    '#': function() {
-                        // VIEW (expr) RENDER (expr2) (expr3) ...
-                        this.hasSubblock = true;
+            '': {
+                '(': {
+                    'RENDER': {
+                        '#': function() {
+                            // VIEW identifier (expr) RENDER (expr2) (expr3) ...
+                            this.hasSubblock = true;
+                        }
                     }
                 }
             }

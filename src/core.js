@@ -717,78 +717,81 @@ function cooModelViewCollectionBase(name, declExt, commandExt) {
 
                         cmd.processChild = cmdProcessEvents;
                     }
-                }
-            },
-
-            '(': {
-                '@': function() {
-                    // `NAME` (expr)
-                    //     ...
-
-                    cmd.hasSubblock = true;
-                    cmd.valueRequired = false;
-
-                    cmd.processChild = cmdProcessEvents;
                 },
 
-                'SET': {
+                '(': {
                     '@': function() {
-                        // `NAME` (something) SET
+                        // `NAME` identifier (expr)
                         //     ...
+
+                        cmd.hasSubblock = true;
+                        cmd.valueRequired = false;
+
+                        cmd.processChild = cmdProcessEvents;
                     },
 
-                    '(': function() {
-                        // `NAME` (something) SET (expr)
-                    },
-
-                    '"': function() {
-                        // `NAME` (something) SET "text"
-                    },
-
-                    '': {
+                    'SET': {
                         '@': function() {
-                            // `NAME` (something) SET identifier
-
-                            cmd.hasSubblock = true;
-                            cmd.valueRequired = true;
+                            // `NAME` identifier (something) SET
+                            //     ...
                         },
 
                         '(': function() {
-                            // `NAME` (something) SET identifier (expr)
+                            // `NAME` identifier (something) SET (expr)
                         },
 
                         '"': function() {
-                            // `NAME` (something) SET identifier "text"
-                        }
-                    }
-                },
-
-                'GET': {
-                    '@': function() {
-                        // `NAME` (something) GET
-                    },
-
-                    '': function() {
-                        // `NAME` (something) GET identifier
-                    }
-                },
-
-                'CALL': {
-                    '': {
-                        '@': function() {
-                            cmd.hasSubblock = true;
-                            cmd.valueRequired = true;
-
-                            cmd.processChild = cmdProcessParams;
+                            // `NAME` identifier (something) SET "text"
                         },
 
-                        '#': function() {
+                        '': {
+                            '@': function() {
+                                // `NAME` identifier (something) SET identifier
+
+                                cmd.hasSubblock = true;
+                                cmd.valueRequired = true;
+                            },
+
+                            '(': function() {
+                                // `NAME` identifier (something) SET identifier (expr)
+                            },
+
+                            '"': function() {
+                                // `NAME` identifier (something) SET identifier "text"
+                            }
                         }
+                    },
+
+                    'GET': {
+                        '@': function() {
+                            // `NAME` identifier (something) GET
+                        },
+
+                        '': function() {
+                            // `NAME` identifier (something) GET identifier
+                        }
+                    },
+
+                    'CALL': {
+                        '': {
+                            '@': function() {
+                                // `NAME` identifier (something) CALL identifier
+                                //     ...
+                                cmd.hasSubblock = true;
+                                cmd.valueRequired = true;
+
+                                cmd.processChild = cmdProcessParams;
+                            },
+
+                            '#': function() {
+                                // `NAME` identifier (something) CALL identifier (expr) (expr) ...
+                            }
+                        }
+                    },
+
+                    'DESTROY': function() {
+                        // `NAME` identifier (something) DESTROY
                     }
-                },
-
-                'DESTROY': function() {
-
                 }
             },
 
