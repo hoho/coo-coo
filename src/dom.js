@@ -2,6 +2,10 @@
     /* global cooMatchCommand */
 
     function domProcess(cmd) {
+        if (!cmd.parent) {
+            return cmd.parts[0];
+        }
+
         return cooMatchCommand(cmd, {
             'DOM': {
                 '(': {

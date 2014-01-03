@@ -2,6 +2,10 @@
     /* global cooMatchCommand */
 
     function chooseProcess(cmd) {
+        if (!cmd.parent) {
+            return cmd.parts[0];
+        }
+
         return cooMatchCommand(cmd, {
             'CHOOSE': function() {
                 // CHOOSE

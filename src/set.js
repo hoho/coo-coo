@@ -2,6 +2,10 @@
     /* global cooMatchCommand */
 
     function setProcess(cmd) {
+        if (!cmd.parent) {
+            return cmd.parts[0];
+        }
+
         return cooMatchCommand(cmd, {
             'SET': {
                 '': {

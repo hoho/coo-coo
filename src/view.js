@@ -19,7 +19,8 @@
                 '(': {
                     'RENDER': {
                         '@': function(cmd) {
-
+                            // VIEW identifier (expr) RENDER
+                            cmd.hasSubblock = true;
                         },
 
                         '#': function(cmd) {
