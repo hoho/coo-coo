@@ -23,23 +23,29 @@
         /* global cooMatchCommand */
         return cooMatchCommand(cmd, {
             'TYPE': {
-                '"': function(_, type) {
+                '"': function() {
                     // TYPE "text"
+                    var type = cmd.parts[1];
+
                     if (cmd.parent.template.type !== null) {
                         type.error = 'Duplicate type';
                         return type;
                     }
+
                     cmd.parent.template.type = type.value;
                 }
             },
 
             'NAME': {
-                '"': function(_, name) {
+                '"': function() {
                     // NAME "text"
+                    var name = cmd.parts[1];
+
                     if (cmd.parent.template.name !== null) {
                         name.error = 'Duplicate name';
                         return name;
                     }
+
                     cmd.parent.template.name = name.value;
                 }
             },

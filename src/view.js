@@ -4,12 +4,13 @@
 
     cooModelViewCollectionBase('VIEW', {
         RENDER: {
-            '*': function() {
+            '*': function(cmd) {
                 // RENDER identifier identifier2 ...
-                var params = cooExtractParamNames(this.parts, 1);
-                if (params.error) { return params.error; } else { params = params.params; }
+                cmd.hasSubblock = true;
+                cmd.valueRequired = true;
 
-                console.log('rerere');
+                var params = cooExtractParamNames(cmd.parts, 1);
+                if (params.error) { return params.error; } else { params = params.params; }
             }
         }
     }, {
@@ -17,9 +18,13 @@
             '': {
                 '(': {
                     'RENDER': {
-                        '#': function() {
+                        '@': function(cmd) {
+
+                        },
+
+                        '#': function(cmd) {
                             // VIEW identifier (expr) RENDER (expr2) (expr3) ...
-                            this.hasSubblock = true;
+                            cmd.hasSubblock = true;
                         }
                     }
                 }

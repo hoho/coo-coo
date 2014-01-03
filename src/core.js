@@ -138,13 +138,13 @@ function cooMatchCommand(cmd, patterns, pos) {
         }
     } else {
         if (patterns['*']) {
-            return patterns['*'].apply(cmd, parts);
+            return patterns['*'](cmd);
         } else if (patterns['#']) {
-            return patterns['#'].apply(cmd, parts);
+            return patterns['#'](cmd);
         } else if (patterns['@']) {
-            return patterns['@'].apply(cmd, parts);
+            return patterns['@'](cmd);
         } else if (typeof patterns === 'function') {
-            return patterns.apply(cmd, parts);
+            return patterns(cmd);
         } else {
             // Incomplete command.
             part = parts[parts.length - 1];
@@ -633,14 +633,13 @@ function cooModelViewCollectionBase(name, declExt, commandExt) {
 
 
     function cmdProcessDecl(cmd) {
-        cmd.hasSubblock = true;
-        cmd.valueRequired = true;
-
         cmd.method = {};
 
         return cooMatchCommand(cmd, extend({
             'CONSTRUCT': {
                 '*': function() {
+                    cmd.hasSubblock = true;
+
                     if (cmd.parent[name].construct) {
                         cmd.parts[0].error = 'Duplicate constructor';
                         return cmd.parts[0];
@@ -650,30 +649,24 @@ function cooModelViewCollectionBase(name, declExt, commandExt) {
                     if (params.error) { return params.error; } else { params = params.params; }
 
                     cmd.parent[name].construct = true;
-
-                    cmd.valueRequired = false;
                 }
             },
 
             'DESTRUCT': function() {
-                cmd.valueRequired = false;
-                console.log('dede');
+                cmd.hasSubblock = true;
             },
 
             'PROPERTY': {
                 '': {
                     '@': function() {
-                        console.log('propro1');
+                        cmd.hasSubblock = true;
+                        cmd.valueRequired = true;
                     },
 
                     '(': function() {
-                        console.log('propro2');
-                        cmd.hasSubblock = false;
                     },
 
                     '"': function() {
-                        console.log('propro3');
-                        cmd.hasSubblock = false;
                     }
                 }
             },
@@ -681,10 +674,11 @@ function cooModelViewCollectionBase(name, declExt, commandExt) {
             'METHOD': {
                 '': {
                     '*': function() {
+                        cmd.hasSubblock = true;
+                        cmd.valueRequired = true;
+
                         var params = cooExtractParamNames(cmd.parts, 2);
                         if (params.error) { return params.error; } else { params = params.params; }
-
-                        console.log('mmmmm');
                     }
                 }
             }
@@ -700,7 +694,6 @@ function cooModelViewCollectionBase(name, declExt, commandExt) {
                 'CREATE': {
                     '@': function() {
                         cmd.hasSubblock = true;
-                        cmd.valueRequired = false;
 
                         cmd.processChild = cmdProcessParamsAndEvents;
                     },
@@ -710,7 +703,6 @@ function cooModelViewCollectionBase(name, declExt, commandExt) {
                         //     ...
 
                         cmd.hasSubblock = true;
-                        cmd.valueRequired = false;
 
                         var params = cooExtractParamNames(cmd.parts, 2);
                         if (params.error) { return params.error; } else { params = params.params; }
@@ -725,7 +717,6 @@ function cooModelViewCollectionBase(name, declExt, commandExt) {
                         //     ...
 
                         cmd.hasSubblock = true;
-                        cmd.valueRequired = false;
 
                         cmd.processChild = cmdProcessEvents;
                     },
