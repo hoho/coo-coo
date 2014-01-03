@@ -31,8 +31,7 @@ CooCommand.prototype = {
     valueRequired: false,
     hasSubblock: false,
     parts: null,
-    processChild: null,
-    data: null
+    processChild: null
 };
 
 
@@ -579,7 +578,7 @@ function CooCoo(filenames, commons, project) {
 
     tmp = ret.postParse;
     for (func in tmp) {
-        func();
+        tmp[func]();
     }
 
     tmp = ret.gen;
@@ -600,6 +599,10 @@ function cooExtractParamNames(parts, start) {
     for (i = start; i < parts.length; i++) {
         part = parts[i];
 
+        if (part.type !== COO_COMMAND_PART_IDENTIFIER) {
+            return {error: part};
+        }
+
         if (part.value in params) {
             part.error = 'Duplicate parameter name';
             return {error: part};
@@ -609,6 +612,26 @@ function cooExtractParamNames(parts, start) {
     }
 
     return {params: params};
+}
+
+
+/* exported cooExtractParamValues */
+function cooExtractParamValues(parts, start) {
+    var values = [],
+        i,
+        part;
+
+    for (i = start; i < parts.length; i++) {
+        part = parts[i];
+
+        if (part.type === COO_COMMAND_PART_IDENTIFIER) {
+            return {error: part};
+        }
+
+        values.push(part.value);
+    }
+
+    return {values: values};
 }
 
 
@@ -635,6 +658,26 @@ function cooModelViewCollectionBase(name, declExt, commandExt) {
     function cmdProcessDecl(cmd) {
         cmd.method = {};
 
+        function setupProperty() {
+            var props = cmd.parent[name].properties,
+                part = cmd.parts[1];
+
+            if (part.value in props) {
+                part.error = 'Duplicate property';
+                return part;
+            }
+
+            var params = cooExtractParamValues(cmd.parts, 2);
+
+            if (params.error) {
+                return params.error;
+            }
+
+            props[part.value] = {
+                value: params.values.length ? params.values[0] : undefined
+            };
+        }
+
         return cooMatchCommand(cmd, extend({
             'CONSTRUCT': {
                 '*': function() {
@@ -654,19 +697,33 @@ function cooModelViewCollectionBase(name, declExt, commandExt) {
 
             'DESTRUCT': function() {
                 cmd.hasSubblock = true;
+
+                if (cmd.parent[name].destruct) {
+                    cmd.parts[0].error = 'Duplicate destructor';
+                    return cmd.parts[0];
+                }
+
+                cmd.parent[name].destruct = true;
             },
 
             'PROPERTY': {
                 '': {
                     '@': function() {
+                        var error = setupProperty();
+                        if (error) { return error; }
+
                         cmd.hasSubblock = true;
                         cmd.valueRequired = true;
                     },
 
                     '(': function() {
+                        var error = setupProperty();
+                        if (error) { return error; }
                     },
 
                     '"': function() {
+                        var error = setupProperty();
+                        if (error) { return error; }
                     }
                 }
             },
@@ -674,11 +731,20 @@ function cooModelViewCollectionBase(name, declExt, commandExt) {
             'METHOD': {
                 '': {
                     '*': function() {
+                        var methods = cmd.parent[name].methods,
+                            part = cmd.parts[1];
+
+                        if (part.value in methods) {
+                            part.error = 'Duplicate method';
+                            return part;
+                        }
+
                         cmd.hasSubblock = true;
                         cmd.valueRequired = true;
 
                         var params = cooExtractParamNames(cmd.parts, 2);
                         if (params.error) { return params.error; } else { params = params.params; }
+
                     }
                 }
             }
@@ -704,8 +770,8 @@ function cooModelViewCollectionBase(name, declExt, commandExt) {
 
                         cmd.hasSubblock = true;
 
-                        var params = cooExtractParamNames(cmd.parts, 2);
-                        if (params.error) { return params.error; } else { params = params.params; }
+                        var params = cooExtractParamValues(cmd.parts, 3);
+                        if (params.error) { return params.error; } else { params = params.values; }
 
                         cmd.processChild = cmdProcessEvents;
                     }
@@ -901,5 +967,6 @@ function cooModelViewCollectionBase(name, declExt, commandExt) {
 
 
 CooCoo.cmd = {};
+CooCoo.decl = {};
 
 module.exports = CooCoo;
