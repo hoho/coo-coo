@@ -12,6 +12,8 @@
                     // TEST (expr)
                     //     ...
                     cmd.hasSubblock = true;
+                    cmd.valueRequired = cmd.parent.valueRequired;
+
                 }
             }
         });

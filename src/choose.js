@@ -28,6 +28,7 @@
                     }
 
                     cmd.hasSubblock = true;
+                    cmd.valueRequired = cmd.parent.parent.valueRequired;
                 }
             },
 
@@ -41,6 +42,7 @@
                 cmd.parent.hadOtherwise = true;
 
                 cmd.hasSubblock = true;
+                cmd.valueRequired = cmd.parent.parent.valueRequired;
             }
         });
     }
