@@ -93,5 +93,9 @@
     }
 
 
-    CooCoo.cmd.TEMPLATE = templateProcess;
+    CooCoo.cmd.TEMPLATE = {
+        process: templateProcess,
+        arrange: null,
+        base: 'template'
+    };
 })();

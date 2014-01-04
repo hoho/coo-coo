@@ -264,10 +264,18 @@ CooFile.prototype = {
                         }
                     });
                 } else {
-                    var cb = CooCoo.cmd[cmd.name];
+                    var commandHandlers = CooCoo.cmd[cmd.name];
 
-                    if (cb) {
-                        errorPart = cb(cmd);
+                    if (commandHandlers.base) {
+                        this.ret.base[commandHandlers.base] = true;
+                    }
+
+                    if (commandHandlers.arrange) {
+                        this.ret.arrange[cmd.name] = commandHandlers.arrange;
+                    }
+
+                    if (commandHandlers && commandHandlers.process) {
+                        errorPart = commandHandlers.process(cmd);
                     } else {
                         errorPart = parts[0];
                     }
@@ -559,9 +567,11 @@ function cooRunGenerators(gen, code, level) {
 
 
 function CooCoo(filenames, commons, project) {
+    CooCoo.decl = {};
+
     var ret = {
-        common: {core: true},
-        postParse: {},
+        base: {core: true},
+        arrange: {},
         gen: []
     };
 
@@ -586,7 +596,7 @@ function CooCoo(filenames, commons, project) {
         cooRunGenerators(tmp[i], code, 0);
     }
 
-    console.log(commons, project, code.join('\n'));
+    console.log(commons, project, code.join('\n'), ret);
 }
 
 
@@ -961,11 +971,14 @@ function cooModelViewCollectionBase(name, declExt, commandExt) {
     }
 
 
-    CooCoo.cmd[name] = cmdProcess;
+    CooCoo.cmd[name] = {
+        process: cmdProcess,
+        arrange: null,
+        base: name.toLowerCase()
+    };
 }
 
 
 CooCoo.cmd = {};
-CooCoo.decl = {};
 
 module.exports = CooCoo;

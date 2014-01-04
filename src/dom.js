@@ -107,5 +107,9 @@
     }
 
 
-    CooCoo.cmd.DOM = domProcess;
+    CooCoo.cmd.DOM = {
+        process: domProcess,
+        arrange: null,
+        base: 'dom'
+    };
 })();

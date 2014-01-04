@@ -20,5 +20,8 @@
     }
 
 
-    CooCoo.cmd.TEST = testProcess;
+    CooCoo.cmd.TEST = {
+        process: testProcess,
+        arrange: null
+    };
 })();

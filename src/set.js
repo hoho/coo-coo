@@ -29,5 +29,8 @@
     }
 
 
-    CooCoo.cmd.SET = setProcess;
+    CooCoo.cmd.SET = {
+        process: setProcess,
+        arrange: null
+    };
 })();

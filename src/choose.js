@@ -48,5 +48,8 @@
     }
 
 
-    CooCoo.cmd.CHOOSE = chooseProcess;
+    CooCoo.cmd.CHOOSE = {
+        process: chooseProcess,
+        arrange: null
+    };
 })();
