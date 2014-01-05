@@ -32,22 +32,12 @@
 
                     'CLASS': {
                         'ADD': {
-                            '"': function() {
-                                // DOM (expr) CLASS ADD "text"
-
-                            },
-
                             '(': function() {
                                 // DOM (expr) CLASS ADD (expr2)
                             }
                         },
 
                         'REMOVE': {
-                            '"': function() {
-                                // DOM (expr) CLASS REMOVE "text"
-
-                            },
-
                             '(': function() {
                                 // DOM (expr) CLASS REMOVE (expr2)
                             }
@@ -76,10 +66,6 @@
 
                             '(': function() {
                                 // DOM (expr) VALUE SET (expr2)
-                            },
-
-                            '"': function() {
-                                // DOM (expr) VALUE SET "text"
                             }
                         },
 

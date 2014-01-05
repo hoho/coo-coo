@@ -4,7 +4,6 @@
     cooModelViewCollectionBase('COLLECTION', {
         MODEL: {
             '': function() {},
-            '"': function() {},
             '(': function() {}
         }
     }, {

@@ -23,7 +23,7 @@
         /* global cooMatchCommand */
         return cooMatchCommand(cmd, {
             'TYPE': {
-                '"': function() {
+                '(': function() {
                     // TYPE "text"
                     var type = cmd.parts[1];
 
@@ -37,7 +37,7 @@
             },
 
             'NAME': {
-                '"': function() {
+                '(': function() {
                     // NAME "text"
                     var name = cmd.parts[1];
 
@@ -53,8 +53,7 @@
             'PARAM': {
                 '': {
                     '@': function() {},
-                    '(': function() {},
-                    '"': function() {}
+                    '(': function() {}
                 }
             }
         });
@@ -71,9 +70,6 @@
                     },
 
                     '(': function() {
-                    },
-
-                    '"': function() {
                     }
                 }
             },

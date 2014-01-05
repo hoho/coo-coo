@@ -18,10 +18,6 @@
 
                     '(': function() {
                         // SET identifier (expr)
-                    },
-
-                    '"': function() {
-                        // SET identifier "text"
                     }
                 }
             }

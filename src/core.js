@@ -12,7 +12,9 @@ var INDENT_WITH = ' ',
 
     COO_COMMAND_PART_STRING = 'string',
     COO_COMMAND_PART_JS = 'JavaScript',
-    COO_COMMAND_PART_IDENTIFIER = 'identifier';
+    COO_COMMAND_PART_IDENTIFIER = 'identifier',
+    COO_COMMAND_PART_PROPERTY_GETTER = 'property getter',
+    COO_COMMAND_PART_VARIABLE_GETTER = 'variable getter';
 
 
 function CooCommand(file, parent) {
@@ -96,29 +98,21 @@ function cooMatchCommand(cmd, patterns, pos) {
     if (part) {
         switch (part.type) {
             case COO_COMMAND_PART_STRING:
-                /* jshint -W061 */
-                var val = JSON.stringify(eval(part.value));
-                /* jshint +W061 */
-
-                if (patterns[val]) {
-                    error = cooMatchCommand(cmd, patterns[val], pos + 1);
-                    unexpected = false;
-                }
-
-                if ((error || unexpected) && patterns['"']) {
-                    error = cooMatchCommand(cmd, patterns['"'], pos + 1);
-                    unexpected = false;
-                }
-
-                if ((error || unexpected) && patterns['#']) {
-                    error = cooMatchCommand(cmd, patterns, pos + 1);
-                    unexpected = false;
-                }
-
-                return unexpected ? part : error;
-
             case COO_COMMAND_PART_JS:
-                if (patterns['(']) {
+            case COO_COMMAND_PART_PROPERTY_GETTER:
+            case COO_COMMAND_PART_VARIABLE_GETTER:
+                if (part.type === COO_COMMAND_PART_STRING) {
+                    /* jshint -W061 */
+                    var val = JSON.stringify(eval(part.value));
+                    /* jshint +W061 */
+
+                    if (patterns[val]) {
+                        error = cooMatchCommand(cmd, patterns[val], pos + 1);
+                        unexpected = false;
+                    }
+                }
+
+                if ((error || unexpected) && patterns['(']) {
                     error = cooMatchCommand(cmd, patterns['('], pos + 1);
                     unexpected = false;
                 }
@@ -147,6 +141,9 @@ function cooMatchCommand(cmd, patterns, pos) {
                 }
 
                 return unexpected ? part : error;
+
+            default:
+                cmd.file.errorUnexpectedPart(part);
         }
     } else {
         if (patterns['*']) {
@@ -477,9 +474,25 @@ CooFile.prototype = {
     },
 
     readIdentifier: function() {
-        var part = new CooCommandPart(COO_COMMAND_PART_IDENTIFIER, this.lineAt, this.charAt),
+        var part,
+            type,
             line = this.code[this.lineAt],
             val = [line[this.charAt]];
+
+        switch (line[this.charAt]) {
+            case '@':
+                type = COO_COMMAND_PART_PROPERTY_GETTER;
+                this.charAt++;
+                break;
+            case '$':
+                type = COO_COMMAND_PART_VARIABLE_GETTER;
+                this.charAt++;
+                break;
+            default:
+                type = COO_COMMAND_PART_IDENTIFIER;
+        }
+
+        part = new CooCommandPart(type, this.lineAt, this.charAt);
 
         if (!line[this.charAt].match(/[a-zA-Z_]/)) {
             this.errorUnexpectedSymbol();
@@ -496,7 +509,12 @@ CooFile.prototype = {
         part._charEnd = this.charAt + 1;
         this.skipWhitespaces();
 
-        part.value = val.join('');
+        if (val.length) {
+            part.value = val.join('');
+        } else {
+            part.error = 'Incomplete ' + type;
+            this.errorUnexpectedPart(part);
+        }
 
         return part;
     },
@@ -833,15 +851,6 @@ function cooModelViewCollectionBase(name, declExt, commandExt) {
                         cmd.getCodeBefore = function() {
                             return cmd.parts[1].value + ': ' + cmd.parts[2].value + (cmd.last ? '' : ',\n');
                         };
-                    },
-
-                    '"': function() {
-                        var error = setupProperty();
-                        if (error) { return error; }
-
-                        cmd.getCodeBefore = function() {
-                            return cmd.parts[1].value + ': ' + cmd.parts[2].value + (cmd.last ? '' : ',\n');
-                        };
                     }
                 }
             },
@@ -934,10 +943,6 @@ function cooModelViewCollectionBase(name, declExt, commandExt) {
                             // `NAME` identifier (something) SET (expr)
                         },
 
-                        '"': function() {
-                            // `NAME` identifier (something) SET "text"
-                        },
-
                         '': {
                             '@': function() {
                                 // `NAME` identifier (something) SET identifier
@@ -948,10 +953,6 @@ function cooModelViewCollectionBase(name, declExt, commandExt) {
 
                             '(': function() {
                                 // `NAME` identifier (something) SET identifier (expr)
-                            },
-
-                            '"': function() {
-                                // `NAME` identifier (something) SET identifier "text"
                             }
                         }
                     },
@@ -999,10 +1000,6 @@ function cooModelViewCollectionBase(name, declExt, commandExt) {
                     // `NAME` SET (expr)
                 },
 
-                '"': function() {
-                    // `NAME` SET "text"
-                },
-
                 '': {
                     '@': function() {
                         // `NAME` SET identifier
@@ -1013,10 +1010,6 @@ function cooModelViewCollectionBase(name, declExt, commandExt) {
 
                     '(': function() {
                         // `NAME` SET identifier (expr)
-                    },
-
-                    '"': function() {
-                        // `NAME` SET identifier "text"
                     }
                 }
             },
@@ -1077,9 +1070,6 @@ function cooModelViewCollectionBase(name, declExt, commandExt) {
                     },
 
                     '(': function() {
-                    },
-
-                    '"': function() {
                     }
                 }
             }
