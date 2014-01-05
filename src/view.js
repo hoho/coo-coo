@@ -9,11 +9,11 @@
                 // RENDER identifier identifier2 ...
                 var part = cmd.parts[0];
 
-                if (cmd.parent.VIEW.render) {
+                if (cmd.parent.data.render) {
                     part.error = 'Duplicate renderer';
                     return part;
                 } else {
-                    cmd.parent.VIEW.render = true;
+                    cmd.parent.data.render = true;
                 }
 
                 cmd.hasSubblock = true;

@@ -15,13 +15,16 @@ var INDENT_WITH = ' ',
     COO_COMMAND_PART_IDENTIFIER = 'identifier';
 
 
-function CooCommand(parent) {
+function CooCommand(file, parent) {
+    this.file = file;
+
     if (parent) {
         this.root = parent.root || parent;
         this.method = parent.method;
     }
 
     this.parent = parent;
+    this.children = [];
 }
 
 CooCommand.prototype = {
@@ -31,7 +34,14 @@ CooCommand.prototype = {
     valueRequired: false,
     hasSubblock: false,
     parts: null,
-    processChild: null
+    processChild: null,
+
+    data: null,
+
+    getDeclKey: null,
+
+    getCodeBefore: null,
+    getCodeAfter: null
 };
 
 
@@ -202,7 +212,7 @@ CooFile.prototype = {
     readCommand: function(parent) {
         var i,
             line = this.code[this.lineAt],
-            cmd = new CooCommand(parent);
+            cmd = new CooCommand(this, parent);
 
         for (i = 0; i < this.blockIndent; i++) {
             if (line[i] !== INDENT_WITH) {
@@ -289,6 +299,26 @@ CooFile.prototype = {
                     this.readBlock(cmd);
                 } else {
                     this.nextLine();
+                }
+            }
+
+            if (!parent) {
+                if (cmd.getDeclKey) {
+                    var declKey = cmd.getDeclKey(),
+                        decls = this.ret.declCmd[declKey.first];
+
+                    if (!decls) {
+                        this.ret.declCmd[declKey.first] = decls = {};
+                    }
+
+                    if (declKey.last in decls) {
+                        cmd.parts[0].error = 'Redeclaration';
+                        this.errorUnexpectedPart(cmd.parts[0]);
+                    } else {
+                        decls[declKey.last] = cmd;
+                    }
+                } else {
+                    this.ret.cmd.push(cmd);
                 }
             }
         } else {
@@ -545,23 +575,23 @@ CooFile.prototype = {
 };
 
 
-function cooRunGenerators(gen, code, level) {
-    var g = gen.gen,
+function cooRunGenerators(cmd, code, level) {
+    var c = cmd.children,
         i,
         indent = (new Array(level)).join(INDENT);
 
-    if (gen.before) {
-        code.push(indent + gen.before());
+    if (cmd.getCodeBefore) {
+        code.push(indent + cmd.getCodeBefore());
     }
 
-    if (g) {
-        for (i = 0; i < g.length; i++) {
-            cooRunGenerators(g[i], code, level + 1);
+    if (c) {
+        for (i = 0; i < c.length; i++) {
+            cooRunGenerators(c[i], code, level + 1);
         }
     }
 
-    if (gen.after) {
-        code.push(indent + gen.after());
+    if (cmd.getCodeAfter) {
+        code.push(indent + cmd.getCodeAfter());
     }
 }
 
@@ -572,13 +602,13 @@ function CooCoo(filenames, commons, project) {
     var ret = {
         base: {core: true},
         arrange: {},
-        gen: []
+        declCmd: {},
+        cmd: []
     };
 
     var i,
         file,
         tmp,
-        func,
         code = [];
 
     for (i = 0; i < filenames.length; i++) {
@@ -586,17 +616,17 @@ function CooCoo(filenames, commons, project) {
         file.read(ret);
     }
 
-    tmp = ret.postParse;
-    for (func in tmp) {
-        tmp[func]();
+    tmp = ret.arrange;
+    for (i in tmp) {
+        tmp[i](file, ret.declCmd, ret.cmd);
     }
 
-    tmp = ret.gen;
+    tmp = ret.cmd;
     for (i = 0; i < tmp.length; i++) {
         cooRunGenerators(tmp[i], code, 0);
     }
 
-    console.log(commons, project, code.join('\n'), ret);
+    console.log(commons, project, code.join('\n'));
 }
 
 
@@ -651,15 +681,70 @@ function cooModelViewCollectionBase(name, declExt, commandExt) {
         if (cmd.parent) {
             return cmdProcessCommand(cmd);
         } else {
+            var patterns = {},
+                error,
+                exts;
+
+            patterns[name] = {
+                '': {
+                    '@': function() {
+                        // `NAME` identifier
+                    },
+
+                    'EXTENDS': {
+                        '': function() {
+                            // `NAME` identifier EXTENDS identifier2
+                            exts = cmd.parts[3].value;
+                        }
+                    }
+                }
+            };
+
+            error = cooMatchCommand(cmd, patterns);
+
+            if (error) {
+                return error;
+            }
+
+            cmd.getDeclKey = function() {
+                return {first: cmd.parts[0].value, last: cmd.parts[1].value};
+            };
+
             // Template declaration.
             cmd.hasSubblock = true;
             cmd.processChild = cmdProcessDecl;
 
-            cmd[name] = {
-                properties: {},
-                methods: {},
+            cmd.data = {
+                name: cmd.parts[1].value,
+                exts: exts,
                 construct: null,
-                destruct: null
+                destruct: null,
+                properties: {},
+                methods: {}
+            };
+
+            var storageName = name[0].toUpperCase() + name.substring(1).toLowerCase();
+
+            cmd.getCodeBefore = function() {
+                // CooCoo.View["Identifier"] =
+                var ret = ['CooCoo.' + storageName + '["' + cmd.parts[1].value + '"] = '];
+
+                if (exts) {
+                    // CooCoo.View["Identifier"]
+                    ret.push('CooCoo.' + storageName + '["' + exts + '"]');
+                } else {
+                    // CooCoo.ViewBase
+                    ret.push('CooCoo.' + storageName + 'Base');
+                }
+
+                // .extend({
+                ret.push('.extend({');
+
+                return ret.join('');
+            };
+
+            cmd.getCodeAfter = function() {
+                return '});\n';
             };
         }
     }
@@ -669,7 +754,7 @@ function cooModelViewCollectionBase(name, declExt, commandExt) {
         cmd.method = {};
 
         function setupProperty() {
-            var props = cmd.parent[name].properties,
+            var props = cmd.parent.data.properties,
                 part = cmd.parts[1];
 
             if (part.value in props) {
@@ -693,7 +778,7 @@ function cooModelViewCollectionBase(name, declExt, commandExt) {
                 '*': function() {
                     cmd.hasSubblock = true;
 
-                    if (cmd.parent[name].construct) {
+                    if (cmd.parent.data.construct) {
                         cmd.parts[0].error = 'Duplicate constructor';
                         return cmd.parts[0];
                     }
@@ -701,19 +786,19 @@ function cooModelViewCollectionBase(name, declExt, commandExt) {
                     var params = cooExtractParamNames(cmd.parts, 1);
                     if (params.error) { return params.error; } else { params = params.params; }
 
-                    cmd.parent[name].construct = true;
+                    cmd.parent.data.construct = true;
                 }
             },
 
             'DESTRUCT': function() {
                 cmd.hasSubblock = true;
 
-                if (cmd.parent[name].destruct) {
+                if (cmd.parent.data.destruct) {
                     cmd.parts[0].error = 'Duplicate destructor';
                     return cmd.parts[0];
                 }
 
-                cmd.parent[name].destruct = true;
+                cmd.parent.data.destruct = true;
             },
 
             'PROPERTY': {
@@ -741,7 +826,7 @@ function cooModelViewCollectionBase(name, declExt, commandExt) {
             'METHOD': {
                 '': {
                     '*': function() {
-                        var methods = cmd.parent[name].methods,
+                        var methods = cmd.parent.data.methods,
                             part = cmd.parts[1];
 
                         if (part.value in methods) {
@@ -973,7 +1058,57 @@ function cooModelViewCollectionBase(name, declExt, commandExt) {
 
     CooCoo.cmd[name] = {
         process: cmdProcess,
-        arrange: null,
+        arrange: function(file, declCmd, cmdList) {
+            var decls = declCmd[name],
+                arranged = {},
+                initialName,
+                key,
+                cmd,
+                props,
+                depProps,
+                depCmd;
+
+            for (key in decls) {
+                cmd = decls[key];
+                props = cmd.data;
+
+                if (props.exts) {
+                    depCmd = cmd;
+                    depProps = props;
+                    initialName = depProps.name;
+
+                    while (depProps.exts) {
+                        if (depProps.exts in decls) {
+                            if (depProps.exts === initialName) {
+                                depCmd.parts[3].error = 'Circular dependency';
+                                depCmd.file.errorUnexpectedPart(depCmd.parts[3]);
+                            }
+                        } else {
+                            depCmd.parts[3].error = 'Dependency is not declared';
+                            depCmd.file.errorUnexpectedPart(depCmd.parts[3]);
+                        }
+
+                        if (!(arranged[depProps.exts])) {
+                            arranged[depProps.exts] = decls[depProps.exts];
+                        }
+                        depCmd = decls[depProps.exts];
+                        depProps = decls[depProps.exts].data;
+                    }
+                }
+
+                if (!(props.name in arranged)) {
+                    arranged[props.name] = cmd;
+                }
+            }
+
+
+            cmd = [];
+            for (key in arranged) {
+                cmd.push(arranged[key]);
+            }
+
+            Array.prototype.splice.apply(cmdList, [0, 0].concat(cmd));
+        },
         base: name.toLowerCase()
     };
 }
