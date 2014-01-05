@@ -14,16 +14,16 @@ VIEW TodoPage
     RENDER
         +TEMPLATE TodoPage APPLY
             ON items node
-                VIEW SET itemsContainer (node)
+                VIEW SET itemsContainer $node
 
         VIEW SET todoList
             +COLLECTION TodoList CREATE
                 ON add m
-                    VIEW CALL addOne (m)
+                    VIEW CALL addOne $m
 
     METHOD addOne m
-        DOM (itemsContainer) APPEND
+        DOM @itemsContainer APPEND
             SET item
-                +VIEW TodoItem CREATE (m)
+                +VIEW TodoItem CREATE $m
 
-            +VIEW TodoItem (item) RENDER
+            +VIEW TodoItem $item RENDER
