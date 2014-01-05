@@ -27,6 +27,7 @@ function CooCommand(file, parent) {
 
     this.parent = parent;
     this.children = [];
+    this.data = {};
 }
 
 CooCommand.prototype = {
@@ -40,8 +41,6 @@ CooCommand.prototype = {
 
     indent: 1,
     last: true,
-
-    data: null,
 
     getDeclKey: null,
 
@@ -477,7 +476,7 @@ CooFile.prototype = {
         var part,
             type,
             line = this.code[this.lineAt],
-            val = [line[this.charAt]];
+            val;
 
         switch (line[this.charAt]) {
             case '@':
@@ -492,6 +491,7 @@ CooFile.prototype = {
                 type = COO_COMMAND_PART_IDENTIFIER;
         }
 
+        val = [line[this.charAt]];
         part = new CooCommandPart(type, this.lineAt, this.charAt);
 
         if (!line[this.charAt].match(/[a-zA-Z_]/)) {
