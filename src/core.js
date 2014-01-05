@@ -476,29 +476,32 @@ CooFile.prototype = {
         var part,
             type,
             line = this.code[this.lineAt],
-            val;
+            val,
+            nextChar = 0;
 
         switch (line[this.charAt]) {
             case '@':
                 type = COO_COMMAND_PART_PROPERTY_GETTER;
-                this.charAt++;
+                nextChar = 1;
                 break;
             case '$':
                 type = COO_COMMAND_PART_VARIABLE_GETTER;
-                this.charAt++;
+                nextChar = 1;
                 break;
             default:
                 type = COO_COMMAND_PART_IDENTIFIER;
         }
 
-        val = [line[this.charAt]];
+        val = [];
         part = new CooCommandPart(type, this.lineAt, this.charAt);
+        this.charAt += nextChar;
 
-        if (!line[this.charAt].match(/[a-zA-Z_]/)) {
+        if (line[this.charAt].match(/[a-zA-Z_]/)) {
+            val.push(line[this.charAt]);
+            this.charAt++;
+        } else {
             this.errorUnexpectedSymbol();
         }
-
-        this.charAt++;
 
         while (this.charAt < line.length && line[this.charAt].match(/[a-zA-Z0-9_]/)) {
             val.push(line[this.charAt]);
