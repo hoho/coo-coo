@@ -36,6 +36,9 @@ CooCommand.prototype = {
     parts: null,
     processChild: null,
 
+    indent: 1,
+    last: true,
+
     data: null,
 
     getDeclKey: null,
@@ -320,6 +323,8 @@ CooFile.prototype = {
                 } else {
                     this.ret.cmd.push(cmd);
                 }
+            } else {
+                parent.children.push(cmd);
             }
         } else {
             if (line[i] === INDENT_WITH) { this.errorBadIndentation(i); }
@@ -578,20 +583,33 @@ CooFile.prototype = {
 function cooRunGenerators(cmd, code, level) {
     var c = cmd.children,
         i,
-        indent = (new Array(level)).join(INDENT);
+        indent = (new Array(level + 1)).join(INDENT);
 
-    if (cmd.getCodeBefore) {
-        code.push(indent + cmd.getCodeBefore());
+    if (cmd.getCodeBefore && (i = cmd.getCodeBefore())) {
+        code.push(indent + i);
     }
 
     if (c) {
+        var prev,
+            subcmd;
+
         for (i = 0; i < c.length; i++) {
-            cooRunGenerators(c[i], code, level + 1);
+            subcmd = c[i];
+
+            if (subcmd.getCodeBefore || subcmd.getCodeAfter) {
+                if (prev) { prev.last = false; }
+                prev = subcmd;
+            }
+        }
+
+        for (i = 0; i < c.length; i++) {
+            subcmd = c[i];
+            cooRunGenerators(subcmd, code, level + subcmd.indent);
         }
     }
 
-    if (cmd.getCodeAfter) {
-        code.push(indent + cmd.getCodeAfter());
+    if (cmd.getCodeAfter && (i = cmd.getCodeAfter())) {
+        code.push(indent + i);
     }
 }
 
@@ -618,13 +636,10 @@ function CooCoo(filenames, commons, project) {
 
     tmp = ret.arrange;
     for (i in tmp) {
-        tmp[i](file, ret.declCmd, ret.cmd);
+        tmp[i](ret.declCmd, ret.cmd);
     }
 
-    tmp = ret.cmd;
-    for (i = 0; i < tmp.length; i++) {
-        cooRunGenerators(tmp[i], code, 0);
-    }
+    cooRunGenerators({children: ret.cmd}, code, 0);
 
     console.log(commons, project, code.join('\n'));
 }
@@ -727,11 +742,11 @@ function cooModelViewCollectionBase(name, declExt, commandExt) {
 
             cmd.getCodeBefore = function() {
                 // CooCoo.View["Identifier"] =
-                var ret = ['CooCoo.' + storageName + '["' + cmd.parts[1].value + '"] = '];
+                var ret = ['CooCoo.' + storageName + '.' + cmd.parts[1].value + ' = '];
 
                 if (exts) {
                     // CooCoo.View["Identifier"]
-                    ret.push('CooCoo.' + storageName + '["' + exts + '"]');
+                    ret.push('CooCoo.' + storageName + '.' + exts);
                 } else {
                     // CooCoo.ViewBase
                     ret.push('CooCoo.' + storageName + 'Base');
@@ -744,7 +759,7 @@ function cooModelViewCollectionBase(name, declExt, commandExt) {
             };
 
             cmd.getCodeAfter = function() {
-                return '});\n';
+                return '});' + (cmd.last ? '' : '\n');
             };
         }
     }
@@ -814,11 +829,19 @@ function cooModelViewCollectionBase(name, declExt, commandExt) {
                     '(': function() {
                         var error = setupProperty();
                         if (error) { return error; }
+
+                        cmd.getCodeBefore = function() {
+                            return cmd.parts[1].value + ': ' + cmd.parts[2].value + (cmd.last ? '' : ',\n');
+                        };
                     },
 
                     '"': function() {
                         var error = setupProperty();
                         if (error) { return error; }
+
+                        cmd.getCodeBefore = function() {
+                            return cmd.parts[1].value + ': ' + cmd.parts[2].value + (cmd.last ? '' : ',\n');
+                        };
                     }
                 }
             },
@@ -839,6 +862,26 @@ function cooModelViewCollectionBase(name, declExt, commandExt) {
 
                         var params = cooExtractParamNames(cmd.parts, 2);
                         if (params.error) { return params.error; } else { params = params.params; }
+
+                        cmd.getCodeBefore = function() {
+                            var ret = [cmd.parts[1].value + ': function('],
+                                first = true;
+
+                            for (var param in params) {
+                                if (!first) { ret.push(', '); }
+                                first = false;
+
+                                ret.push(param);
+                            }
+
+                            ret.push(') {');
+
+                            return ret.join('');
+                        };
+
+                        cmd.getCodeAfter = function() {
+                            return '}' + (cmd.last ? '' : ',\n');
+                        };
                     }
                 }
             }
@@ -1058,7 +1101,7 @@ function cooModelViewCollectionBase(name, declExt, commandExt) {
 
     CooCoo.cmd[name] = {
         process: cmdProcess,
-        arrange: function(file, declCmd, cmdList) {
+        arrange: function(declCmd, cmdList) {
             var decls = declCmd[name],
                 arranged = {},
                 initialName,
