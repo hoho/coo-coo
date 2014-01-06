@@ -14,7 +14,10 @@ var INDENT_WITH = ' ',
     COO_COMMAND_PART_JS = 'JavaScript',
     COO_COMMAND_PART_IDENTIFIER = 'identifier',
     COO_COMMAND_PART_PROPERTY_GETTER = 'property getter',
-    COO_COMMAND_PART_VARIABLE_GETTER = 'variable getter';
+    COO_COMMAND_PART_VARIABLE_GETTER = 'variable getter',
+
+    COO_INTERNAL_VARIABLE_THIS = '__self__',
+    COO_INTERNAL_VARIABLE_RET = '__ret__';
 
 
 function CooCommand(file, parent) {
@@ -164,6 +167,56 @@ function cooMatchCommand(cmd, patterns, pos) {
 }
 
 
+
+/* exported cooPushScopeVariable */
+function cooPushScopeVariable(cmd, name) {
+    var tmp = cmd,
+        scope = cmd.data.scope;
+
+    while (!scope && tmp.parent) {
+        tmp = tmp.parent;
+        scope = tmp.data.scope;
+    }
+
+    if (!scope) {
+        cmd.parts[0].error = 'No variable scope';
+        cmd.file.errorUnexpectedPart(cmd.parts[0]);
+    }
+
+    scope[name] = false;
+}
+
+
+function cooPushInternalVariable(cmd, name, value) {
+    var tmp = cmd,
+        scope;
+
+    while (tmp) {
+        if (tmp.data.scope) { scope = tmp.data.scope; }
+        tmp = tmp.parent;
+    }
+
+    if (!scope) {
+        cmd.parts[0].error = 'No variable scope';
+        cmd.file.errorUnexpectedPart(cmd.parts[0]);
+    }
+
+    scope[name] = value;
+}
+
+
+/* exported cooPushThisVariable */
+function cooPushThisVariable(cmd) {
+    cooPushInternalVariable(cmd, COO_INTERNAL_VARIABLE_THIS, 'this');
+}
+
+
+/* exported cooPushRetVariable */
+function cooPushRetVariable(cmd) {
+    cooPushInternalVariable(cmd, COO_INTERNAL_VARIABLE_RET, '[]');
+}
+
+
 function CooFile(filename) {
     var data = fs.readFileSync(filename, {encoding: 'utf8'});
 
@@ -269,7 +322,38 @@ CooFile.prototype = {
                     errorPart = cooMatchCommand(cmd, {
                         'JS': function() {
                             var val = self.readJS(self.blockIndent);
-                            console.log(val.value);
+
+                            cooPushThisVariable(cmd);
+
+                            cmd.getCodeBefore = function() {
+                                var ret = [];
+
+                                if (cmd.valuePusher) {
+                                    ret.push(COO_INTERNAL_VARIABLE_RET);
+                                    ret.push('.push(');
+                                }
+
+                                ret.push('(function() {\n');
+                                ret.push(val.value);
+
+                                return ret.join('');
+                            };
+
+                            cmd.getCodeAfter = function() {
+                                var ret = [];
+
+                                ret.push('}).call(');
+                                ret.push(COO_INTERNAL_VARIABLE_THIS);
+                                ret.push(')');
+
+                                if (cmd.valuePusher) {
+                                    ret.push(')');
+                                }
+
+                                ret.push(';');
+
+                                return ret.join('');
+                            };
                         }
                     });
                 } else {
@@ -727,25 +811,6 @@ function cooValueToJS(cmd, part) {
 }
 
 
-/* exported cooPushScopeVariable */
-function cooPushScopeVariable(cmd, name) {
-    var tmp = cmd,
-        scope = cmd.data.scope;
-
-    while (!scope && tmp.parent) {
-        tmp = tmp.parent;
-        scope = tmp.data.scope;
-    }
-
-    if (!scope) {
-        cmd.parts[0].error = 'No variable scope';
-        cmd.file.errorUnexpectedPart(cmd.parts[0]);
-    }
-
-    scope[name] = true;
-}
-
-
 /* exported cooModelViewCollectionBase */
 function cooModelViewCollectionBase(name, declExt, commandExt) {
     function cmdProcess(cmd) {
@@ -880,6 +945,16 @@ function cooModelViewCollectionBase(name, declExt, commandExt) {
 
                         cmd.hasSubblock = true;
                         cmd.valueRequired = true;
+
+                        cmd.getCodeBefore = function() {
+                            if (cmd.children.length) {
+                                cmd.getCodeAfter = function() {
+                                    return '})()' + (cmd.last ? '' : ',\n');
+                                };
+
+                                return cmd.parts[1].value + ': (function() {';
+                            }
+                        };
                     },
 
                     '(': function() {
@@ -929,8 +1004,21 @@ function cooModelViewCollectionBase(name, declExt, commandExt) {
 
                             if (scopeVars.length) {
                                 ret.push('\n' + INDENT + 'var ' + scopeVars[0]);
+
+                                var val = cmd.data.scope[scopeVars[0]];
+                                if (val) {
+                                    ret.push(' = ');
+                                    ret.push(val);
+                                }
+
                                 for (var i = 1; i < scopeVars.length; i++) {
                                     ret.push(', ' + scopeVars[i]);
+
+                                    val = cmd.data.scope[scopeVars[i]];
+                                    if (val) {
+                                        ret.push(' = ');
+                                        ret.push(val);
+                                    }
                                 }
                                 ret.push(';');
                             }
