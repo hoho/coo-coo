@@ -607,7 +607,7 @@ function cooRunGenerators(cmd, code, level) {
         indent = (new Array(level + 1)).join(INDENT);
 
     if (cmd.getCodeBefore && (i = cmd.getCodeBefore())) {
-        code.push(indent + i);
+        code.push(indent + i.split('\n').join('\n' + indent));
     }
 
     if (c) {
@@ -630,7 +630,7 @@ function cooRunGenerators(cmd, code, level) {
     }
 
     if (cmd.getCodeAfter && (i = cmd.getCodeAfter())) {
-        code.push(indent + i);
+        code.push(indent + i.split('\n').join('\n' + indent));
     }
 }
 
@@ -708,6 +708,41 @@ function cooExtractParamValues(parts, start) {
     }
 
     return {values: values};
+}
+
+
+/* exported cooValueToJS */
+function cooValueToJS(cmd, part) {
+    switch (part.type) {
+        case COO_COMMAND_PART_JS:
+        case COO_COMMAND_PART_STRING:
+        case COO_COMMAND_PART_VARIABLE_GETTER:
+            return part.value;
+        case COO_COMMAND_PART_PROPERTY_GETTER:
+            return 'this.get("' + part.value + '")';
+        default:
+            part.error = 'Incorrect type';
+            cmd.file.errorUnexpectedPart(part);
+    }
+}
+
+
+/* exported cooPushScopeVariable */
+function cooPushScopeVariable(cmd, name) {
+    var tmp = cmd,
+        scope = cmd.data.scope;
+
+    while (!scope && tmp.parent) {
+        tmp = tmp.parent;
+        scope = tmp.data.scope;
+    }
+
+    if (!scope) {
+        cmd.parts[0].error = 'No variable scope';
+        cmd.file.errorUnexpectedPart(cmd.parts[0]);
+    }
+
+    scope[name] = true;
 }
 
 
@@ -852,7 +887,7 @@ function cooModelViewCollectionBase(name, declExt, commandExt) {
                         if (error) { return error; }
 
                         cmd.getCodeBefore = function() {
-                            return cmd.parts[1].value + ': ' + cmd.parts[2].value + (cmd.last ? '' : ',\n');
+                            return cmd.parts[1].value + ': ' + cooValueToJS(cmd, cmd.parts[2]) + (cmd.last ? '' : ',\n');
                         };
                     }
                 }
@@ -872,6 +907,8 @@ function cooModelViewCollectionBase(name, declExt, commandExt) {
                         cmd.hasSubblock = true;
                         cmd.valueRequired = true;
 
+                        cmd.data.scope = {};
+
                         var params = cooExtractParamNames(cmd.parts, 2);
                         if (params.error) { return params.error; } else { params = params.params; }
 
@@ -887,6 +924,16 @@ function cooModelViewCollectionBase(name, declExt, commandExt) {
                             }
 
                             ret.push(') {');
+
+                            var scopeVars = Object.keys(cmd.data.scope);
+
+                            if (scopeVars.length) {
+                                ret.push('\n' + INDENT + 'var ' + scopeVars[0]);
+                                for (var i = 1; i < scopeVars.length; i++) {
+                                    ret.push(', ' + scopeVars[i]);
+                                }
+                                ret.push(';');
+                            }
 
                             return ret.join('');
                         };

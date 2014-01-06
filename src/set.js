@@ -1,5 +1,6 @@
 (function() {
     /* global cooMatchCommand */
+    /* global cooPushScopeVariable */
 
     function setProcess(cmd) {
         if (!cmd.parent) {
@@ -14,10 +15,13 @@
                         //     ...
                         cmd.hasSubblock = true;
                         cmd.valueRequired = true;
+
+                        cooPushScopeVariable(cmd, cmd.parts[1].value);
                     },
 
                     '(': function() {
                         // SET identifier (expr)
+                        cooPushScopeVariable(cmd, cmd.parts[1].value);
                     }
                 }
             }
