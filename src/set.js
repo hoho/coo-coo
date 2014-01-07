@@ -1,7 +1,6 @@
 (function() {
     /* global cooMatchCommand */
     /* global cooCreateScope */
-    /* global cooSetScopeRet */
     /* global cooPushScopeVariable */
     /* global cooPushThisVariable */
     /* global cooGetScopeVariablesDecl */
@@ -26,7 +25,6 @@
                         cmd.valueRequired = true;
 
                         cooCreateScope(cmd);
-                        cooSetScopeRet(cmd);
                         cooPushThisVariable(cmd);
                         cooPushScopeVariable(cmd.parent, cmd.parts[1].value);
 

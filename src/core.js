@@ -39,6 +39,7 @@ CooCommand.prototype = {
     method: null,
     valuePusher: false,
     valueRequired: false,
+    noScope: false,
     hasSubblock: false,
     hasRet: false,
     parts: null,
@@ -185,7 +186,7 @@ function cooPushScopeVariable(cmd, name, value) {
         cmd.file.errorUnexpectedPart(cmd.parts[0]);
     }
 
-    scope[name] = value || false;
+    scope[name] = value || null;
 
     return tmp;
 }
@@ -381,13 +382,16 @@ CooFile.prototype = {
             } else {
                 // This command pushes value to parent one.
                 cmd.valuePusher = true;
-                cooSetScopeRet(cmd);
                 i++;
             }
         }
 
         if (line[i].match(/[a-zA-Z"'(_$@]/)) {
             var parts = cmd.parts = this.readCommandParts(i);
+
+            if (cmd.valuePusher) {
+                cooSetScopeRet(cmd);
+            }
 
             if (parts[0].type === COO_COMMAND_PART_STRING ||
                 parts[0].type === COO_COMMAND_PART_JS ||
@@ -485,7 +489,7 @@ CooFile.prototype = {
                 }
 
                 if (cmd.hasSubblock) {
-                    if (cmd.valueRequired) { cooCreateScope(cmd); }
+                    if (cmd.valueRequired && !cmd.noScope) { cooCreateScope(cmd); }
                     this.readBlock(cmd);
 
                 } else {

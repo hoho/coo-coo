@@ -31,6 +31,7 @@
 
                     cmd.hasSubblock = true;
                     cmd.valueRequired = cmd.parent.parent.valueRequired;
+                    cmd.noScope = true;
 
                     cmd.getCodeBefore = function() {
                         var ret = [];
@@ -65,6 +66,7 @@
 
                 cmd.hasSubblock = true;
                 cmd.valueRequired = cmd.parent.parent.valueRequired;
+                cmd.noScope = true;
 
                 cmd.getCodeBefore = function() {
                     if (cmd.first) {
