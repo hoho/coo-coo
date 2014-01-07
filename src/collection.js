@@ -1,11 +1,25 @@
 (function() {
-    /* global cooModelViewCollectionBase */
+    /* global cooObjectBase */
 
-    cooModelViewCollectionBase('COLLECTION', {
-        MODEL: {
-            '': function() {},
-            '(': function() {}
+    cooObjectBase(
+        'COLLECTION',
+        'CooCoo.Collection',
+        {name: 'CooCoo.CollectionBase'},
+        {
+            specialProperties: {
+                MODEL: {
+                    actualName: 'model',
+                    required: true,
+                    allowIdentifier: true,
+                    allowExpression: false,
+
+                    getCodeBefore: function(cmd) {
+                        return 'model: CooCoo.Model.' + cmd.parts[1].value;
+                    }
+                }
+            }
+        },
+        {
         }
-    }, {
-    });
+    );
 })();
