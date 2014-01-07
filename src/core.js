@@ -20,8 +20,9 @@ var INDENT_WITH = ' ',
     COO_INTERNAL_VARIABLE_RET = '__ret__';
 
 
-function CooCommand(file, parent) {
+function CooCommand(file, parent, decls) {
     this.file = file;
+    this.decls = decls;
 
     if (parent) {
         this.root = parent.root || parent;
@@ -44,7 +45,8 @@ CooCommand.prototype = {
     processChild: null,
 
     indent: 1,
-    last: true,
+    first: false,
+    last: false,
 
     getDeclKey: null,
 
@@ -189,6 +191,24 @@ function cooPushScopeVariable(cmd, name, value) {
 }
 
 
+function cooCheckScopeVariable(cmd, part) {
+    var ok,
+        tmp = cmd;
+
+    while (tmp && ok === undefined) {
+        if (tmp.data.scope) {
+            ok = tmp.data.scope[part.value];
+        }
+        tmp = tmp.parent;
+    }
+
+    if (ok === undefined) {
+        part.error = 'Variable is not set yet';
+        cmd.file.errorUnexpectedPart(part);
+    }
+}
+
+
 function cooPushInternalVariable(cmd, name, value) {
     var tmp = cmd,
         scope;
@@ -277,10 +297,13 @@ function cooValueToJS(cmd, part) {
     switch (part.type) {
         case COO_COMMAND_PART_JS:
         case COO_COMMAND_PART_STRING:
+            return part.value;
         case COO_COMMAND_PART_VARIABLE_GETTER:
+            cooCheckScopeVariable(cmd, part);
             return part.value;
         case COO_COMMAND_PART_PROPERTY_GETTER:
-            return 'this.get("' + part.value + '")';
+            cooPushThisVariable(cmd);
+            return COO_INTERNAL_VARIABLE_THIS + '.get("' + part.value + '")';
         default:
             part.error = 'Incorrect type';
             cmd.file.errorUnexpectedPart(part);
@@ -335,7 +358,7 @@ CooFile.prototype = {
     readCommand: function(parent) {
         var i,
             line = this.code[this.lineAt],
-            cmd = new CooCommand(this, parent);
+            cmd = new CooCommand(this, parent, this.ret.declCmd);
 
         for (i = 0; i < this.blockIndent; i++) {
             if (line[i] !== INDENT_WITH) {
@@ -363,11 +386,13 @@ CooFile.prototype = {
             }
         }
 
-        if (line[i].match(/[a-zA-Z"'(_]/)) {
+        if (line[i].match(/[a-zA-Z"'(_$@]/)) {
             var parts = cmd.parts = this.readCommandParts(i);
 
             if (parts[0].type === COO_COMMAND_PART_STRING ||
-                parts[0].type === COO_COMMAND_PART_JS)
+                parts[0].type === COO_COMMAND_PART_JS ||
+                parts[0].type === COO_COMMAND_PART_VARIABLE_GETTER ||
+                parts[0].type === COO_COMMAND_PART_PROPERTY_GETTER)
             {
                 // Check for certain conditions in case command begins with
                 // a string or with a JavaScript expression.
@@ -778,16 +803,25 @@ function cooRunGenerators(cmd, code, level) {
     }
 
     if (c) {
-        var prev,
+        var last,
+            first = true,
             subcmd;
 
         for (i = 0; i < c.length; i++) {
             subcmd = c[i];
 
             if (subcmd.getCodeBefore || subcmd.getCodeAfter) {
-                if (prev) { prev.last = false; }
-                prev = subcmd;
+                if (first) {
+                    subcmd.first = true;
+                    first = false;
+                }
+
+                last = subcmd;
             }
+        }
+
+        if (last) {
+            last.last = true;
         }
 
         for (i = 0; i < c.length; i++) {
@@ -1014,20 +1048,19 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt) {
                 return part;
             }
 
-            var params = hasValue === COO_COMMAND_PART_IDENTIFIER ?
-                cooExtractParamNames(cmd.parts, special ? 1 : 2)
-                :
-                cooExtractParamValues(cmd.parts, special ? 1 : 2);
+            part = cmd.parts[special ? 1 : 2];
 
-            if (params.error) {
-                return params.error;
-            }
+            if (hasValue) {
+                if (part.type === COO_COMMAND_PART_PROPERTY_GETTER ||
+                    part.type === COO_COMMAND_PART_VARIABLE_GETTER)
+                {
+                    part.error = 'Unexpected ' + part.type;
+                    return part;
+                }
 
-            props[part.value] = {
-                //value: params.values.length ? params.values[0] : undefined
-            };
-
-            if (!hasValue) {
+                props[propName] = part;
+            } else {
+                props[propName] = null;
                 cmd.hasSubblock = true;
                 cmd.valueRequired = true;
                 cooCreateRetScope(cmd);
@@ -1467,17 +1500,19 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt) {
                 initialName,
                 key,
                 cmd,
-                props,
+                data,
                 depProps,
                 depCmd;
 
             for (key in decls) {
                 cmd = decls[key];
-                props = cmd.data;
+                data = cmd.data;
 
-                if (props.exts) {
+                console.log(data.properties);
+
+                if (data.exts) {
                     depCmd = cmd;
-                    depProps = props;
+                    depProps = data;
                     initialName = depProps.name;
 
                     while (depProps.exts) {
@@ -1499,8 +1534,8 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt) {
                     }
                 }
 
-                if (!(props.name in arranged)) {
-                    arranged[props.name] = cmd;
+                if (!(data.name in arranged)) {
+                    arranged[data.name] = cmd;
                 }
             }
 

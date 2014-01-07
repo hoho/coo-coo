@@ -30,17 +30,26 @@
                     },
 
                     getCodeBefore: function(cmd) {
-                        if (cmd.hasSubblock) {
-                            var tmp = cooGetScopeVariablesDecl(cmd);
+                        var tmp;
 
-                            if (!cmd.children.length || tmp === '') {
+                        if (cmd.hasSubblock) {
+                            tmp = cooGetScopeVariablesDecl(cmd);
+
+                            if (tmp === '') {
                                 cmd.parts[0].error = 'Model has no value';
                                 cmd.file.errorUnexpectedPart(cmd.parts[0]);
                             }
 
                             return 'model: function() {' + tmp;
                         } else {
-                            return 'model: CooCoo.Model.' + cmd.parts[1].value;
+                            tmp = cmd.parts[1].value;
+
+                            if (!cmd.decls.MODEL || !cmd.decls.MODEL[tmp]) {
+                                cmd.parts[1].error = 'Undeclared model';
+                                cmd.file.errorUnexpectedPart(cmd.parts[1]);
+                            }
+
+                            return 'model: CooCoo.Model.' + tmp;
                         }
                     },
 
