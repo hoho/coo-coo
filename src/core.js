@@ -262,6 +262,32 @@ function cooGetScopeVariablesDecl(cmd) {
 }
 
 
+/* exported cooGetScopeRet */
+function cooGetScopeRet(cmd) {
+    if (cmd.hasRet) {
+        return INDENT+ 'return ' + COO_INTERNAL_VARIABLE_RET + ';\n';
+    } else {
+        return '';
+    }
+}
+
+
+/* exported cooValueToJS */
+function cooValueToJS(cmd, part) {
+    switch (part.type) {
+        case COO_COMMAND_PART_JS:
+        case COO_COMMAND_PART_STRING:
+        case COO_COMMAND_PART_VARIABLE_GETTER:
+            return part.value;
+        case COO_COMMAND_PART_PROPERTY_GETTER:
+            return 'this.get("' + part.value + '")';
+        default:
+            part.error = 'Incorrect type';
+            cmd.file.errorUnexpectedPart(part);
+    }
+}
+
+
 function CooFile(filename) {
     var data = fs.readFileSync(filename, {encoding: 'utf8'});
 
@@ -346,7 +372,16 @@ CooFile.prototype = {
                 // Check for certain conditions in case command begins with
                 // a string or with a JavaScript expression.
                 if (parent && parent.valueRequired && cmd.valuePusher) {
-                    // TODO: Implement.
+                    cmd.getCodeBefore = function() {
+                        var ret = [];
+
+                        ret.push(COO_INTERNAL_VARIABLE_RET);
+                        ret.push('.push(');
+                        ret.push(cooValueToJS(cmd, cmd.parts[0]));
+                        ret.push(');');
+
+                        return ret.join('');
+                    };
 
                     if (parts.length > 1) { this.errorUnexpectedPart(parts[1]); }
 
@@ -843,22 +878,6 @@ function cooExtractParamValues(parts, start) {
 }
 
 
-/* exported cooValueToJS */
-function cooValueToJS(cmd, part) {
-    switch (part.type) {
-        case COO_COMMAND_PART_JS:
-        case COO_COMMAND_PART_STRING:
-        case COO_COMMAND_PART_VARIABLE_GETTER:
-            return part.value;
-        case COO_COMMAND_PART_PROPERTY_GETTER:
-            return 'this.get("' + part.value + '")';
-        default:
-            part.error = 'Incorrect type';
-            cmd.file.errorUnexpectedPart(part);
-    }
-}
-
-
 /* exported cooObjectBase */
 function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt) {
     /*
@@ -875,11 +894,10 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt) {
             specialProperties: {
                 prop: {
                     actualName: name,
-                    allowIdentifier: true,
-                    allowExpression: true,
                     default: value,
                     required: true
 
+                    tuneCommand: func,
                     getCodeBeforeBefore: func,
                     getCodeBefore: func, // override.
                     getCodeBeforeAfter: func,
@@ -894,6 +912,8 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt) {
                     actualName: name,
                     required: true,
                     noValue: true,
+
+                    tuneCommand: func,
                     getCodeBeforeBefore: func,
                     getCodeBefore: func, // override.
                     getCodeBeforeAfter: func,
@@ -1010,6 +1030,12 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt) {
             if (!hasValue) {
                 cmd.hasSubblock = true;
                 cmd.valueRequired = true;
+                cooCreateRetScope(cmd);
+            }
+
+            if (specialData && specialData.tuneCommand) {
+                var error = specialData.tuneCommand(cmd);
+                if (error) { return error; }
             }
 
             cmd.getCodeBefore = function() {
@@ -1026,7 +1052,7 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt) {
                         ret.push(propName + ': ' + cooValueToJS(cmd, cmd.parts[special ? 1 : 2]) + (cmd.last ? '' : ',\n'));
                     } else {
                         if (cmd.children.length) {
-                            ret.push(propName + ': (function() {');
+                            ret.push(propName + ': (function() {' + cooGetScopeVariablesDecl(cmd));
                         }
                     }
                 }
@@ -1049,7 +1075,7 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt) {
                     ret.push(specialData.getCodeAfter(cmd));
                 } else {
                     if (!hasValue && cmd.children.length) {
-                        ret.push('})()' + (cmd.last ? '' : ',\n'));
+                        ret.push(cooGetScopeRet(cmd) + '})()' + (cmd.last ? '' : ',\n'));
                     }
                 }
 
@@ -1070,6 +1096,8 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt) {
             if (methodName in methods) {
                 part.error = 'Duplicate method';
                 return part;
+            } else {
+                methods[methodName] = true;
             }
 
             cmd.hasSubblock = true;
@@ -1082,6 +1110,11 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt) {
 
             cmd.data.params = params;
 
+            if (specialData && specialData.tuneCommand) {
+                var error = specialData.tuneCommand(cmd);
+                if (error) { return error; }
+            }
+
             cmd.getCodeBefore = function() {
                 var ret = [];
 
@@ -1090,7 +1123,7 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt) {
                 }
 
                 if (specialData && specialData.getCodeBefore) {
-                    specialData.getCodeBefore(cmd);
+                    ret.push(specialData.getCodeBefore(cmd));
                 } else {
                     var ret2 = [],
                         first = true;
@@ -1129,13 +1162,11 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt) {
                 if (specialData && specialData.getCodeAfter) {
                     ret.push(specialData.getCodeAfter(cmd));
                 } else {
-                    var ret2 = [];
+                    var ret2 = [],
+                        tmp = cooGetScopeRet(cmd);
 
-                    if (cmd.hasRet) {
-                        ret2.push(INDENT);
-                        ret2.push('return ');
-                        ret2.push(COO_INTERNAL_VARIABLE_RET);
-                        ret2.push(';\n');
+                    if (tmp) {
+                        ret2.push(tmp);
                     }
 
                     ret2.push('}');
@@ -1191,17 +1222,9 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt) {
                             }
                         };
 
-                        if (specialData.allowIdentifier) {
-                            patterns[special][''] = function() {
-                                return processProperty(COO_COMMAND_PART_IDENTIFIER, special, specialData);
-                            };
-                        }
-
-                        if (specialData.allowExpression) {
-                            patterns[special]['('] = function() {
-                                return processProperty(true, special, specialData);
-                            };
-                        }
+                        patterns[special]['('] = function() {
+                            return processProperty(true, special, specialData);
+                        };
                     })(key, tmp[key]);
                 }
             }

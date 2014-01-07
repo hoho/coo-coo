@@ -31,6 +31,10 @@
                             '@': function(cmd) {
                                 // VIEW identifier (expr) RENDER
                                 cmd.hasSubblock = true;
+
+                                cmd.getCodeBefore = function() {
+
+                                };
                             },
 
                             '#': function(cmd) {
