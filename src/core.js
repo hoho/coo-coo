@@ -233,8 +233,8 @@ function cooPushThisVariable(cmd) {
 }
 
 
-/* exported cooCreateRetScope */
-function cooCreateRetScope(cmd) {
+/* exported cooCreateScope */
+function cooCreateScope(cmd) {
     if (!cmd.data.scope) {
         cmd.data.scope = {};
     }
@@ -485,7 +485,7 @@ CooFile.prototype = {
                 }
 
                 if (cmd.hasSubblock) {
-                    if (cmd.valueRequired) { cooCreateRetScope(cmd); }
+                    if (cmd.valueRequired) { cooCreateScope(cmd); }
                     this.readBlock(cmd);
 
                 } else {
@@ -1063,7 +1063,7 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt) {
                 props[propName] = null;
                 cmd.hasSubblock = true;
                 cmd.valueRequired = true;
-                cooCreateRetScope(cmd);
+                cooCreateScope(cmd);
             }
 
             if (specialData && specialData.tuneCommand) {
@@ -1136,7 +1136,7 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt) {
             cmd.hasSubblock = true;
             cmd.valueRequired = specialData ? !specialData.noValue : true;
 
-            cooCreateRetScope(cmd);
+            cooCreateScope(cmd);
 
             var params = cooExtractParamNames(cmd.parts, special ? 1 : 2);
             if (params.error) { return params.error; } else { params = params.params; }
@@ -1507,8 +1507,6 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt) {
             for (key in decls) {
                 cmd = decls[key];
                 data = cmd.data;
-
-                console.log(data.properties);
 
                 if (data.exts) {
                     depCmd = cmd;
