@@ -21,6 +21,10 @@
                     '@': function() {
                         // SET identifier
                         //     ...
+                        if (cmd.valuePusher) {
+                            cmd.file.errorNoValue(cmd.parts[0]);
+                        }
+
                         cmd.hasSubblock = true;
                         cmd.valueRequired = true;
 

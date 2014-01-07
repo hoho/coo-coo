@@ -40,7 +40,7 @@
                             '#': function(cmd) {
                                 // VIEW identifier (expr) RENDER (expr2) (expr3) ...
 
-                                var params = cooExtractParamValues(cmd.parts, 4);
+                                var params = cooExtractParamValues(cmd, 4);
                                 if (params.error) { return params.error; } else { params = params.values; }
 
                                 cmd.hasSubblock = true;

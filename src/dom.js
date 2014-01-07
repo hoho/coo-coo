@@ -1,5 +1,8 @@
 (function() {
     /* global cooMatchCommand */
+    /* global cooCreateScope */
+    /* global cooExtractParamNames */
+    /* global cooPushScopeVariable */
 
     function domProcess(cmd) {
         if (!cmd.parent) {
@@ -86,6 +89,15 @@
                     '*': function() {
                         // ON identifier identifier2 ...
                         cmd.hasSubblock = true;
+
+                        cooCreateScope(cmd);
+
+                        var params = cooExtractParamNames(cmd.parts, 2);
+                        if (params.error) { return params.error; } else { params = params.params; }
+
+                        for (var p in params) {
+                            cooPushScopeVariable(cmd, p, false);
+                        }
                     }
                 }
             }
