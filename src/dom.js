@@ -75,6 +75,17 @@
                         'GET': function() {
                             // DOM (expr) VALUE GET
                         }
+                    },
+
+                    'TEXT': {
+                        '@': function() {
+                            // DOM (expr) TEXT
+                            //     ...
+                        },
+
+                        '(': function() {
+                            // DOM (expr) TEXT (expr2)
+                        }
                     }
                 }
             }

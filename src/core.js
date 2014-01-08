@@ -126,6 +126,11 @@ function cooMatchCommand(cmd, patterns, pos) {
                     unexpected = false;
                 }
 
+                if ((error || unexpected) && patterns['#']) {
+                    error = cooMatchCommand(cmd, patterns['#'], pos + 1);
+                    unexpected = false;
+                }
+
                 return unexpected ? part : error;
 
             case COO_COMMAND_PART_IDENTIFIER:
@@ -150,11 +155,11 @@ function cooMatchCommand(cmd, patterns, pos) {
                 cmd.file.errorUnexpectedPart(part);
         }
     } else {
-        if (patterns['*']) {
+        if (typeof patterns['*'] === 'function') {
             return patterns['*'](cmd);
-        } else if (patterns['#']) {
+        } else if (typeof patterns['#'] === 'function') {
             return patterns['#'](cmd);
-        } else if (patterns['@']) {
+        } else if (typeof patterns['@'] === 'function') {
             return patterns['@'](cmd);
         } else if (typeof patterns === 'function') {
             return patterns(cmd);
@@ -975,7 +980,7 @@ function cooExtractParamValues(cmd, start) {
 
 
 /* exported cooObjectBase */
-function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt) {
+function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subCommandExt) {
     /*
     `cmdStorage` is a place for this class to be stored: CooCoo[cmdStorage][name].
 
@@ -1025,7 +1030,8 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt) {
             methods: true, // allow custom methods.
         }
 
-    `commandExt` is an extension for default cooMatchCommand() object.
+    `commandExt` and `subCommandExt` is an extension for default
+    cooMatchCommand() object.
     */
 
 
@@ -1414,19 +1420,21 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt) {
                         cmdProcessCreateCommand(cmd);
                     },
 
-                    '#': function() {
-                        // `NAME` identifier CREATE (expr1) (expr2) ...
-                        //     ...
-                        cmd.hasSubblock = true;
+                    '#': {
+                        '@': function() {
+                            // `NAME` identifier CREATE (expr1) (expr2) ...
+                            //     ...
+                            cmd.hasSubblock = true;
 
-                        var params = cooExtractParamValues(cmd, 3);
-                        if (params.error) { return params.error; } else { params = params.values; }
+                            var params = cooExtractParamValues(cmd, 3);
+                            if (params.error) { return params.error; } else { params = params.values; }
 
-                        cmd.data.params = params;
+                            cmd.data.params = params;
 
-                        cmd.processChild = cmdProcessEvents;
+                            cmd.processChild = cmdProcessEvents;
 
-                        cmdProcessCreateCommand(cmd);
+                            cmdProcessCreateCommand(cmd);
+                        }
                     }
                 },
 
@@ -1795,41 +1803,97 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt) {
     }
 
 
+    function cmdProcessEvent(cmd, hasName, hasParams) {
+        cmd.hasSubblock = true;
+
+        cooCreateScope(cmd);
+
+        var params,
+            tmp;
+
+        if (hasParams) {
+            params = hasName ? {'_': true} : {};
+
+            tmp = cooExtractParamNames(cmd.parts, hasParams);
+            if (tmp.error) {
+                return tmp.error;
+            } else {
+                tmp = tmp.params;
+            }
+
+            for (var param in tmp) {
+                cooPushScopeVariable(cmd, param, false);
+            }
+
+            params = extend(params, tmp);
+        }
+
+        cmd.getCodeBefore = function() {
+            var ret = [];
+
+            ret.push('.on("');
+            ret.push(cmd.parts[0].value.toLowerCase());
+
+            if (hasName) {
+                var name = cmd.parts[1];
+                ret.push(':');
+
+                if (name.type === COO_COMMAND_PART_STRING) {
+                    ret.push(name.value.substring(1));
+                } else {
+                    ret.push('" + ');
+                    ret.push(cooValueToJS(cmd, name));
+                }
+            } else {
+                ret.push('"');
+            }
+
+            ret.push(', function(');
+            ret.push(cooGetParamsDecl(params));
+            ret.push(') {');
+
+            return ret.join('');
+        };
+
+        cmd.getCodeAfter = function() {
+            return '})';
+        };
+    }
+
+
     function cmdProcessEvents(cmd) {
-        return cooMatchCommand(cmd, {
-            'ON': {
+        return cooMatchCommand(cmd, extend({
+            'ADD': {
+                '*': function() {
+                    // ADD identifier identifier2 ...
+                    return cmdProcessEvent(cmd, false, 1);
+                }
+            },
+
+            'REMOVE': {
+
+            },
+
+            'CHANGE': {
+                '(': {
+                    '*': function() {
+                        // CHANGE (expr) identifier identifier2 ...
+                        return cmdProcessEvent(cmd, true, 2);
+                    }
+                },
+
                 '': {
                     '*': function() {
-                        cmd.hasSubblock = true;
-
-                        cooCreateScope(cmd);
-
-                        var params = cooExtractParamNames(cmd.parts, 2);
-                        if (params.error) { return params.error; } else { params = params.params; }
-
-                        for (var p in params) {
-                            cooPushScopeVariable(cmd, p, false);
-                        }
-
-                        cmd.getCodeBefore = function() {
-                            var ret = [];
-
-                            ret.push('.on("');
-                            ret.push(cmd.parts[1].value);
-                            ret.push('", function(');
-                            ret.push(cooGetParamsDecl(params));
-                            ret.push(') {');
-
-                            return ret.join('');
-                        };
-
-                        cmd.getCodeAfter = function() {
-                            return '})';
-                        };
+                        // CHANGE identifier identifier2 ...
+                        return cmdProcessEvent(cmd, false, 2);
                     }
                 }
+            },
+
+            'DESTROY': function() {
+                return cmdProcessEvent(cmd, false, false);
             }
-        });
+        }, subCommandExt));
     }
 
 

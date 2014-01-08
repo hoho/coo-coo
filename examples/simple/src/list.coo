@@ -1,0 +1,70 @@
+MODEL Item
+    PROPERTY title
+
+    CONSTRUCT title
+        MODEL SET title $title
+
+
+COLLECTION List
+    MODEL Item
+
+
+VIEW Item
+    PROPERTY model
+    PROPERTY textNode
+
+    CONSTRUCT m
+        VIEW SET model $m
+
+        MODEL Item $m
+            CHANGE "title" val
+                DOM @textNode TEXT $val
+            DESTROY
+                VIEW DESTROY
+
+    RENDER
+        +TEMPLATE Item APPLY
+            NODE "text" node
+                VIEW SET textNode $node
+            NODE "remove" node
+                DOM $node
+                    ON click
+                        MODEL Item @model DESTROY
+
+
+VIEW Page
+    PROPERTY container
+    PROPERTY input
+    PROPERTY list
+
+    CONSTRUCT
+        VIEW SET list
+            +COLLECTION List CREATE
+                ADD m
+                    VIEW CALL addItem $m
+
+    RENDER
+        +TEMPLATE Page APPLY
+            NODE "container" node
+                VIEW SET container $node
+            NODE "input" node
+                VIEW SET input $node
+            NODE "add" node
+                DOM $node
+                    ON click
+                        COLLECTION List @list ADD
+                            +DOM @input VALUE GET
+
+    METHOD addItem m
+        DOM @container APPEND
+            +VIEW Item CREATE $m RENDER
+
+
+TEMPLATE Page
+    TYPE "conkitty"
+    NAME "page"
+
+
+TEMPLATE Item
+    TYPE "conkitty"
+    NAME "item"

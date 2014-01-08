@@ -62,6 +62,24 @@
             }
         },
         {
+            'COLLECTION': {
+                '': {
+                    '(': {
+                        'ADD': {
+                            '@': function(cmd) {
+                                // COLLECTION identifier (expr) ADD
+                                //     ...
+                                cmd.hasSubblock = true;
+                                cmd.valueRequired = true;
+                            },
+
+                            '(': function() {
+                                // COLLECTION identifier (expr) ADD (expr2)
+                            }
+                        }
+                    }
+                }
+            }
         }
     );
 })();

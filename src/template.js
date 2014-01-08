@@ -78,7 +78,7 @@
                 }
             },
 
-            ON: {
+            NODE: {
                 '': {
                     '*': function() {
                         cmd.hasSubblock = true;
