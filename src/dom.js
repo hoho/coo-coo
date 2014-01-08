@@ -1,8 +1,12 @@
 (function() {
     /* global cooMatchCommand */
     /* global cooCreateScope */
-    /* global cooExtractParamNames */
     /* global cooPushScopeVariable */
+    /* global cooValueToJS */
+    /* global cooPushThisVariable */
+    /* global cooGetScopeVariablesDecl */
+    /* global COO_INTERNAL_VARIABLE_THIS */
+    /* global cooGetScopeRet */
 
     function domProcess(cmd) {
         if (!cmd.parent) {
@@ -18,6 +22,24 @@
                         cmd.valueRequired = false;
 
                         cmd.processChild = domProcessEvents;
+
+                        cmd.getCodeBefore = function() {
+                            if (!cmd.children.length) {
+                                cmd.file.errorMeaninglessCommand(cmd.parts[0]);
+                            }
+
+                            var ret = [];
+
+                            ret.push('CooCoo.DOM(');
+                            ret.push(cooValueToJS(cmd, cmd.parts[1]));
+                            ret.push(')');
+
+                            return ret.join('');
+                        };
+
+                        cmd.getCodeAfter = function() {
+                            return ';';
+                        };
                     },
 
                     'APPEND': {
@@ -26,10 +48,51 @@
                             //     ...
                             cmd.hasSubblock = true;
                             cmd.valueRequired = true;
+
+                            cooCreateScope(cmd);
+                            cooPushThisVariable(cmd);
+
+                            cmd.getCodeBefore = function() {
+                                var ret = [];
+
+                                ret.push('CooCoo.DOM(');
+                                ret.push(cooValueToJS(cmd, cmd.parts[1]));
+                                ret.push(').append(');
+                                ret.push('(function() {');
+                                ret.push(cooGetScopeVariablesDecl(cmd));
+
+                                return ret.join('');
+                            };
+
+                            cmd.getCodeAfter = function() {
+                                var ret = [],
+                                    tmp = cooGetScopeRet(cmd);
+
+                                if (tmp) {
+                                    ret.push(tmp);
+                                }
+
+                                ret.push('}).call(');
+                                ret.push(COO_INTERNAL_VARIABLE_THIS);
+                                ret.push('));');
+
+                                return ret.join('');
+                            };
                         },
 
                         '(': function() {
                             // DOM (expr) APPEND (expr2)
+                            cmd.getCodeBefore = function() {
+                                var ret = [];
+
+                                ret.push('CooCoo.DOM(');
+                                ret.push(cooValueToJS(cmd, cmd.parts[1]));
+                                ret.push(').append(');
+                                ret.push(cooValueToJS(cmd, cmd.parts[3]));
+                                ret.push(')');
+
+                                return ret.join('');
+                            };
                         }
                     },
 
@@ -93,26 +156,88 @@
     }
 
 
-    function domProcessEvents(cmd) {
-        return cooMatchCommand(cmd, {
-            'ON': {
-                '': {
-                    '*': function() {
-                        // ON identifier identifier2 ...
-                        cmd.hasSubblock = true;
+    var eventList = {
+        CLICK: 'click',
+        DBLCLICK: 'dblclick',
+        MOUSEDOWN: 'mousedown',
+        MOUSEUP: 'mouseup',
+        MOUSEOVER: 'mouseover',
+        MOUSEMOVE: 'mousemove',
+        MOUSEOUT: 'mouseout',
+        DRAGSTART: 'dragstart',
+        DRAG: 'drag',
+        DRAGENTER: 'dragenter',
+        DRAGLEAVE: 'dragleave',
+        DRAGOVER: 'dragover',
+        DROP: 'drop',
+        DRAGEND: 'dragend',
+        KEYDOWN: 'keydown',
+        KEYPRESS: 'keypress',
+        KEYUP: 'keyup',
+        LOAD: 'load',
+        UNLOAD: 'unload',
+        ABORT: 'abort',
+        ERROR: 'error',
+        RESIZE: 'resize',
+        SCROLL: 'scroll',
+        SELECT: 'select',
+        CHANGE: 'change',
+        SUBMIT: 'submit',
+        RESET: 'reset',
+        FOCUS: 'focus',
+        BLUR: 'blur',
+        FOCUSIN: 'focusin',
+        FOCUSOUT: 'focusout'
+    };
 
-                        cooCreateScope(cmd);
+    var eventPatterns = {
 
-                        var params = cooExtractParamNames(cmd.parts, 2);
-                        if (params.error) { return params.error; } else { params = params.params; }
+    };
 
-                        for (var p in params) {
-                            cooPushScopeVariable(cmd, p, false);
-                        }
-                    }
-                }
+    function getProcessEventFunc(name, hasParam) {
+        return function(cmd) {
+            // EVENT
+            // or
+            // EVENT identifier
+            cmd.hasSubblock = true;
+
+            cooCreateScope(cmd);
+
+            if (hasParam) {
+                cooPushScopeVariable(cmd, cmd.parts[1].value, false);
             }
-        });
+
+            cmd.getCodeBefore = function() {
+                var ret = [];
+
+                ret.push('.on("');
+                ret.push(name);
+                ret.push('", function(');
+
+                if (hasParam) {
+                    ret.push(cmd.parts[1].value);
+                }
+
+                ret.push(') {');
+
+                return ret.join('');
+            };
+
+            cmd.getCodeAfter = function() {
+                return '})';
+            };
+        };
+    }
+
+    for (var e in eventList) {
+        eventPatterns[e] = {
+            '@': getProcessEventFunc(eventList[e], false),
+            '': getProcessEventFunc(eventList[e], true)
+        };
+    }
+
+    function domProcessEvents(cmd) {
+        return cooMatchCommand(cmd, eventPatterns);
     }
 
 

@@ -855,6 +855,10 @@ CooFile.prototype = {
 
     errorMeaninglessValue: function(part) {
         this.error('Command returns meaningless value', part._charAt, part._lineAt);
+    },
+
+    errorMeaninglessCommand: function(part) {
+        this.error('Command has no meaning', part._charAt, part._lineAt);
     }
 };
 
@@ -929,7 +933,8 @@ function CooCoo(filenames, commons, project) {
 
     cooRunGenerators({children: ret.cmd}, code, 0);
 
-    console.log(commons, project, code.join('\n'));
+    console.log(commons, project);
+    console.log(code.join('\n'));
 }
 
 
@@ -1453,8 +1458,7 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
                             cooGetDecl(cmd);
 
                             if (!cmd.children.length) {
-                                cmd.parts[0].error = 'Command has no meaning';
-                                cmd.file.errorUnexpectedPart(cmd.parts[0]);
+                                cmd.file.errorMeaninglessCommand(cmd.parts[0]);
                             }
 
                             ret.push(cooValueToJS(cmd, cmd.parts[2]));

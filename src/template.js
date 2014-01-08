@@ -1,70 +1,117 @@
 (function() {
     /* global cooCreateScope */
-    /* global cooExtractParamNames */
     /* global cooPushScopeVariable */
+    /* global cooValueToJS */
+    /* global cooMatchCommand */
+    /* global cooExtractParamValues */
+    /* global COO_INTERNAL_VARIABLE_RET */
 
     function templateProcess(cmd) {
-
-
         if (cmd.parent) {
-            cmd.processChild = templateProcessParamsAndEvents;
+            cmd.hasSubblock = true;
+
+            cmd.processChild = templateProcessParamsAndNodes;
+
+            return cooMatchCommand(cmd, {
+                'TEMPLATE': {
+                    '': {
+                        'APPLY': {
+                            '#': function() {
+                                if (!cmd.valuePusher) {
+                                    cmd.file.errorMeaninglessValue(cmd.parts[0]);
+                                }
+
+                                var params = cooExtractParamValues(cmd, 3);
+                                if (params.error) { return params.error; } else { params = params.values; }
+
+                                cmd.getCodeBefore = function() {
+                                    //cooGetDecl(cmd);
+
+                                    var ret = [];
+
+                                    ret.push(COO_INTERNAL_VARIABLE_RET);
+                                    ret.push('.push(CooCoo.Template.');
+                                    ret.push(cmd.parts[1].value);
+                                    ret.push('()');
+
+                                    if (!cmd.children.length) {
+                                        ret.push('.apply(');
+                                        ret.push(params.join(', '));
+                                        ret.push('));');
+                                    }
+
+                                    return ret.join('');
+                                };
+
+                                cmd.getCodeAfter = function() {
+                                    if (cmd.children.length) {
+                                        var ret = [];
+
+                                        ret.push('.apply(');
+                                        ret.push(params.join(', '));
+                                        ret.push('));');
+
+                                        return ret.join('');
+                                    }
+                                };
+                            }
+                        }
+                    }
+                }
+            });
         } else {
             // Template declaration.
-            cmd.processChild = templateProcessDecl;
+            return cooMatchCommand(cmd, {
+                'TEMPLATE': {
+                    '': {
+                        '*': function() {
+                            cmd.hasSubblock = true;
 
-            cmd.template = {
-                type: null,
-                name: null,
-                params: {}
-            };
+                            cmd.processChild = templateProcessDecl;
+
+                            cmd.data = {
+                                origin: null,
+                                params: {}
+                            };
+
+                            cmd.getCodeBefore = function() {
+                                var ret = [];
+
+                                ret.push('CooCoo.Template.');
+                                ret.push(cmd.parts[1].value);
+                                ret.push(' = CooCoo.TemplateBase.create(');
+                                ret.push(cmd.data.origin);
+                                ret.push(');');
+
+                                return ret.join('');
+                            };
+                        }
+                    }
+                }
+            });
         }
-
-        cmd.hasSubblock = true;
     }
 
 
     function templateProcessDecl(cmd) {
         /* global cooMatchCommand */
         return cooMatchCommand(cmd, {
-            'TYPE': {
+            'ORIGIN': {
                 '(': function() {
-                    // TYPE "text"
-                    var type = cmd.parts[1];
-
-                    if (cmd.parent.template.type !== null) {
-                        type.error = 'Duplicate type';
-                        return type;
+                    // ORIGIN "text"
+                    if (cmd.parent.data.origin !== null) {
+                        cmd.parts[0].error = 'Duplicate origin';
+                        return cmd.parts[0];
                     }
 
-                    cmd.parent.template.type = type.value;
-                }
-            },
-
-            'NAME': {
-                '(': function() {
-                    // NAME "text"
-                    var name = cmd.parts[1];
-
-                    if (cmd.parent.template.name !== null) {
-                        name.error = 'Duplicate name';
-                        return name;
-                    }
-
-                    cmd.parent.template.name = name.value;
-                }
-            },
-
-            'PARAM': {
-                '': {
-                    '@': function() {},
-                    '(': function() {}
+                    cmd.parent.data.origin = cooValueToJS(cmd, cmd.parts[1]);
                 }
             }
         });
     }
 
 
-    function templateProcessParamsAndEvents(cmd) {
+    function templateProcessParamsAndNodes(cmd) {
         return cooMatchCommand(cmd, {
             PARAM: {
                 '': {
@@ -79,18 +126,28 @@
             },
 
             NODE: {
-                '': {
-                    '*': function() {
+                '(': {
+                    '': function() {
                         cmd.hasSubblock = true;
 
                         cooCreateScope(cmd);
+                        cooPushScopeVariable(cmd, cmd.parts[2].value, false);
 
-                        var params = cooExtractParamNames(cmd.parts, 2);
-                        if (params.error) { return params.error; } else { params = params.params; }
+                        cmd.getCodeBefore = function() {
+                            var ret = [];
 
-                        for (var p in params) {
-                            cooPushScopeVariable(cmd, p, false);
-                        }
+                            ret.push('.on(');
+                            ret.push(cooValueToJS(cmd, cmd.parts[1]));
+                            ret.push(', function(');
+                            ret.push(cmd.parts[2].value);
+                            ret.push(') {');
+
+                            return ret.join('');
+                        };
+
+                        cmd.getCodeAfter = function() {
+                            return '})';
+                        };
                     }
                 }
             }

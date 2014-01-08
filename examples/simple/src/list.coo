@@ -24,11 +24,13 @@ VIEW Item
 
     RENDER
         +TEMPLATE Item APPLY
+            PARAM title
+                +MODEL Item @model GET title
             NODE "text" node
                 VIEW SET textNode $node
             NODE "remove" node
                 DOM $node
-                    ON click
+                    CLICK
                         MODEL Item @model DESTROY
 
 
@@ -51,7 +53,7 @@ VIEW Page
                 VIEW SET input $node
             NODE "add" node
                 DOM $node
-                    ON click
+                    CLICK
                         COLLECTION List @list ADD
                             +DOM @input VALUE GET
 
@@ -61,10 +63,8 @@ VIEW Page
 
 
 TEMPLATE Page
-    TYPE "conkitty"
-    NAME "page"
+    ORIGIN "conkitty:page"
 
 
-TEMPLATE Item
-    TYPE "conkitty"
-    NAME "item"
+TEMPLATE Item title
+    ORIGIN "conkitty:item"
