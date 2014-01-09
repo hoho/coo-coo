@@ -26,14 +26,8 @@
                                     cmd.file.errorMeaninglessValue(cmd.parts[0]);
                                 }
 
-                                var inlineParams = cooExtractParamValues(cmd, 3);
-                                if (inlineParams.error) {
-                                    return inlineParams.error;
-                                } else {
-                                    inlineParams = inlineParams.values;
-                                }
-
-                                var paramValues;
+                                var inlineParams = cooExtractParamValues(cmd, 3),
+                                    paramValues;
 
                                 cmd.getCodeBefore = function() {
                                     var decl = decls[cmd.parts[1].value];
@@ -88,13 +82,7 @@
 
                             cmd.processChild = templateProcessDecl;
 
-                            var params = cooExtractParamNames(cmd.parts, 2);
-
-                            if (params.error) {
-                                return params.error;
-                            } else {
-                                params = params.params;
-                            }
+                            var params = cooExtractParamNames(cmd, cmd.parts, 2);
 
                             cmd.data = {
                                 origin: null,

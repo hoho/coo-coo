@@ -4,16 +4,13 @@ var CooCoo = {
     /* global $E */
     Base: $E.O.extend({
         init: function(parent, attrs) {
-            var self = this,
-                attr;
+            var self = this;
 
             self.__parent = parent;
             self.__root = parent.__root || parent;
             self.__children = [];
 
-            for (attr in attrs) {
-                self.set(attr, attrs[attr]);
-            }
+            self.set(attrs);
         },
 
         destroy: function() {
@@ -40,3 +37,14 @@ var CooCoo = {
         }
     })
 };
+
+var CooCooRet = function() {
+    if (this.constructor === CooCooRet) {
+        this._ = [];
+    } else {
+        return new CooCooRet();
+    }
+};
+
+CooCooRet.prototype.push = function(val) { this._.push(val); };
+CooCooRet.prototype.valueOf = function() { return this._[0]; };

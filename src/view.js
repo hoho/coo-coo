@@ -3,6 +3,11 @@
     /* global cooExtractParamValues */
     /* global INDENT */
     /* global COO_INTERNAL_VARIABLE_RET */
+    /* global cooValueToJS */
+    /* global cooGetDecl */
+    /* global cooProcessParam */
+    /* global cooMatchCommand */
+    /* global cooGetParamValues */
 
     cooObjectBase(
         'VIEW',
@@ -28,22 +33,31 @@
                 '': {
                     '(': {
                         'RENDER': {
-                            '@': function(cmd) {
-                                // VIEW identifier (expr) RENDER
-                                cmd.hasSubblock = true;
-
-                                cmd.getCodeBefore = function() {
-
-                                };
-                            },
-
                             '#': function(cmd) {
                                 // VIEW identifier (expr) RENDER (expr2) (expr3) ...
-
-                                var params = cooExtractParamValues(cmd, 4);
-                                if (params.error) { return params.error; } else { params = params.values; }
+                                if (!cmd.valuePusher) {
+                                    cmd.file.errorMeaninglessValue(cmd.parts[0]);
+                                }
 
                                 cmd.hasSubblock = true;
+
+                                cmd.processChild = processParams;
+
+                                var params = cooExtractParamValues(cmd, 4);
+
+                                cmd.getCodeBefore = function() {
+                                    var decl = cooGetDecl(cmd),
+                                        ret = [];
+
+                                    ret.push(COO_INTERNAL_VARIABLE_RET);
+                                    ret.push('.push(');
+                                    ret.push(cooValueToJS(cmd, cmd.parts[2]));
+                                    ret.push('.render(');
+                                    ret.push(cooGetParamValues(cmd, decl.data.methods.render, params, cmd.data.elemParams));
+                                    ret.push('));');
+
+                                    return ret.join('');
+                                };
                             }
                         }
                     }
@@ -51,4 +65,20 @@
             }
         }
     );
+
+    function processParams(cmd) {
+        return cooMatchCommand(cmd, {
+            PARAM: {
+                '': {
+                    '@': function() {
+                        return cooProcessParam(cmd, false);
+                    },
+
+                    '(': function() {
+                        return cooProcessParam(cmd, true);
+                    }
+                }
+            }
+        });
+    }
 })();

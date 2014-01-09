@@ -49,8 +49,10 @@ VIEW Page
         +TEMPLATE Page APPLY
             ELEMENT "container" node
                 VIEW SET container $node
+
             ELEMENT "input" node
                 VIEW SET input $node
+
             ELEMENT "add" node
                 DOM $node
                     CLICK

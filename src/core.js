@@ -249,7 +249,7 @@ function cooCreateScope(cmd) {
 
 /* exported cooSetScopeRet */
 function cooSetScopeRet(cmd) {
-    cooPushScopeVariable(cmd, COO_INTERNAL_VARIABLE_RET, '[]').hasRet = true;
+    cooPushScopeVariable(cmd, COO_INTERNAL_VARIABLE_RET, 'CooCooRet()').hasRet = true;
 }
 
 
@@ -949,7 +949,7 @@ function CooCoo(filenames, commons, project) {
 
 
 /* exported cooExtractParamNames */
-function cooExtractParamNames(parts, start) {
+function cooExtractParamNames(cmd, parts, start) {
     var params = {},
         i,
         part;
@@ -958,18 +958,18 @@ function cooExtractParamNames(parts, start) {
         part = parts[i];
 
         if (part.type !== COO_COMMAND_PART_IDENTIFIER) {
-            return {error: part};
+            cmd.file.errorUnexpectedPart(part);
         }
 
         if (part.value in params) {
             part.error = 'Duplicate parameter';
-            return {error: part};
+            cmd.file.errorUnexpectedPart(part);
         }
 
         params[part.value] = true;
     }
 
-    return {params: params};
+    return params;
 }
 
 
@@ -984,13 +984,13 @@ function cooExtractParamValues(cmd, start) {
         part = parts[i];
 
         if (part.type === COO_COMMAND_PART_IDENTIFIER) {
-            return {error: part};
+            cmd.file.errorUnexpectedPart(part);
         }
 
         values.push(cooValueToJS(cmd, part));
     }
 
-    return {values: values};
+    return values;
 }
 
 
@@ -1091,7 +1091,7 @@ function cooGetParamValues(cmd, names, paramsArray, elemParams) {
 
     if (paramsArray.length) {
         return paramsArray.join(', ');
-    } else {
+    } else if (elemParams) {
         var ret = [];
 
         for (param in elemParams) {
@@ -1353,8 +1353,7 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
 
             cooCreateScope(cmd);
 
-            var params = cooExtractParamNames(cmd.parts, special ? 1 : 2);
-            if (params.error) { return params.error; } else { params = params.params; }
+            var params = cooExtractParamNames(cmd, cmd.parts, special ? 1 : 2);
 
             for (var p in params) {
                 cooPushScopeVariable(cmd, p, false);
@@ -1576,7 +1575,6 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
                         cmd.hasSubblock = true;
 
                         var params = cooExtractParamValues(cmd, 3);
-                        if (params.error) { return params.error; } else { params = params.values; }
 
                         cmd.data.params = params;
 
@@ -1727,7 +1725,6 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
                             '#': function() {
                                 // `NAME` identifier (something) CALL identifier (expr) (expr) ...
                                 var params = cooExtractParamValues(cmd, 5);
-                                if (params.error) { return params.error; } else { params = params.values; }
 
                                 cmd.getCodeBefore = function() {
                                     var decl = cooGetDecl(cmd);
@@ -1937,7 +1934,6 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
                         cooPushThisVariable(cmd);
 
                         var params = cooExtractParamValues(cmd, 3);
-                        if (params.error) { return params.error; } else { params = params.values; }
 
                         cmd.getCodeBefore = function() {
                             if (!(cmd.parts[2].value in cmd.root.data.methods)) {
@@ -1998,12 +1994,7 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
         if (hasParams) {
             params = hasName ? {'_': true} : {};
 
-            tmp = cooExtractParamNames(cmd.parts, hasParams);
-            if (tmp.error) {
-                return tmp.error;
-            } else {
-                tmp = tmp.params;
-            }
+            tmp = cooExtractParamNames(cmd, cmd.parts, hasParams);
 
             for (var param in tmp) {
                 cooPushScopeVariable(cmd, param, false);
