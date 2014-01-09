@@ -5,12 +5,17 @@
     /* global cooMatchCommand */
     /* global cooExtractParamValues */
     /* global COO_INTERNAL_VARIABLE_RET */
+    /* global cooExtractParamNames */
+    /* global cooProcessParam */
+    /* global cooGetParamValues */
+
+    var decls = {};
 
     function templateProcess(cmd) {
         if (cmd.parent) {
             cmd.hasSubblock = true;
 
-            cmd.processChild = templateProcessParamsAndNodes;
+            cmd.processChild = templateProcessParamsAndElements;
 
             return cooMatchCommand(cmd, {
                 'TEMPLATE': {
@@ -21,11 +26,21 @@
                                     cmd.file.errorMeaninglessValue(cmd.parts[0]);
                                 }
 
-                                var params = cooExtractParamValues(cmd, 3);
-                                if (params.error) { return params.error; } else { params = params.values; }
+                                var inlineParams = cooExtractParamValues(cmd, 3);
+                                if (inlineParams.error) {
+                                    return inlineParams.error;
+                                } else {
+                                    inlineParams = inlineParams.values;
+                                }
+
+                                var paramValues;
 
                                 cmd.getCodeBefore = function() {
-                                    //cooGetDecl(cmd);
+                                    var decl = decls[cmd.parts[1].value];
+
+                                    if (!decl) {
+                                        cmd.file.errorUndeclared(cmd.parts[1]);
+                                    }
 
                                     var ret = [];
 
@@ -36,8 +51,10 @@
 
                                     if (!cmd.children.length) {
                                         ret.push('.apply(');
-                                        ret.push(params.join(', '));
+                                        ret.push(inlineParams.join(', '));
                                         ret.push('));');
+                                    } else {
+                                        paramValues = cooGetParamValues(cmd, decl.data.params, inlineParams, cmd.data.elemParams);
                                     }
 
                                     return ret.join('');
@@ -48,7 +65,9 @@
                                         var ret = [];
 
                                         ret.push('.apply(');
-                                        ret.push(params.join(', '));
+                                        if (paramValues) {
+                                            ret.push(paramValues);
+                                        }
                                         ret.push('));');
 
                                         return ret.join('');
@@ -69,10 +88,26 @@
 
                             cmd.processChild = templateProcessDecl;
 
+                            var params = cooExtractParamNames(cmd.parts, 2);
+
+                            if (params.error) {
+                                return params.error;
+                            } else {
+                                params = params.params;
+                            }
+
                             cmd.data = {
                                 origin: null,
-                                params: {}
+                                params: params,
+                                elemParams: null
                             };
+
+                            if (cmd.parts[1].value in decls) {
+                                cmd.parts[1].error = 'Redeclaration';
+                                cmd.file.errorUnexpectedPart(cmd.parts[1]);
+                            } else {
+                                decls[cmd.parts[1].value] = cmd;
+                            }
 
                             cmd.getCodeBefore = function() {
                                 var ret = [];
@@ -111,21 +146,21 @@
     }
 
 
-    function templateProcessParamsAndNodes(cmd) {
+    function templateProcessParamsAndElements(cmd) {
         return cooMatchCommand(cmd, {
             PARAM: {
                 '': {
                     '@': function() {
-                        cmd.hasSubblock = true;
-                        cmd.valueRequired = true;
+                        return cooProcessParam(cmd, false);
                     },
 
                     '(': function() {
+                        return cooProcessParam(cmd, true);
                     }
                 }
             },
 
-            NODE: {
+            ELEMENT: {
                 '(': {
                     '': function() {
                         cmd.hasSubblock = true;

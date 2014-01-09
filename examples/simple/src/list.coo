@@ -26,9 +26,9 @@ VIEW Item
         +TEMPLATE Item APPLY
             PARAM title
                 +MODEL Item @model GET title
-            NODE "text" node
+            ELEMENT "text" node
                 VIEW SET textNode $node
-            NODE "remove" node
+            ELEMENT "remove" node
                 DOM $node
                     CLICK
                         MODEL Item @model DESTROY
@@ -47,11 +47,11 @@ VIEW Page
 
     RENDER
         +TEMPLATE Page APPLY
-            NODE "container" node
+            ELEMENT "container" node
                 VIEW SET container $node
-            NODE "input" node
+            ELEMENT "input" node
                 VIEW SET input $node
-            NODE "add" node
+            ELEMENT "add" node
                 DOM $node
                     CLICK
                         COLLECTION List @list ADD
@@ -59,6 +59,9 @@ VIEW Page
 
     METHOD addItem m
         DOM @container APPEND
+            //SET tmp
+            //    +VIEW Item CREATE $m
+            //+VIEW Item $tmp RENDER
             +VIEW Item CREATE $m RENDER
 
 

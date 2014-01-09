@@ -47,6 +47,8 @@ CooCommand.prototype = {
     first: false,
     last: false,
 
+    ignore: false,
+
     getDeclKey: null,
 
     getCodeBefore: null,
@@ -859,11 +861,19 @@ CooFile.prototype = {
 
     errorMeaninglessCommand: function(part) {
         this.error('Command has no meaning', part._charAt, part._lineAt);
+    },
+
+    errorUndeclared: function(part) {
+        this.error('Dependency is not declared', part._charAt, part._lineAt);
     }
 };
 
 
 function cooRunGenerators(cmd, code, level) {
+    if (cmd.ignore) {
+        return;
+    }
+
     var c = cmd.children,
         i,
         indent = (new Array(level + 1)).join(INDENT);
@@ -952,7 +962,7 @@ function cooExtractParamNames(parts, start) {
         }
 
         if (part.value in params) {
-            part.error = 'Duplicate parameter name';
+            part.error = 'Duplicate parameter';
             return {error: part};
         }
 
@@ -981,6 +991,111 @@ function cooExtractParamValues(cmd, start) {
     }
 
     return {values: values};
+}
+
+
+/* exported cooProcessParam */
+function cooProcessParam(cmd, hasValue) {
+    var elemParams = cmd.parent.data.elemParams;
+
+    if (!elemParams) { elemParams = cmd.parent.data.elemParams = {}; }
+
+    var name = cmd.parts[1];
+
+    if (name.value in elemParams) {
+        name.error = 'Duplicate parameter';
+        cmd.file.errorUnexpectedPart(name);
+    }
+
+    elemParams[name.value] = cmd;
+
+    if (hasValue) {
+        cmd.getCodeBefore = function() {
+            cmd.ignore = true;
+            return cooValueToJS(cmd, cmd.parts[2]);
+        };
+    } else {
+        cmd.hasSubblock = true;
+        cmd.valueRequired = true;
+
+        cooCreateScope(cmd);
+
+        cmd.getCodeBefore = function() {
+            cmd.ignore = true;
+
+            var ret = [];
+
+            ret.push('(function() {');
+            ret.push(cooGetScopeVariablesDecl(cmd));
+
+            return ret.join('');
+        };
+
+        cmd.getCodeAfter = function() {
+            var ret = [],
+                tmp = cooGetScopeRet(cmd);
+
+            if (tmp) {
+                ret.push(tmp);
+            }
+
+            ret.push('}).call(');
+            ret.push(COO_INTERNAL_VARIABLE_THIS);
+            ret.push(')');
+
+            return ret.join('');
+        };
+    }
+}
+
+
+/* exported cooGetParamValues */
+function cooGetParamValues(cmd, names, paramsArray, elemParams) {
+    var param;
+
+    if (paramsArray.length > 0 && elemParams) {
+        param = elemParams[Object.keys(elemParams)[0]];
+        param.parts[0].error = 'Can\'t mix PARAM commands with inline params';
+        param.file.errorUnexpectedPart(param.parts[0]);
+    }
+
+    if (paramsArray.length) {
+        return paramsArray.join(', ');
+    } else {
+        var ret = [];
+
+        for (param in elemParams) {
+            if (!(param in names)) {
+                param = elemParams[param];
+                param.parts[1].error = 'Unknown parameter';
+                param.file.errorUnexpectedPart(param.parts[1]);
+            }
+        }
+
+        names = Object.keys(names);
+
+        if (names.length) {
+            ret.push('');
+        }
+
+        for (var i = 0; i < names.length; i++) {
+            param = elemParams[names[i]];
+
+            if (param) {
+                cooRunGenerators(param, ret, 1);
+            } else {
+                ret.push(INDENT + 'undefined');
+            }
+
+            if (i < names.length - 1) {
+                ret[ret.length - 1] += ',';
+            }
+        }
+
+        ret.push('');
+
+        return ret.join('\n');
+    }
 }
 
 
@@ -1958,8 +2073,7 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
                                 depCmd.file.errorUnexpectedPart(depCmd.parts[3]);
                             }
                         } else {
-                            depCmd.parts[3].error = 'Dependency is not declared';
-                            depCmd.file.errorUnexpectedPart(depCmd.parts[3]);
+                            depCmd.file.errorUndeclared(depCmd.parts[3]);
                         }
 
                         if (!(arranged[depProps.exts])) {
