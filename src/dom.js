@@ -7,6 +7,9 @@
     /* global cooGetScopeVariablesDecl */
     /* global COO_INTERNAL_VARIABLE_THIS */
     /* global cooGetScopeRet */
+    /* global cooProcessBlockAsValue */
+
+    var DOM_FUNC = 'CooCoo.DOM';
 
     function domProcess(cmd) {
         if (!cmd.parent) {
@@ -30,7 +33,8 @@
 
                             var ret = [];
 
-                            ret.push('CooCoo.DOM(');
+                            ret.push(DOM_FUNC);
+                            ret.push('(');
                             ret.push(cooValueToJS(cmd, cmd.parts[1]));
                             ret.push(')');
 
@@ -55,7 +59,8 @@
                             cmd.getCodeBefore = function() {
                                 var ret = [];
 
-                                ret.push('CooCoo.DOM(');
+                                ret.push(DOM_FUNC);
+                                ret.push('(');
                                 ret.push(cooValueToJS(cmd, cmd.parts[1]));
                                 ret.push(').append(');
                                 ret.push('(function() {');
@@ -85,7 +90,8 @@
                             cmd.getCodeBefore = function() {
                                 var ret = [];
 
-                                ret.push('CooCoo.DOM(');
+                                ret.push(DOM_FUNC);
+                                ret.push('(');
                                 ret.push(cooValueToJS(cmd, cmd.parts[1]));
                                 ret.push(').append(');
                                 ret.push(cooValueToJS(cmd, cmd.parts[3]));
@@ -144,10 +150,38 @@
                         '@': function() {
                             // DOM (expr) TEXT
                             //     ...
+                            return cooProcessBlockAsValue(cmd, {
+                                getCodeBeforeBefore: function() {
+                                    var ret = [];
+
+                                    ret.push(DOM_FUNC);
+                                    ret.push('(');
+                                    ret.push(cooValueToJS(cmd, cmd.parts[1]));
+                                    ret.push(').text(');
+
+                                    return ret.join('');
+                                },
+
+                                getCodeAfterAfter: function() {
+                                    return ');';
+                                }
+                            });
                         },
 
                         '(': function() {
                             // DOM (expr) TEXT (expr2)
+                            cmd.getCodeBefore = function() {
+                                var ret = [];
+
+                                ret.push(DOM_FUNC);
+                                ret.push('(');
+                                ret.push(cooValueToJS(cmd, cmd.parts[1]));
+                                ret.push(').text(');
+                                ret.push(cooValueToJS(cmd, cmd.parts[3]));
+                                ret.push(');');
+
+                                return ret.join('');
+                            };
                         }
                     }
                 }

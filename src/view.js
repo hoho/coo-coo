@@ -26,16 +26,6 @@
         {
             'VIEW': {
                 '': {
-                    'CREATE': {
-                        '#': {
-                            'RENDER': {
-                                '#': function() {
-
-                                }
-                            }
-                        }
-                    },
-
                     '(': {
                         'RENDER': {
                             '@': function(cmd) {

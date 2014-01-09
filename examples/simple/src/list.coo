@@ -59,10 +59,10 @@ VIEW Page
 
     METHOD addItem m
         DOM @container APPEND
-            //SET tmp
-            //    +VIEW Item CREATE $m
-            //+VIEW Item $tmp RENDER
-            +VIEW Item CREATE $m RENDER
+            SET tmp
+                +VIEW Item CREATE $m
+
+            +VIEW Item $tmp RENDER
 
 
 TEMPLATE Page
