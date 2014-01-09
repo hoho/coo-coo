@@ -1,7 +1,6 @@
 (function() {
     /* global cooObjectBase */
     /* global cooExtractParamValues */
-    /* global INDENT */
     /* global COO_INTERNAL_VARIABLE_RET */
     /* global cooValueToJS */
     /* global cooGetDecl */
@@ -19,12 +18,8 @@
             methods: true,
             specialMethods: {
                 RENDER: {
-                    actualName: 'render',
-                    required: true,
-
-                    getCodeAfterBefore: function() {
-                        return INDENT + 'CooCoo.ViewBase.render.call(this, ' + COO_INTERNAL_VARIABLE_RET + ');';
-                    }
+                    actualName: '__render',
+                    required: true
                 }
             }
         },
@@ -52,7 +47,7 @@
                                     ret.push(COO_INTERNAL_VARIABLE_RET);
                                     ret.push('.push(');
                                     ret.push(cooValueToJS(cmd, cmd.parts[2]));
-                                    ret.push('.render(');
+                                    ret.push('._render(');
                                     ret.push(cooGetParamValues(cmd, decl.data.methods.render, params, cmd.data.elemParams));
                                     ret.push('));');
 

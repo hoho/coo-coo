@@ -10,7 +10,7 @@ var CooCoo = {
             self.__root = parent.__root || parent;
             self.__children = [];
 
-            self.set(attrs);
+            self.__construct(attrs);
         },
 
         destroy: function() {
@@ -19,6 +19,7 @@ var CooCoo = {
                 i;
 
             self.__destroyed = true;
+            self.__destruct();
 
             for (i = 0; i < children.length; i++) {
                 children[i].destroy();
@@ -34,7 +35,11 @@ var CooCoo = {
                     }
                 }
             }
-        }
+        },
+
+        __construct: function() {},
+
+        __destruct: function() {}
     })
 };
 

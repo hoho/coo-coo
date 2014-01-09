@@ -1348,8 +1348,15 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
                 return part;
             }
 
+            if (methodName === '__construct' && cmd.parts.length > 2) {
+                cmd.parts[2].error = 'Constructor expects only one parameter';
+                cmd.file.errorUnexpectedPart(cmd.parts[2]);
+            }
+
             cmd.hasSubblock = true;
             cmd.valueRequired = specialData ? !specialData.noValue : true;
+
+            cmd.data.actualName = methodName;
 
             cooCreateScope(cmd);
 
@@ -1440,7 +1447,7 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
                 patterns.CONSTRUCT = {
                     '*': function() {
                         return processMethod('CONSTRUCT', {
-                            actualName: 'init',
+                            actualName: '__construct',
                             required: false,
                             noValue: true
                         });
@@ -1451,7 +1458,7 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
             if (declExt.destroy) {
                 patterns.DESTRUCT = function() {
                     return processMethod('DESTRUCT', {
-                        actualName: 'destroy',
+                        actualName: '__destruct',
                         required: false,
                         noValue: true
                     });
@@ -1514,10 +1521,11 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
 
 
     function cmdProcessCreateCommand(cmd) {
+        cooPushThisVariable(cmd);
+
         cmd.getCodeBefore = function() {
             var cls = cmd.parts[1],
-                decl = cooGetDecl(cmd),
-                params = cmd.data.params;
+                decl = cooGetDecl(cmd);
 
             var ret = [];
 
@@ -1531,7 +1539,16 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
             ret.push('.');
             ret.push(cls.value);
             ret.push('(');
-            ret.push(params.join(', '));
+
+            ret.push(COO_INTERNAL_VARIABLE_THIS);
+
+
+            var tmp = cooGetParamValues(cmd, decl.data.methods.__construct, cmd.data.params, cmd.data.elemParams);
+            if (tmp) {
+                ret.push(', ');
+                ret.push(tmp);
+            }
+
             ret.push(')');
 
             if (cmd.valuePusher) {
@@ -1559,26 +1576,21 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
         pattern[cmdName] = {
             '': {
                 'CREATE': {
-                    '@': function() {
-                        cmd.hasSubblock = true;
-
-                        cmd.data.params = [];
-
-                        cmd.processChild = cmdProcessParamsAndEvents;
-
-                        cmdProcessCreateCommand(cmd);
-                    },
-
                     '#': function() {
                         // `NAME` identifier CREATE (expr1) (expr2) ...
                         //     ...
                         cmd.hasSubblock = true;
 
-                        var params = cooExtractParamValues(cmd, 3);
+                        if (cmd.parts.length > 4) {
+                            // Limit constructor to one parameter to avoid
+                            // .apply() and arguments copying in base .init().
+                            cmd.parts[4].error = 'Constructor expects only one parameter';
+                            cmd.file.errorUnexpectedPart(cmd.parts[4]);
+                        }
 
-                        cmd.data.params = params;
+                        cmd.data.params = cooExtractParamValues(cmd, 3);
 
-                        cmd.processChild = cmdProcessEvents;
+                        cmd.processChild = cmdProcessParamsAndEvents;
 
                         cmdProcessCreateCommand(cmd);
                     }
@@ -2077,11 +2089,11 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
             'PARAM': {
                 '': {
                     '@': function() {
-                        cmd.hasSubblock = true;
-                        cmd.valueRequired = true;
+                        return cooProcessParam(cmd, false);
                     },
 
                     '(': function() {
+                        return cooProcessParam(cmd, true);
                     }
                 }
             }
@@ -2099,6 +2111,85 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
 
         return ret2 ? ret : ret2;
     }
+
+
+    CooCoo.cmd.SUPER = {
+        process: function(cmd) {
+            cooPushThisVariable(cmd);
+
+            return cooMatchCommand(cmd, {
+                'SUPER': {
+                    '#': function() {
+                        cmd.hasSubblock = true;
+
+                        cmd.data.params = cooExtractParamValues(cmd, 1);
+
+                        cmd.processChild = cmdProcessParams;
+
+                        cmd.getCodeBefore = function() {
+                            var decl = cooGetDecl(cmd.root),
+                                method,
+                                ret = [];
+
+                            method = cmd;
+                            while (method.parent !== cmd.root) {
+                                method = method.parent;
+                            }
+
+                            var hasParentMethod,
+                                decls = cmd.decls[cmdName],
+                                extDecl = decls[decl.data.exts];
+
+                            method = method.data.actualName;
+
+                            while (extDecl) {
+                                if (method in extDecl.data.methods) {
+                                    hasParentMethod = true;
+                                    break;
+                                }
+
+                                extDecl = extDecl.data.exts ? decls[extDecl.data.exts] : null;
+                            }
+
+                            if (!hasParentMethod) {
+                                cmd.parts[0].error = 'No parent method to call';
+                                cmd.file.errorUnexpectedPart(cmd.parts[0]);
+                            }
+
+                            if (cmd.valuePusher) {
+                                ret.push(COO_INTERNAL_VARIABLE_RET);
+                                ret.push('.push(');
+                            }
+
+                            ret.push(cmdStorage);
+                            ret.push('.');
+                            ret.push(cmd.root.parts[1].value);
+                            ret.push('.__super__.');
+                            ret.push(method);
+                            ret.push('.call(');
+                            ret.push(COO_INTERNAL_VARIABLE_THIS);
+
+                            var tmp = cooGetParamValues(cmd, extDecl.data.methods[method], cmd.data.params, cmd.data.elemParams);
+                            if (tmp) {
+                                ret.push(', ');
+                                ret.push(tmp);
+                            }
+
+                            if (cmd.valuePusher) {
+                                ret.push(')');
+                            }
+
+                            ret.push(');');
+
+                            return ret.join('');
+                        };
+                    }
+                }
+            });
+        },
+        arrange: null,
+        base: null
+    };
 
 
     CooCoo.cmd[cmdName] = {

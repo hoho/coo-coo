@@ -1,10 +1,11 @@
 CooCoo.View = {};
 
 CooCoo.ViewBase = CooCoo.Base.extend({
-    render: function(ret) {
+    _render: function() {
         var self = this,
             elems = self.__elems = [],
-            elem;
+            elem,
+            ret = self._render.apply(self, arguments);
 
         for (var i = 0; i < ret.length; i++) {
             elem = ret[i];
@@ -24,7 +25,11 @@ CooCoo.ViewBase = CooCoo.Base.extend({
             }
             /* jshint browser: false */
         }
+
+        return ret;
     },
+
+    __render: function() {},
 
     destroy: function() {
         var self = this,
@@ -40,7 +45,7 @@ CooCoo.ViewBase = CooCoo.Base.extend({
         }
 
         /* jshint -W106 */
-        CooCoo.ViewBase.__super__.destroy.call(this);
+        CooCoo.ViewBase.__super__.destroy.call(self);
         /* jshint +W106 */
     }
 });
