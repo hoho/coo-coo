@@ -943,8 +943,20 @@ function CooCoo(filenames, commons, project) {
 
     cooRunGenerators({children: ret.cmd}, code, 0);
 
-    console.log(commons, project);
-    console.log(code.join('\n'));
+    tmp = [];
+    for (i in ret.base) {
+        file = __dirname + '/' + i + '_.js';
+        tmp.push('// ' + file);
+        tmp.push(fs.readFileSync(file, {encoding: 'utf8'}));
+        tmp.push('');
+        tmp.push('');
+    }
+
+    fs.writeFileSync(commons, tmp.join('\n'));
+
+    code.unshift('(function(CooCoo, CooCooRet) {');
+    code.push('})(CooCoo, CooCooRet);\n');
+    fs.writeFileSync(project, code.join('\n'));
 }
 
 

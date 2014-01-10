@@ -8,11 +8,15 @@ var assert = require('assert'),
 
 
 function test() {
-    var coocoo = CooCoo(
-        ['examples/todo/src/todo.coo', 'examples/todo/src/todoItem.coo'],
-        './test/test-common.js',
-        './test/test-gen.js'
-    );
+    try {
+        var coocoo = CooCoo(
+            //['examples/todo/src/todo.coo', 'examples/todo/src/todoItem.coo'],
+            ['examples/simple/src/list.coo'],
+            './test/test-common.js',
+            './test/test-app.js'
+        );
 
-
+    } catch(e) {
+        console.log(e.stack);
+    }
 }

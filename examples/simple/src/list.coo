@@ -19,6 +19,7 @@ VIEW Item
         MODEL Item $m
             CHANGE "title" val
                 DOM @textNode TEXT $val
+
             DESTROY
                 VIEW DESTROY
 
@@ -26,8 +27,10 @@ VIEW Item
         +TEMPLATE Item APPLY
             PARAM title
                 +MODEL Item @model GET title
+
             ELEMENT "text" node
                 VIEW SET textNode $node
+
             ELEMENT "remove" node
                 DOM $node
                     CLICK

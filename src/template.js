@@ -102,7 +102,7 @@
 
                                 ret.push('CooCoo.Template.');
                                 ret.push(cmd.parts[1].value);
-                                ret.push(' = CooCoo.TemplateBase.create(');
+                                ret.push(' = CooCoo.TemplateBase(');
                                 ret.push(cmd.data.origin);
                                 ret.push(');');
 

@@ -43,13 +43,25 @@ var CooCoo = {
     })
 };
 
-var CooCooRet = function() {
+var CooCooRet = function(val) {
     if (this.constructor === CooCooRet) {
-        this._ = [];
+        this._ = val instanceof CooCooRet ?
+            val.toArray()
+            :
+            (val === undefined ? [] : [val]);
     } else {
-        return new CooCooRet();
+        return new CooCooRet(val);
     }
 };
 
-CooCooRet.prototype.push = function(val) { this._.push(val); };
+CooCooRet.prototype.push = function(val) {
+    if (val instanceof CooCooRet) {
+        this._ = this._.concat(val.toArray());
+    } else if (val !== undefined) {
+        this._.push(val);
+    }
+};
 CooCooRet.prototype.valueOf = function() { return this._[0]; };
+CooCooRet.prototype.toString = function() { return this._.join(''); };
+CooCooRet.prototype.toArray = function() { return this._; };
+CooCooRet.prototype.isEmpty = function() { return !this._.length; };
