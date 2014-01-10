@@ -8,8 +8,12 @@
     /* global cooExtractParamNames */
     /* global cooProcessParam */
     /* global cooGetParamValues */
+    /* global cooPushThisVariable */
+    /* global COO_INTERNAL_VARIABLE_THIS */
+    /* global INDENT */
 
-    var decls = {};
+    var decls = {},
+        identifer = 0;
 
     function templateProcess(cmd) {
         if (cmd.parent) {
@@ -29,6 +33,8 @@
                                 var inlineParams = cooExtractParamValues(cmd, 3),
                                     paramValues;
 
+                                cooPushThisVariable(cmd);
+
                                 cmd.getCodeBefore = function() {
                                     var decl = decls[cmd.parts[1].value];
 
@@ -39,12 +45,16 @@
                                     var ret = [];
 
                                     ret.push(COO_INTERNAL_VARIABLE_RET);
-                                    ret.push('.push(CooCoo.Template.');
+                                    ret.push('.push(new CooCoo.Template.');
                                     ret.push(cmd.parts[1].value);
-                                    ret.push('()');
+                                    ret.push('(');
+                                    ret.push(COO_INTERNAL_VARIABLE_THIS);
+                                    ret.push(', ');
+                                    ret.push(++identifer);
+                                    ret.push(')');
 
                                     if (!cmd.children.length) {
-                                        ret.push('.apply(');
+                                        ret.push('.apply(null, ');
                                         ret.push(inlineParams.join(', '));
                                         ret.push('));');
                                     } else {
@@ -58,7 +68,7 @@
                                     if (cmd.children.length) {
                                         var ret = [];
 
-                                        ret.push('.apply(');
+                                        ret.push('.apply(null');
                                         if (paramValues) {
                                             ret.push(paramValues);
                                         }
@@ -102,9 +112,20 @@
 
                                 ret.push('CooCoo.Template.');
                                 ret.push(cmd.parts[1].value);
-                                ret.push(' = CooCoo.TemplateBase(');
+                                ret.push(' = CooCoo.TemplateBase.extend({\n');
+
+                                if (cmd.debug) {
+                                    ret.push(INDENT);
+                                    ret.push('__what: "');
+                                    ret.push('CooCoo.Template.');
+                                    ret.push(cmd.parts[1].value);
+                                    ret.push('",\n');
+                                }
+
+                                ret.push(INDENT);
+                                ret.push('origin: ');
                                 ret.push(cmd.data.origin);
-                                ret.push(');');
+                                ret.push('\n});');
 
                                 return ret.join('');
                             };

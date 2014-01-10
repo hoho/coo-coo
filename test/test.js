@@ -13,7 +13,8 @@ function test() {
             //['examples/todo/src/todo.coo', 'examples/todo/src/todoItem.coo'],
             ['examples/simple/src/list.coo'],
             './test/test-common.js',
-            './test/test-app.js'
+            './test/test-app.js',
+            true
         );
 
     } catch(e) {

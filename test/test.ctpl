@@ -1,0 +1,22 @@
+page
+    h1
+        "Ololo!"
+    ol
+        TRIGGER "container"
+
+    div
+        input[type=text]
+            TRIGGER "input"
+        button[type=button]
+            TRIGGER "add"
+            "add"
+
+
+item title
+    li
+        span
+            TRIGGER "text"
+            (title)
+        button[type=button]
+            TRIGGER "remove"
+            "remove"

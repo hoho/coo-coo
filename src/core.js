@@ -21,6 +21,7 @@ var INDENT_WITH = ' ',
 
 
 function CooCommand(file, parent, decls) {
+    this.debug = file.ret.debug;
     this.file = file;
     this.decls = decls;
 
@@ -916,10 +917,11 @@ function cooRunGenerators(cmd, code, level) {
 }
 
 
-function CooCoo(filenames, commons, project) {
+function CooCoo(filenames, commons, project, debug) {
     CooCoo.decl = {};
 
     var ret = {
+        debug: debug,
         base: {core: true},
         arrange: {},
         declCmd: {},
@@ -1255,6 +1257,16 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
 
                 // .extend({
                 ret.push('.extend({');
+
+                if (cmd.debug) {
+                    ret.push('\n');
+                    ret.push(INDENT);
+                    ret.push('__what: "');
+                    ret.push(cmdStorage);
+                    ret.push('.');
+                    ret.push(cmd.parts[1].value);
+                    ret.push('",');
+                }
 
                 return ret.join('');
             };

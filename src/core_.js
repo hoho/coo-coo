@@ -1,14 +1,20 @@
 /* exported CooCoo */
 var CooCoo = {
-
     /* global $E */
     Base: $E.O.extend({
         init: function(parent, attrs) {
             var self = this;
 
             self.__parent = parent;
-            self.__root = parent.__root || parent;
+
+            if (parent) {
+                self.__root = parent.__root || parent;
+                parent.__children.push(self);
+            }
+
             self.__children = [];
+
+            console.log('Create: ' + self.__what);
 
             self.__construct(attrs);
         },
@@ -35,6 +41,8 @@ var CooCoo = {
                     }
                 }
             }
+
+            console.log('Destroy: ' + self.__what);
         },
 
         __construct: function() {},

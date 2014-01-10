@@ -32,6 +32,13 @@ module.exports = function(grunt) {
             }
         },
 
+        watch: {
+            scripts: {
+                files: ['src/**/*.js'],
+                tasks: ['concat', 'copy', 'test']
+            }
+        },
+
         qunit: {
             all: ['test/**/*.html']
         }
@@ -41,11 +48,12 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-contrib-copy');
     grunt.loadNpmTasks('grunt-contrib-jshint');
     grunt.loadNpmTasks('grunt-contrib-qunit');
+    grunt.loadNpmTasks('grunt-contrib-watch');
 
     grunt.registerTask('test', function() {
         var run = require('./test/test.js');
         run();
     });
 
-    grunt.registerTask('default', ['jshint', 'concat', 'copy', 'test'/*, 'qunit'*/]);
+    grunt.registerTask('default', ['jshint', 'concat', 'copy', 'test', 'watch' /*, 'qunit'*/]);
 };

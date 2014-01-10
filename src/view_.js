@@ -5,10 +5,11 @@ CooCoo.ViewBase = CooCoo.Base.extend({
         var self = this,
             elems = self.__elems = [],
             elem,
-            ret = self._render.apply(self, arguments);
+            ret = self.__render.apply(self, arguments),
+            arr = ret.toArray();
 
-        for (var i = 0; i < ret.length; i++) {
-            elem = ret[i];
+        for (var i = 0; i < arr.length; i++) {
+            elem = arr[i];
 
             /* jshint browser: true */
             if (elem instanceof Node) {
