@@ -18,9 +18,9 @@
     CooCoo.Template = {};
 
     CooCoo.TemplateBase = CooCoo.Base.extend({
-        init: function(parent, identifier) {
+        init: function(parent, id) {
             var self = this,
-                bindings = conkittyBindings[(self.id = identifier)];
+                bindings = conkittyBindings[(self.id = id)];
 
             if (bindings) {
                 bindings.count++;

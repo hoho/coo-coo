@@ -54,8 +54,13 @@
                                     ret.push(')');
 
                                     if (!cmd.children.length) {
-                                        ret.push('.apply(null, ');
-                                        ret.push(inlineParams.join(', '));
+                                        ret.push('.apply(');
+
+                                        if (inlineParams.length) {
+                                            ret.push('null, ');
+                                            ret.push(inlineParams.join(', '));
+                                        }
+
                                         ret.push('));');
                                     } else {
                                         paramValues = cooGetParamValues(cmd, decl.data.params, inlineParams, cmd.data.elemParams);
@@ -68,8 +73,11 @@
                                     if (cmd.children.length) {
                                         var ret = [];
 
-                                        ret.push('.apply(null');
+                                        ret.push('.apply(');
                                         if (paramValues) {
+                                            ret.push('\n');
+                                            ret.push(INDENT);
+                                            ret.push('null, ');
                                             ret.push(paramValues);
                                         }
                                         ret.push('));');
