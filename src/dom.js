@@ -6,8 +6,10 @@
     /* global cooGetScopeVariablesDecl */
     /* global cooGetScopeRet */
     /* global cooProcessBlockAsValue */
+    /* global COO_INTERNAL_VARIABLE_RET */
 
-    var DOM_FUNC = 'new CooCoo.DOM',
+    var DOM_FUNC = 'CooCoo.DOM',
+        DOM_OBJ = 'new ' + DOM_FUNC,
         eventIdentifier = 0;
 
     function domProcess(cmd) {
@@ -32,7 +34,7 @@
 
                             var ret = [];
 
-                            ret.push(DOM_FUNC);
+                            ret.push(DOM_OBJ);
                             ret.push('(this, ');
                             ret.push(++eventIdentifier);
 
@@ -65,16 +67,9 @@
                                 var ret = [];
 
                                 ret.push(DOM_FUNC);
-                                ret.push('(this, ');
-                                ret.push(++eventIdentifier);
-
-                                var tmp = cooValueToJS(cmd, cmd.parts[1]);
-                                if (tmp) {
-                                    ret.push(', ');
-                                    ret.push(tmp);
-                                }
-
-                                ret.push(').append(');
+                                ret.push('.append(');
+                                ret.push(cooValueToJS(cmd, cmd.parts[1]));
+                                ret.push(', ');
                                 ret.push('(function() {');
                                 ret.push(cooGetScopeVariablesDecl(cmd));
 
@@ -101,16 +96,9 @@
                                 var ret = [];
 
                                 ret.push(DOM_FUNC);
-                                ret.push('(this, ');
-                                ret.push(++eventIdentifier);
-
-                                var tmp = cooValueToJS(cmd, cmd.parts[1]);
-                                if (tmp) {
-                                    ret.push(', ');
-                                    ret.push(tmp);
-                                }
-
-                                ret.push(').append(');
+                                ret.push('.append(');
+                                ret.push(cooValueToJS(cmd, cmd.parts[1]));
+                                ret.push(', ');
                                 ret.push(cooValueToJS(cmd, cmd.parts[3]));
                                 ret.push(')');
 
@@ -151,15 +139,67 @@
                             '@': function() {
                                 // DOM (expr) VALUE SET
                                 //     ...
+                                if (cmd.valuePusher) {
+                                    cmd.file.errorNoValue(cmd.parts[0]);
+                                }
+
+                                return cooProcessBlockAsValue(cmd, {
+                                    getCodeBeforeBefore: function() {
+                                        var ret = [];
+
+                                        ret.push(DOM_FUNC);
+                                        ret.push('.val(');
+                                        ret.push(cooValueToJS(cmd, cmd.parts[1]));
+                                        ret.push(', ');
+
+                                        return ret.join('');
+                                    },
+
+                                    getCodeAfterAfter: function() {
+                                        return ');';
+                                    }
+                                });
                             },
 
                             '(': function() {
                                 // DOM (expr) VALUE SET (expr2)
+                                if (cmd.valuePusher) {
+                                    cmd.file.errorNoValue(cmd.parts[0]);
+                                }
+
+                                cmd.getCodeBefore = function() {
+                                    var ret = [];
+
+                                    ret.push(DOM_FUNC);
+                                    ret.push('.val(');
+                                    ret.push(cooValueToJS(cmd, cmd.parts[1]));
+                                    ret.push(', ');
+                                    ret.push(cooValueToJS(cmd, cmd.parts[4]));
+                                    ret.push(');');
+
+                                    return ret.join('');
+                                };
                             }
                         },
 
                         'GET': function() {
                             // DOM (expr) VALUE GET
+                            if (!cmd.valuePusher) {
+                                cmd.file.errorMeaninglessValue(cmd.parts[0]);
+                            }
+
+                            cmd.getCodeBefore = function() {
+                                var ret = [];
+
+                                ret.push(COO_INTERNAL_VARIABLE_RET);
+                                ret.push('.push(');
+                                ret.push(DOM_FUNC);
+                                ret.push('.val(');
+                                ret.push(cooValueToJS(cmd, cmd.parts[1]));
+                                ret.push('));');
+
+                                return ret.join('');
+                            };
                         }
                     },
 
@@ -172,16 +212,9 @@
                                     var ret = [];
 
                                     ret.push(DOM_FUNC);
-                                    ret.push('(this, ');
-                                    ret.push(++eventIdentifier);
-
-                                    var tmp = cooValueToJS(cmd, cmd.parts[1]);
-                                    if (tmp) {
-                                        ret.push(', ');
-                                        ret.push(tmp);
-                                    }
-
-                                    ret.push(').text(');
+                                    ret.push('.text(');
+                                    ret.push(cooValueToJS(cmd, cmd.parts[1]));
+                                    ret.push(', ');
 
                                     return ret.join('');
                                 },
@@ -198,16 +231,9 @@
                                 var ret = [];
 
                                 ret.push(DOM_FUNC);
-                                ret.push('(this, ');
-                                ret.push(++eventIdentifier);
-
-                                var tmp = cooValueToJS(cmd, cmd.parts[1]);
-                                if (tmp) {
-                                    ret.push(', ');
-                                    ret.push(tmp);
-                                }
-
-                                ret.push(').text(');
+                                ret.push('.text(');
+                                ret.push(cooValueToJS(cmd, cmd.parts[1]));
+                                ret.push(', ');
                                 ret.push(cooValueToJS(cmd, cmd.parts[3]));
                                 ret.push(');');
 

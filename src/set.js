@@ -41,7 +41,7 @@
                             }
 
                             ret.push(cmd.parts[1].value);
-                            ret.push(' = (function() {');
+                            ret.push(' = CooCooRet((function() {');
                             ret.push(cooGetScopeVariablesDecl(cmd));
 
                             return ret.join('');
@@ -57,7 +57,7 @@
                                 ret.push(')');
                             }
 
-                            ret.push(');');
+                            ret.push(')).valueOf();');
 
                             return ret.join('');
                         };

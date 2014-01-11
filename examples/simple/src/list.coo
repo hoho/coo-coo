@@ -61,6 +61,7 @@ VIEW Page
                     CLICK
                         COLLECTION List @list ADD
                             +DOM @input VALUE GET
+                            DOM @input VALUE SET ""
 
     METHOD addItem m
         DOM @container APPEND

@@ -913,7 +913,13 @@ function CooCoo(filenames, commons, project, debug) {
         tmp[i](ret.declCmd, ret.cmd);
     }
 
-    cooRunGenerators({children: ret.cmd}, code, 0);
+    // Super dump vay to put collections at the bottom (they depend on models).
+    // XXX: Implement this thing in arrange function.
+    tmp = ret.cmd.filter(function(item) { return item.name !== 'COLLECTION'; });
+    cooRunGenerators({children: tmp}, code, 0);
+
+    tmp = ret.cmd.filter(function(item) { return item.name === 'COLLECTION'; });
+    cooRunGenerators({children: tmp}, code, 0);
 
     tmp = [];
     for (i in ret.base) {

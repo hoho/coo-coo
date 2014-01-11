@@ -3,7 +3,7 @@
 (function() {
     var handlers = {};
 
-    CooCoo.DOM = CooCoo.Base.extend({
+    CooCoo.DOM = CooCoo.Extendable.extend({
         init: function(parent, id, node) {
             var self = this,
                 h = handlers[id];
@@ -82,4 +82,24 @@
             return self;
         }
     });
+
+    CooCoo.DOM.val = function(node, val) {
+        val = CooCooRet(val);
+        node = CooCooRet(node).valueOf(true);
+
+        if (val.valueOf() === undefined) {
+            return node.value || '';
+        } else {
+            node.value = val.toString();
+        }
+    };
+
+    CooCoo.DOM.append = function(parent, node) {
+        parent = CooCooRet(parent).valueOf();
+        node = CooCooRet(node).toArray();
+
+        for (var i = 0; i < node.length; i++) {
+            parent.appendChild(node[i]);
+        }
+    };
 })(CooCoo, CooCooRet);

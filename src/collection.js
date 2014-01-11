@@ -3,6 +3,8 @@
     /* global cooMatchCommand */
     /* global cooGetScopeVariablesDecl */
     /* global cooGetScopeRet */
+    /* global cooProcessBlockAsValue */
+    /* global cooValueToJS */
 
     cooObjectBase(
         'COLLECTION',
@@ -71,6 +73,16 @@
                                 //     ...
                                 cmd.hasSubblock = true;
                                 cmd.valueRequired = true;
+
+                                return cooProcessBlockAsValue(cmd, {
+                                    getCodeBeforeBefore: function() {
+                                        return cooValueToJS(cmd, cmd.parts[2]) + '.add(';
+                                    },
+
+                                    getCodeAfterAfter: function() {
+                                        return ');';
+                                    }
+                                });
                             },
 
                             '(': function() {

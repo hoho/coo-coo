@@ -39,6 +39,14 @@ module.exports = function(grunt) {
             }
         },
 
+        conkitty: {
+            compile: {
+                files: {
+                    'test/test-tpl.js': ['test/test.ctpl']
+                }
+            }
+        },
+
         qunit: {
             all: ['test/**/*.html']
         }
@@ -49,11 +57,12 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-contrib-jshint');
     grunt.loadNpmTasks('grunt-contrib-qunit');
     grunt.loadNpmTasks('grunt-contrib-watch');
+    grunt.loadNpmTasks('grunt-conkitty');
 
     grunt.registerTask('test', function() {
         var run = require('./test/test.js');
         run();
     });
 
-    grunt.registerTask('default', ['jshint', 'concat', 'copy', 'test', 'watch' /*, 'qunit'*/]);
+    grunt.registerTask('default', ['jshint', 'concat', 'copy', 'test', 'conkitty', 'watch' /*, 'qunit'*/]);
 };
