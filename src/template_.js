@@ -2,6 +2,7 @@
     /* global $C */
 
     var currentBindings,
+        currentParent,
         conkittyBindings = {};
 
     $C.define('trigger', function(item, index, arr, args) {
@@ -10,7 +11,7 @@
 
         if ((funcs = currentBindings[args[0]])) {
             for (i = 0; i < funcs.length; i++) {
-                funcs[i](this);
+                funcs[i].call(currentParent, this);
             }
         }
     });
@@ -21,6 +22,8 @@
         init: function(parent, id) {
             var self = this,
                 bindings = conkittyBindings[(self.id = id)];
+
+            self.parent = parent;
 
             if (bindings) {
                 bindings.count++;
@@ -77,6 +80,7 @@
             }
 
             currentBindings = self.bindings.funcs;
+            currentParent = self.parent;
 
             return $C.tpl[self.bindings.name].apply(null, arguments);
         }

@@ -16,7 +16,6 @@ var INDENT_WITH = ' ',
     COO_COMMAND_PART_PROPERTY_GETTER = 'property getter',
     COO_COMMAND_PART_VARIABLE_GETTER = 'variable getter',
 
-    COO_INTERNAL_VARIABLE_THIS = '__self',
     COO_INTERNAL_VARIABLE_RET = '__ret';
 
 
@@ -216,30 +215,6 @@ function cooCheckScopeVariable(cmd, part) {
 }
 
 
-function cooPushInternalVariable(cmd, name, value) {
-    var tmp = cmd,
-        scope;
-
-    while (tmp) {
-        if (tmp.data.scope) { scope = tmp.data.scope; }
-        tmp = tmp.parent;
-    }
-
-    if (!scope) {
-        cmd.parts[0].error = 'No variable scope';
-        cmd.file.errorUnexpectedPart(cmd.parts[0]);
-    }
-
-    scope[name] = value || value;
-}
-
-
-/* exported cooPushThisVariable */
-function cooPushThisVariable(cmd) {
-    cooPushInternalVariable(cmd, COO_INTERNAL_VARIABLE_THIS, 'this');
-}
-
-
 /* exported cooCreateScope */
 function cooCreateScope(cmd) {
     if (!cmd.data.scope) {
@@ -352,8 +327,7 @@ function cooValueToJS(cmd, part) {
             if (!(part.value in cmd.root.data.properties)) {
                 cmd.file.errorUnknownProperty(part);
             }
-            cooPushThisVariable(cmd);
-            return COO_INTERNAL_VARIABLE_THIS + '.get("' + part.value + '")';
+            return 'this.get("' + part.value + '")';
         default:
             part.error = 'Incorrect type';
             cmd.file.errorUnexpectedPart(part);
@@ -482,8 +456,6 @@ CooFile.prototype = {
                         'JS': function() {
                             var val = self.readJS(self.blockIndent);
 
-                            cooPushThisVariable(cmd);
-
                             cmd.getCodeBefore = function() {
                                 var ret = [];
 
@@ -501,9 +473,7 @@ CooFile.prototype = {
                             cmd.getCodeAfter = function() {
                                 var ret = [];
 
-                                ret.push('}).call(');
-                                ret.push(COO_INTERNAL_VARIABLE_THIS);
-                                ret.push(')');
+                                ret.push('}).call(this)');
 
                                 if (cmd.valuePusher) {
                                     ret.push(')');
@@ -1014,7 +984,6 @@ function cooProcessBlockAsValue(cmd, ext) {
     cmd.valueRequired = true;
 
     cooCreateScope(cmd);
-    cooPushThisVariable(cmd);
 
     cmd.getCodeBefore = function() {
         var ret = [],
@@ -1050,9 +1019,7 @@ function cooProcessBlockAsValue(cmd, ext) {
             cmd.file.errorNoValue(cmd.parts[0]);
         }
 
-        ret.push('}).call(');
-        ret.push(COO_INTERNAL_VARIABLE_THIS);
-        ret.push(')');
+        ret.push('}).call(this)');
 
         if (ext.getCodeAfterAfter && (tmp = ext.getCodeAfterAfter(cmd))) {
             ret.push(tmp);
@@ -1545,8 +1512,6 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
 
 
     function cmdProcessCreateCommand(cmd) {
-        cooPushThisVariable(cmd);
-
         cmd.getCodeBefore = function() {
             var cls = cmd.parts[1],
                 decl = cooGetDecl(cmd);
@@ -1562,10 +1527,7 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
             ret.push(decl.data.storage);
             ret.push('.');
             ret.push(cls.value);
-            ret.push('(');
-
-            ret.push(COO_INTERNAL_VARIABLE_THIS);
-
+            ret.push('(this');
 
             var tmp = cooGetParamValues(cmd, decl.data.methods.__construct, cmd.data.params, cmd.data.elemParams);
             if (tmp) {
@@ -1822,16 +1784,9 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
                         cmd.file.errorNoValue(cmd.parts[0]);
                     }
 
-                    cooPushThisVariable(cmd);
-
                     return cooProcessBlockAsValue(cmd, {
                         getCodeBeforeBefore: function() {
-                            var ret = [];
-
-                            ret.push(COO_INTERNAL_VARIABLE_THIS);
-                            ret.push('.set(');
-
-                            return ret;
+                            return 'this.set(';
                         },
 
                         getCodeAfterAfter: function() {
@@ -1855,8 +1810,6 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
                             cmd.file.errorNoValue(cmd.parts[0]);
                         }
 
-                        cooPushThisVariable(cmd);
-
                         return cooProcessBlockAsValue(cmd, {
                             getCodeBeforeBefore: function() {
                                 if (!(cmd.parts[2].value in cmd.root.data.properties)) {
@@ -1865,8 +1818,7 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
 
                                 var ret = [];
 
-                                ret.push(COO_INTERNAL_VARIABLE_THIS);
-                                ret.push('.set("');
+                                ret.push('this.set("');
                                 ret.push(cmd.parts[2].value);
                                 ret.push('", ');
 
@@ -1889,13 +1841,10 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
                             cmd.file.errorUnknownProperty(cmd.parts[2]);
                         }
 
-                        cooPushThisVariable(cmd);
-
                         cmd.getCodeBefore = function() {
                             var ret = [];
 
-                            ret.push(COO_INTERNAL_VARIABLE_THIS);
-                            ret.push('.set("');
+                            ret.push('this.set("');
                             ret.push(cmd.parts[2].value);
                             ret.push('", ');
                             ret.push(cooValueToJS(cmd, cmd.parts[3]));
@@ -1914,15 +1863,11 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
                         cmd.file.errorMeaninglessValue(cmd.parts[0]);
                     }
 
-                    cooPushThisVariable(cmd);
-
                     cmd.getCodeBefore = function() {
                         var ret = [];
 
                         ret.push(COO_INTERNAL_VARIABLE_RET);
-                        ret.push('.push(');
-                        ret.push(COO_INTERNAL_VARIABLE_THIS);
-                        ret.push('.get());');
+                        ret.push('.push(this.get());');
 
                         return ret.join('');
                     };
@@ -1934,8 +1879,6 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
                         cmd.file.errorMeaninglessValue(cmd.parts[0]);
                     }
 
-                    cooPushThisVariable(cmd);
-
                     cmd.getCodeBefore = function() {
                         if (!(cmd.parts[2].value in cmd.root.data.properties)) {
                             cmd.file.errorUnknownProperty(cmd.parts[2]);
@@ -1944,9 +1887,7 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
                         var ret = [];
 
                         ret.push(COO_INTERNAL_VARIABLE_RET);
-                        ret.push('.push(');
-                        ret.push(COO_INTERNAL_VARIABLE_THIS);
-                        ret.push('.get("');
+                        ret.push('.push(this.get("');
                         ret.push(cmd.parts[2].value);
                         ret.push('"));');
 
@@ -1967,8 +1908,6 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
 
                     '#': function() {
                         // `NAME` CALL identifier (expr) (expr) ...
-                        cooPushThisVariable(cmd);
-
                         var params = cooExtractParamValues(cmd, 3);
 
                         cmd.getCodeBefore = function() {
@@ -1983,8 +1922,7 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
                                 ret.push('.push(');
                             }
 
-                            ret.push(COO_INTERNAL_VARIABLE_THIS);
-                            ret.push('.');
+                            ret.push('this.');
                             ret.push(cmd.parts[2].value);
                             ret.push('(');
                             ret.push(params.join(', '));
@@ -2007,10 +1945,8 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
                     cmd.file.errorNoValue(cmd.parts[0]);
                 }
 
-                cooPushThisVariable(cmd);
-
                 cmd.getCodeBefore = function() {
-                    return COO_INTERNAL_VARIABLE_THIS + '.destroy();';
+                    return 'this.destroy();';
                 };
             }
         };
@@ -2067,7 +2003,7 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
         };
 
         cmd.getCodeAfter = function() {
-            return '})';
+            return '}, this)';
         };
     }
 
@@ -2139,8 +2075,6 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
 
     CooCoo.cmd.SUPER = {
         process: function(cmd) {
-            cooPushThisVariable(cmd);
-
             return cooMatchCommand(cmd, {
                 'SUPER': {
                     '#': function() {
@@ -2190,8 +2124,7 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
                             ret.push(cmd.root.parts[1].value);
                             ret.push('.__super__.');
                             ret.push(method);
-                            ret.push('.call(');
-                            ret.push(COO_INTERNAL_VARIABLE_THIS);
+                            ret.push('.call(this');
 
                             var tmp = cooGetParamValues(cmd, extDecl.data.methods[method], cmd.data.params, cmd.data.elemParams);
                             if (tmp) {

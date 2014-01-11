@@ -2,12 +2,9 @@
     /* global cooMatchCommand */
     /* global cooCreateScope */
     /* global cooPushScopeVariable */
-    /* global cooPushThisVariable */
     /* global cooGetScopeVariablesDecl */
     /* global cooGetScopeRet */
-    /* global COO_INTERNAL_VARIABLE_THIS */
     /* global COO_INTERNAL_VARIABLE_RET */
-    /* global COO_COMMAND_PART_PROPERTY_GETTER */
     /* global cooValueToJS */
 
     function setProcess(cmd) {
@@ -29,7 +26,6 @@
                         cmd.valueRequired = true;
 
                         cooCreateScope(cmd);
-                        cooPushThisVariable(cmd);
                         cooPushScopeVariable(cmd.parent, cmd.parts[1].value);
 
                         cmd.getCodeBefore = function() {
@@ -55,8 +51,7 @@
                             var ret = [];
 
                             ret.push(cooGetScopeRet(cmd));
-                            ret.push('}).call(');
-                            ret.push(COO_INTERNAL_VARIABLE_THIS);
+                            ret.push('}).call(this');
 
                             if (cmd.valuePusher) {
                                 ret.push(')');
@@ -74,10 +69,6 @@
                             val = cmd.parts[2];
 
                         cooPushScopeVariable(cmd, name);
-
-                        if (val.type === COO_COMMAND_PART_PROPERTY_GETTER) {
-                            cooPushThisVariable(cmd);
-                        }
 
                         cmd.getCodeBefore = function() {
                             var ret = [];

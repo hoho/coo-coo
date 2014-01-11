@@ -8,8 +8,6 @@
     /* global cooExtractParamNames */
     /* global cooProcessParam */
     /* global cooGetParamValues */
-    /* global cooPushThisVariable */
-    /* global COO_INTERNAL_VARIABLE_THIS */
     /* global INDENT */
 
     var decls = {},
@@ -33,8 +31,6 @@
                                 var inlineParams = cooExtractParamValues(cmd, 3),
                                     paramValues;
 
-                                cooPushThisVariable(cmd);
-
                                 cmd.getCodeBefore = function() {
                                     var decl = decls[cmd.parts[1].value];
 
@@ -47,9 +43,7 @@
                                     ret.push(COO_INTERNAL_VARIABLE_RET);
                                     ret.push('.push(new CooCoo.Template.');
                                     ret.push(cmd.parts[1].value);
-                                    ret.push('(');
-                                    ret.push(COO_INTERNAL_VARIABLE_THIS);
-                                    ret.push(', ');
+                                    ret.push('(this, ');
                                     ret.push(++identifer);
                                     ret.push(')');
 
