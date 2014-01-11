@@ -3,13 +3,12 @@
     /* global cooCreateScope */
     /* global cooPushScopeVariable */
     /* global cooValueToJS */
-    /* global cooPushThisVariable */
     /* global cooGetScopeVariablesDecl */
-    /* global COO_INTERNAL_VARIABLE_THIS */
     /* global cooGetScopeRet */
     /* global cooProcessBlockAsValue */
 
-    var DOM_FUNC = 'new CooCoo.DOM';
+    var DOM_FUNC = 'new CooCoo.DOM',
+        eventIdentifier = 0;
 
     function domProcess(cmd) {
         if (!cmd.parent) {
@@ -26,8 +25,6 @@
 
                         cmd.processChild = domProcessEvents;
 
-                        cooPushThisVariable(cmd);
-
                         cmd.getCodeBefore = function() {
                             if (!cmd.children.length) {
                                 cmd.file.errorMeaninglessCommand(cmd.parts[0]);
@@ -36,8 +33,8 @@
                             var ret = [];
 
                             ret.push(DOM_FUNC);
-                            ret.push('(');
-                            ret.push(COO_INTERNAL_VARIABLE_THIS);
+                            ret.push('(this, ');
+                            ret.push(++eventIdentifier);
 
                             var tmp = cooValueToJS(cmd, cmd.parts[1]);
                             if (tmp) {
@@ -63,14 +60,13 @@
                             cmd.valueRequired = true;
 
                             cooCreateScope(cmd);
-                            cooPushThisVariable(cmd);
 
                             cmd.getCodeBefore = function() {
                                 var ret = [];
 
                                 ret.push(DOM_FUNC);
-                                ret.push('(');
-                                ret.push(COO_INTERNAL_VARIABLE_THIS);
+                                ret.push('(this, ');
+                                ret.push(++eventIdentifier);
 
                                 var tmp = cooValueToJS(cmd, cmd.parts[1]);
                                 if (tmp) {
@@ -93,9 +89,7 @@
                                     ret.push(tmp);
                                 }
 
-                                ret.push('}).call(');
-                                ret.push(COO_INTERNAL_VARIABLE_THIS);
-                                ret.push('));');
+                                ret.push('}).call(this));');
 
                                 return ret.join('');
                             };
@@ -107,8 +101,8 @@
                                 var ret = [];
 
                                 ret.push(DOM_FUNC);
-                                ret.push('(');
-                                ret.push(COO_INTERNAL_VARIABLE_THIS);
+                                ret.push('(this, ');
+                                ret.push(++eventIdentifier);
 
                                 var tmp = cooValueToJS(cmd, cmd.parts[1]);
                                 if (tmp) {
@@ -178,8 +172,8 @@
                                     var ret = [];
 
                                     ret.push(DOM_FUNC);
-                                    ret.push('(');
-                                    ret.push(COO_INTERNAL_VARIABLE_THIS);
+                                    ret.push('(this, ');
+                                    ret.push(++eventIdentifier);
 
                                     var tmp = cooValueToJS(cmd, cmd.parts[1]);
                                     if (tmp) {
@@ -204,8 +198,8 @@
                                 var ret = [];
 
                                 ret.push(DOM_FUNC);
-                                ret.push('(');
-                                ret.push(COO_INTERNAL_VARIABLE_THIS);
+                                ret.push('(this, ');
+                                ret.push(++eventIdentifier);
 
                                 var tmp = cooValueToJS(cmd, cmd.parts[1]);
                                 if (tmp) {
