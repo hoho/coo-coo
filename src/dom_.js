@@ -84,8 +84,8 @@
     });
 
     CooCoo.DOM.val = function(node, val) {
-        val = CooCooRet(val);
         node = CooCooRet(node).valueOf(true);
+        val = CooCooRet(val);
 
         if (val.valueOf() === undefined) {
             return node.value || '';
@@ -101,5 +101,13 @@
         for (var i = 0; i < node.length; i++) {
             parent.appendChild(node[i]);
         }
+    };
+
+    CooCoo.DOM.text = function(node, val) {
+        node = CooCooRet(node).valueOf(true);
+        val = CooCooRet(val).toString();
+
+        node.innerHTML = '';
+        node.appendChild(document.createTextNode(val));
     };
 })(CooCoo, CooCooRet);
