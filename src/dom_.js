@@ -57,12 +57,20 @@
                         event,
                         (eventHandler.h = function(e) {
                             var parent = e.target['_coo' + self.id],
-                                i;
+                                i,
+                                ret,
+                                cur;
 
                             if (parent) {
                                 for (i = 0; i < funcs.length; i++) {
-                                    funcs[i].call(parent, e);
+                                    cur = funcs[i].call(parent, e);
+
+                                    if (cur !== undefined && ret === undefined) {
+                                        ret = cur;
+                                    }
                                 }
+
+                                return ret;
                             }
                         })
                     );
