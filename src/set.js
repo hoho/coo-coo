@@ -6,6 +6,7 @@
     /* global cooGetScopeRet */
     /* global COO_INTERNAL_VARIABLE_RET */
     /* global cooValueToJS */
+    /* global cooAssertNotValuePusher */
 
     function setProcess(cmd) {
         if (!cmd.parent) {
@@ -18,9 +19,7 @@
                     '@': function() {
                         // SET identifier
                         //     ...
-                        if (cmd.valuePusher) {
-                            cmd.file.errorNoValue(cmd.parts[0]);
-                        }
+                        cooAssertNotValuePusher(cmd);
 
                         cmd.hasSubblock = true;
                         cmd.valueRequired = true;

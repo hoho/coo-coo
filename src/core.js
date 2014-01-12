@@ -840,6 +840,30 @@ CooFile.prototype = {
 };
 
 
+/* exported cooAssertNotValuePusher */
+function cooAssertNotValuePusher(cmd) {
+    if (cmd.valuePusher) {
+        cmd.file.errorNoValue(cmd.parts[0]);
+    }
+}
+
+
+/* exported cooAssertValuePusher */
+function cooAssertValuePusher(cmd) {
+    if (!cmd.valuePusher) {
+        cmd.file.errorMeaninglessValue(cmd.parts[0]);
+    }
+}
+
+
+/* exported cooAssertHasSubcommands */
+function cooAssertHasSubcommands(cmd) {
+    if (!cmd.children.length) {
+        cmd.file.errorMeaninglessCommand(cmd.parts[0]);
+    }
+}
+
+
 function cooRunGenerators(cmd, code, level) {
     if (cmd.ignore) {
         return;
@@ -1601,10 +1625,7 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
                             var ret = [];
 
                             cooGetDecl(cmd);
-
-                            if (!cmd.children.length) {
-                                cmd.file.errorMeaninglessCommand(cmd.parts[0]);
-                            }
+                            cooAssertHasSubcommands(cmd);
 
                             ret.push(cooValueToJS(cmd, cmd.parts[2]));
 
@@ -1642,9 +1663,7 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
 
                             '(': function() {
                                 // `NAME` identifier (something) SET identifier (expr)
-                                if (cmd.valuePusher) {
-                                    cmd.file.errorNoValue(cmd.parts[0]);
-                                }
+                                cooAssertNotValuePusher(cmd);
 
                                 cmd.getCodeBefore = function() {
                                     var decl = cooGetDecl(cmd),
@@ -1764,9 +1783,7 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
 
                     'DESTROY': function() {
                         // `NAME` identifier (something) DESTROY
-                        if (cmd.valuePusher) {
-                            cmd.file.errorNoValue(cmd.parts[0]);
-                        }
+                        cooAssertNotValuePusher(cmd);
 
                         cmd.getCodeBefore = function() {
                             cooGetDecl(cmd);
@@ -1786,9 +1803,7 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
                 '@': function() {
                     // `NAME` SET
                     //     ...
-                    if (cmd.valuePusher) {
-                        cmd.file.errorNoValue(cmd.parts[0]);
-                    }
+                    cooAssertNotValuePusher(cmd);
 
                     return cooProcessBlockAsValue(cmd, {
                         getCodeBeforeBefore: function() {
@@ -1803,18 +1818,14 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
 
                 '(': function() {
                     // `NAME` SET (expr)
-                    if (cmd.valuePusher) {
-                        cmd.file.errorNoValue(cmd.parts[0]);
-                    }
+                    cooAssertNotValuePusher(cmd);
                 },
 
                 '': {
                     '@': function() {
                         // `NAME` SET identifier
                         //     ...
-                        if (cmd.valuePusher) {
-                            cmd.file.errorNoValue(cmd.parts[0]);
-                        }
+                        cooAssertNotValuePusher(cmd);
 
                         return cooProcessBlockAsValue(cmd, {
                             getCodeBeforeBefore: function() {
@@ -1839,9 +1850,7 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
 
                     '(': function() {
                         // `NAME` SET identifier (expr)
-                        if (cmd.valuePusher) {
-                            cmd.file.errorNoValue(cmd.parts[0]);
-                        }
+                        cooAssertNotValuePusher(cmd);
 
                         if (!(cmd.parts[2].value in cmd.root.data.properties)) {
                             cmd.file.errorUnknownProperty(cmd.parts[2]);
@@ -1947,9 +1956,7 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
 
             'DESTROY': function() {
                 // `NAME` DESTROY
-                if (cmd.valuePusher) {
-                    cmd.file.errorNoValue(cmd.parts[0]);
-                }
+                cooAssertNotValuePusher(cmd);
 
                 cmd.getCodeBefore = function() {
                     return 'this.destroy();';

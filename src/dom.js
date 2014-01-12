@@ -7,6 +7,9 @@
     /* global cooGetScopeRet */
     /* global cooProcessBlockAsValue */
     /* global COO_INTERNAL_VARIABLE_RET */
+    /* global cooAssertHasSubcommands */
+    /* global cooAssertValuePusher */
+    /* global cooAssertNotValuePusher */
 
     var DOM_FUNC = 'CooCoo.DOM',
         DOM_OBJ = 'new ' + DOM_FUNC,
@@ -28,9 +31,7 @@
                         cmd.processChild = domProcessEvents;
 
                         cmd.getCodeBefore = function() {
-                            if (!cmd.children.length) {
-                                cmd.file.errorMeaninglessCommand(cmd.parts[0]);
-                            }
+                            cooAssertHasSubcommands(cmd);
 
                             var ret = [];
 
@@ -139,9 +140,7 @@
                             '@': function() {
                                 // DOM (expr) VALUE SET
                                 //     ...
-                                if (cmd.valuePusher) {
-                                    cmd.file.errorNoValue(cmd.parts[0]);
-                                }
+                                cooAssertNotValuePusher(cmd);
 
                                 return cooProcessBlockAsValue(cmd, {
                                     getCodeBeforeBefore: function() {
@@ -163,9 +162,7 @@
 
                             '(': function() {
                                 // DOM (expr) VALUE SET (expr2)
-                                if (cmd.valuePusher) {
-                                    cmd.file.errorNoValue(cmd.parts[0]);
-                                }
+                                cooAssertNotValuePusher(cmd);
 
                                 cmd.getCodeBefore = function() {
                                     var ret = [];
@@ -184,9 +181,7 @@
 
                         'GET': function() {
                             // DOM (expr) VALUE GET
-                            if (!cmd.valuePusher) {
-                                cmd.file.errorMeaninglessValue(cmd.parts[0]);
-                            }
+                            cooAssertValuePusher(cmd);
 
                             cmd.getCodeBefore = function() {
                                 var ret = [];
