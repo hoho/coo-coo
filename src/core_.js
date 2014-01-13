@@ -28,7 +28,6 @@
     CooCooRet.prototype.valueOf = function(firstOnly) {
         return firstOnly || this._.length < 2 ? this._[0] : this._;
     };
-    CooCooRet.prototype.toString = function() { return this._.join(''); };
     CooCooRet.prototype.toArray = function() { return this._; };
     CooCooRet.prototype.isEmpty = function() { return !this._.length; };
 

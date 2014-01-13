@@ -1,5 +1,6 @@
 (function() {
     /* global $C */
+    /* global CooCooRet */
 
     var currentBindings,
         currentParent,
@@ -73,7 +74,9 @@
         },
 
         apply: function() {
-            var self = this;
+            var self = this,
+                args = [],
+                i;
 
             if (self._bindings) {
                 conkittyBindings[self.id] = self.bindings = self._bindings;
@@ -82,7 +85,11 @@
             currentBindings = self.bindings.funcs;
             currentParent = self.parent;
 
-            return $C.tpl[self.bindings.name].apply(null, arguments);
+            for (i = 0; i < arguments.length; i++) {
+                args.push(CooCooRet(arguments[i]).valueOf());
+            }
+
+            return $C.tpl[self.bindings.name].apply(null, args);
         }
     });
 })();

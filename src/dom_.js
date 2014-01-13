@@ -85,12 +85,12 @@
 
     CooCoo.DOM.val = function(node, val) {
         node = CooCooRet(node).valueOf(true);
-        val = CooCooRet(val);
+        val = CooCooRet(val).valueOf();
 
-        if (val.valueOf() === undefined) {
+        if (val === undefined) {
             return node.value || '';
         } else {
-            node.value = val.toString();
+            node.value = val;
         }
     };
 
@@ -105,7 +105,7 @@
 
     CooCoo.DOM.text = function(node, val) {
         node = CooCooRet(node).valueOf(true);
-        val = CooCooRet(val).toString();
+        val = CooCooRet(val).valueOf();
 
         node.innerHTML = '';
         node.appendChild(document.createTextNode(val));
