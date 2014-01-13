@@ -35,7 +35,7 @@ module.exports = function(grunt) {
         watch: {
             scripts: {
                 files: ['src/**/*.js'],
-                tasks: ['concat', 'copy']
+                tasks: ['concat', 'copy', 'test']
             },
 
             coo: {

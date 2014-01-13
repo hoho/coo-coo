@@ -1,5 +1,5 @@
 MODEL Item
-    PROPERTY title
+    PROPERTY title <STRING>
 
     CONSTRUCT title
         MODEL SET title $title
@@ -10,8 +10,8 @@ COLLECTION List
 
 
 VIEW Item
-    PROPERTY model
-    PROPERTY textNode
+    PROPERTY model <MODEL Item>
+    PROPERTY textNode <(Node)>
 
     CONSTRUCT m
         VIEW SET model $m
@@ -38,9 +38,9 @@ VIEW Item
 
 
 VIEW Page
-    PROPERTY container
-    PROPERTY input
-    PROPERTY list
+    PROPERTY container <(Node)>
+    PROPERTY input <(Node)>
+    PROPERTY list <COLLECTION List>
 
     CONSTRUCT
         VIEW SET list
@@ -61,7 +61,7 @@ VIEW Page
                     CLICK
                         COLLECTION List @list ADD
                             +DOM @input VALUE GET
-                            DOM @input VALUE SET ""
+                        DOM @input VALUE SET ""
 
     METHOD addItem m
         DOM @container APPEND
