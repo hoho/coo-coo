@@ -123,6 +123,15 @@
             CooCoo.Base.__super__.destroy.call(self);
         },
 
+        /*** debug begin ***/
+        assert: function(base, msg) {
+            if (!(this instanceof base)) {
+                throw new Error(msg);
+            }
+            return this;
+        },
+        /*** debug end ***/
+
         on: function(name, callback, context) {
             var self = this,
                 sep = name.indexOf(':'),
