@@ -51,7 +51,7 @@
                                 cmd.file.errorUnexpectedPart(cmd.parts[1]);
                             }
 
-                            return 'model: CooCoo.Model.' + tmp;
+                            return 'model: CooCoo.Model.' + tmp + (cmd.last ? '' : ',\n');
                         }
                     },
 

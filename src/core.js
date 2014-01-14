@@ -546,16 +546,18 @@ CooFile.prototype = {
                 } else {
                     var commandHandlers = CooCoo.cmd[cmd.name];
 
-                    if (commandHandlers.base) {
-                        this.ret.base[commandHandlers.base] = true;
-                    }
+                    if (commandHandlers) {
+                        if (commandHandlers.base) {
+                            this.ret.base[commandHandlers.base] = true;
+                        }
 
-                    if (commandHandlers.arrange) {
-                        this.ret.arrange[cmd.name] = commandHandlers.arrange;
-                    }
+                        if (commandHandlers.arrange) {
+                            this.ret.arrange[cmd.name] = commandHandlers.arrange;
+                        }
 
-                    if (commandHandlers && commandHandlers.process) {
-                        errorPart = commandHandlers.process(cmd);
+                        if (commandHandlers.process) {
+                            errorPart = commandHandlers.process(cmd);
+                        }
                     } else {
                         errorPart = parts[0];
                     }
@@ -624,7 +626,7 @@ CooFile.prototype = {
                     break;
 
                 default:
-                    parts.push(this.readIdentifier());
+                    parts.push(this.readIdentifier(false, parts.length > 0 ? '<' : undefined));
             }
         }
 
@@ -1508,10 +1510,16 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
 
             cooCreateScope(cmd);
 
-            var params = cooExtractParamNames(cmd, cmd.parts, special ? 1 : 2);
+            var params;
 
-            for (var p in params) {
-                cooPushScopeVariable(cmd, p, false);
+            if (specialData && specialData.extractParams) {
+                params = specialData.extractParams(cmd);
+            } else {
+                params = cooExtractParamNames(cmd, cmd.parts, special ? 1 : 2);
+
+                for (var p in params) {
+                    cooPushScopeVariable(cmd, p, false);
+                }
             }
 
             methods[methodName] = params;
@@ -1637,6 +1645,12 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
                                 return processMethod(special, specialData);
                             }
                         };
+
+                        if (specialData.allowValues) {
+                            patterns[special]['#'] =  function() {
+                                return processMethod(special, specialData);
+                            };
+                        }
                     })(key, tmp[key]);
                 }
             }
