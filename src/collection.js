@@ -7,9 +7,11 @@
     /* global cooValueToJS */
 
     cooObjectBase(
-        'COLLECTION',
-        'CooCoo.Collection',
-        {name: 'CooCoo.CollectionBase'},
+        {
+            cmdName: 'COLLECTION',
+            cmdStorage: 'CooCoo.Collection',
+            baseClass: {name: 'CooCoo.CollectionBase'}
+        },
         {
             specialMethods: {
                 MODEL: {

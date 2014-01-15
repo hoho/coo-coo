@@ -9,9 +9,11 @@
     /* global cooGetParamValues */
 
     cooObjectBase(
-        'VIEW',
-        'CooCoo.View',
-        {name: 'CooCoo.ViewBase'},
+        {
+            cmdName: 'VIEW',
+            cmdStorage: 'CooCoo.View',
+            baseClass: {name: 'CooCoo.ViewBase'}
+        },
         {
             init: true,
             properties: true,

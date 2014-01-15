@@ -1279,14 +1279,17 @@ function cooGetParamValues(cmd, names, paramsArray, elemParams) {
 
 
 /* exported cooObjectBase */
-function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subCommandExt) {
+function cooObjectBase(cmdDesc, declExt, commandExt, subCommandExt) {
     /*
-    `cmdStorage` is a place for this class to be stored: CooCoo[cmdStorage][name].
-
-    `baseClass` is an object like:
+    `cmdDesc is an object like:
         {
-            name: 'CooCoo.ViewBase',
-            methods: {init: true, destroy: true, render: true}
+            cmdName: 'VIEW',
+            cmdStorage: 'CooCoo.View, // is a place for this class to be
+                                      // stored: CooCoo[cmdStorage][name].
+            baseClass: {
+                name: 'CooCoo.ViewBase',
+                methods: {init: true, destroy: true, render: true}
+            }
         }
 
     `declExt` is an object like:
@@ -1342,7 +1345,7 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
                 error,
                 exts;
 
-            patterns[cmdName] = {
+            patterns[cmdDesc.cmdName] = {
                 '': {
                     '@': function() {
                         // `NAME` identifier
@@ -1378,16 +1381,22 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
                 destruct: null,
                 properties: {},
                 methods: {},
-                storage: cmdStorage
+                storage: cmdDesc.cmdStorage
             };
 
             cmd.getCodeBefore = function() {
-                var ret = [cmdStorage + '.' + cmd.parts[1].value + ' = '];
+                var ret = [];
+
+                if (cmdDesc.getCodeBeforeBefore) {
+                    ret.push(cmdDesc.getCodeBeforeBefore(cmd));
+                }
+
+                ret.push(cmdDesc.cmdStorage + '.' + cmd.parts[1].value + ' = ');
 
                 if (exts) {
-                    ret.push(cmdStorage + '.' + exts);
+                    ret.push(cmdDesc.cmdStorage + '.' + exts);
                 } else {
-                    ret.push(baseClass.name);
+                    ret.push(cmdDesc.baseClass.name);
                 }
 
                 // .extend({
@@ -1397,17 +1406,34 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
                     ret.push('\n');
                     ret.push(INDENT);
                     ret.push('__what: "');
-                    ret.push(cmdStorage);
+                    ret.push(cmdDesc.cmdStorage);
                     ret.push('.');
                     ret.push(cmd.parts[1].value);
                     ret.push('",');
+                }
+
+                if (cmdDesc.getCodeBeforeAfter) {
+                    ret.push(cmdDesc.getCodeBeforeAfter(cmd));
                 }
 
                 return ret.join('');
             };
 
             cmd.getCodeAfter = function() {
-                return '});' + (cmd.last ? '' : '\n');
+                var ret = [];
+
+                if (cmdDesc.getCodeAfterBefore) {
+                    ret.push(cmdDesc.getCodeAfterBefore(cmd));
+                }
+
+                ret.push('});');
+                if (!cmd.last) { ret.push('\n'); }
+
+                if (cmdDesc.getCodeAfterAfter) {
+                    ret.push(cmdDesc.getCodeAfterAfter(cmd));
+                }
+
+                return ret.join('');
             };
         }
     }
@@ -1756,7 +1782,7 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
     function cmdProcessCommand(cmd) {
         var pattern = {};
 
-        pattern[cmdName] = {
+        pattern[cmdDesc.cmdName] = {
             '': {
                 'CREATE': {
                     '#': function() {
@@ -1799,13 +1825,13 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
                                 ret.push('\n');
                                 ret.push(INDENT);
                                 ret.push('.assert(');
-                                ret.push(cmdStorage);
+                                ret.push(cmdDesc.cmdStorage);
                                 ret.push('.');
                                 ret.push(decl.data.name);
                                 ret.push(', "');
 
                                 var msg = cmd.file.getErrorMessage(
-                                    'Not instance of ' + cmdStorage + '.' + decl.data.name,
+                                    'Not instance of ' + cmdDesc.cmdStorage + '.' + decl.data.name,
                                     cmd.parts[2]._charAt,
                                     cmd.parts[2]._lineAt
                                 );
@@ -2295,7 +2321,7 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
                             }
 
                             var hasParentMethod,
-                                decls = cmd.decls[cmdName],
+                                decls = cmd.decls[cmdDesc.cmdName],
                                 extDecl = decls[decl.data.exts];
 
                             method = method.data.actualName;
@@ -2319,7 +2345,7 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
                                 ret.push('.push(');
                             }
 
-                            ret.push(cmdStorage);
+                            ret.push(cmdDesc.cmdStorage);
                             ret.push('.');
                             ret.push(cmd.root.parts[1].value);
                             ret.push('.__super__.');
@@ -2349,7 +2375,7 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
     };
 
 
-    CooCoo.cmd[cmdName] = {
+    CooCoo.cmd[cmdDesc.cmdName] = {
         process: cmdProcess,
         type: {
             validate: function(file, part) {
@@ -2369,18 +2395,18 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
                 ret.push(val);
                 ret.push(').valueOf() instanceof ');
                 if (part.value[1]) {
-                    ret.push(cmdStorage);
+                    ret.push(cmdDesc.cmdStorage);
                     ret.push('.');
                     ret.push(part.value[1].value);
                 } else {
-                    ret.push(baseClass.name);
+                    ret.push(cmdDesc.baseClass.name);
                 }
 
                 return ret.join('');
             }
         },
         arrange: function(declCmd, cmdList) {
-            var decls = declCmd[cmdName],
+            var decls = declCmd[cmdDesc.cmdName],
                 arranged = {},
                 initialName,
                 key,
@@ -2429,7 +2455,7 @@ function cooObjectBase(cmdName, cmdStorage, baseClass, declExt, commandExt, subC
 
             Array.prototype.splice.apply(cmdList, [0, 0].concat(cmd));
         },
-        base: cmdName.toLowerCase()
+        base: cmdDesc.cmdName.toLowerCase()
     };
 }
 

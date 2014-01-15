@@ -24,7 +24,9 @@
     },
     "dependencies": {
         "deep-extend": "~0.2.6",
-        "concat.js": "~0.9.0"
+        "concat.js": "~0.9.0",
+        "histery": "~0.5.1",
+        "jquery-browser": "~1.10.2"
     },
     "devDependencies": {
         "grunt": "~0.4.1",
