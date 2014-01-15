@@ -1,5 +1,5 @@
 MODEL Item
-    PROPERTY title <STRING>
+    PROPERTY title<String>
 
     CONSTRUCT title
         MODEL SET title $title
@@ -10,8 +10,8 @@ COLLECTION List
 
 
 VIEW Item
-    PROPERTY model <MODEL Item>
-    PROPERTY textNode <(Node)>
+    PROPERTY model<MODEL Item>
+    PROPERTY textNode<JS val (val instanceof Node)>
 
     CONSTRUCT m
         VIEW SET model $m
@@ -38,9 +38,9 @@ VIEW Item
 
 
 VIEW Page
-    PROPERTY container <(Node)>
-    PROPERTY input <(Node)>
-    PROPERTY list <COLLECTION List>
+    PROPERTY container<Node>
+    PROPERTY input<Node>
+    PROPERTY list<COLLECTION List>
 
     CONSTRUCT
         VIEW SET list

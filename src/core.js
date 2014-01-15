@@ -830,18 +830,26 @@ CooFile.prototype = {
                 this.errorUnexpectedSymbol();
                 break;
 
-            case '(':
-                val.push(this.readJS(0, true));
-                break;
-
             default:
                 var line = this.code[this.lineAt];
 
                 while (this.charAt < line.length && line[this.charAt] !== '>') {
-                    val.push(this.readIdentifier(true, '>'));
+                    if (this.code[this.lineAt][this.charAt] === '(') {
+                        val.push(this.readJS(0, true));
+
+                        if (this.code[this.lineAt][this.charAt] !== '>') {
+                            this.skipWhitespaces();
+                        }
+                    } else {
+                        val.push(this.readIdentifier(true, '>'));
+                    }
                 }
 
                 if (val[0]) {
+                    if (val[0].type !== COO_COMMAND_PART_IDENTIFIER) {
+                        this.errorUnexpectedPart(val[0]);
+                    }
+
                     var handlers = CooCoo.cmd[val[0].value];
                     if (handlers && handlers.type) {
                         handlers.type.validate(this, part);
