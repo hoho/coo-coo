@@ -87,7 +87,26 @@
 
                     return actualName + ': function(' + (cmd.parts[1] ? cmd.parts[1].value : '') + ') {' + tmp;
                 } else {
-                    return actualName + ': new RegExp(' + cmd.parts[1].value + ')' + (cmd.last ? '' : ',');
+                    var ret = [];
+
+                    ret.push(actualName);
+                    ret.push(': ');
+
+                    if (cmd.parts[1].type !== COO_COMMAND_PART_JS) {
+                        ret.push('new RegExp(');
+                    }
+
+                    ret.push(cmd.parts[1].value);
+
+                    if (cmd.parts[1].type !== COO_COMMAND_PART_JS) {
+                        ret.push(')');
+                    }
+
+                    if (!cmd.last) {
+                        ret.push(',')
+                    }
+
+                    return ret.join('');
                 }
             },
 
