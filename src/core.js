@@ -1343,31 +1343,42 @@ function cooObjectBase(cmdDesc, declExt, commandExt, subCommandExt) {
         } else {
             var patterns = {},
                 error,
-                exts;
+                exts,
+                name;
 
-            patterns[cmdDesc.cmdName] = {
-                '': {
-                    '@': function() {
-                        // `NAME` identifier
-                    },
+            if (cmdDesc.cmdName !== 'APPLICATION') {
+                patterns[cmdDesc.cmdName] = {
+                    '': {
+                        '@': function() {
+                            // `NAME` identifier
+                        },
 
-                    'EXTENDS': {
-                        '': function() {
-                            // `NAME` identifier EXTENDS identifier2
-                            exts = cmd.parts[3].value;
+                        'EXTENDS': {
+                            '': function() {
+                                // `NAME` identifier EXTENDS identifier2
+                                exts = cmd.parts[3].value;
+                            }
                         }
                     }
+                };
+
+                error = cooMatchCommand(cmd, patterns);
+
+                if (error) {
+                    return error;
                 }
-            };
 
-            error = cooMatchCommand(cmd, patterns);
+                name = cmd.parts[1].value;
+            } else {
+                if (cmd.parts.length > 1) {
+                    return cmd.parts[1];
+                }
 
-            if (error) {
-                return error;
+                name = 'App';
             }
 
             cmd.getDeclKey = function() {
-                return {first: cmd.parts[0].value, last: cmd.parts[1].value};
+                return {first: cmd.parts[0].value, last: name};
             };
 
             // Template declaration.
@@ -1375,7 +1386,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt, subCommandExt) {
             cmd.processChild = cmdProcessDecl;
 
             cmd.data = {
-                name: cmd.parts[1].value,
+                name: name,
                 exts: exts,
                 construct: null,
                 destruct: null,
@@ -1391,7 +1402,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt, subCommandExt) {
                     ret.push(cmdDesc.getCodeBeforeBefore(cmd));
                 }
 
-                ret.push(cmdDesc.cmdStorage + '.' + cmd.parts[1].value + ' = ');
+                ret.push(cmdDesc.cmdStorage + '.' + name + ' = ');
 
                 if (exts) {
                     ret.push(cmdDesc.cmdStorage + '.' + exts);
@@ -1408,7 +1419,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt, subCommandExt) {
                     ret.push('__what: "');
                     ret.push(cmdDesc.cmdStorage);
                     ret.push('.');
-                    ret.push(cmd.parts[1].value);
+                    ret.push(name);
                     ret.push('",');
                 }
 
@@ -2347,7 +2358,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt, subCommandExt) {
 
                             ret.push(cmdDesc.cmdStorage);
                             ret.push('.');
-                            ret.push(cmd.root.parts[1].value);
+                            ret.push(cmd.root.data.name);
                             ret.push('.__super__.');
                             ret.push(method);
                             ret.push('.call(this');

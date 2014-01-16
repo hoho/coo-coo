@@ -9,6 +9,30 @@ COLLECTION List
     MODEL Item
 
 
+ROUTE Index
+    PATHNAME "^/(test)$"
+    SEARCH val
+        +JS
+            return {a: 123, b: 234, c: val}
+
+
+ROUTE NotFound
+    NOMATCH
+
+
+APPLICATION
+    CONSTRUCT parentNode
+        SET page
+            +VIEW Page CREATE
+
+        DOM $parentNode APPEND
+            +VIEW Page $page RENDER
+
+    DESTRUCT
+        JS
+            alert(100500);
+
+
 VIEW Item
     PROPERTY model<MODEL Item>
     PROPERTY textNode<JS val (val instanceof Node)>
@@ -24,6 +48,22 @@ VIEW Item
                 VIEW DESTROY
 
     RENDER
+        ROUTE NotFound
+            ON same href p1 p2
+                JS
+                    alert(123);
+            OFF same href p4 p5
+                JS
+                    alert('abc');
+
+        ROUTE Index
+            ON href p1 p2
+                JS
+                    alert(123);
+            OFF href p4 p5
+                JS
+                    alert('abc');
+
         +TEMPLATE Item APPLY
             PARAM title
                 +MODEL Item @model GET title
@@ -69,6 +109,8 @@ VIEW Page
                 +VIEW Item CREATE $m
 
             +VIEW Item $tmp RENDER
+
+        //+VIEW Item [+VIEW Item CREATE $m] RENDER
 
 
 TEMPLATE Page

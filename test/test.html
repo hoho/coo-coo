@@ -10,12 +10,7 @@
 <script src="test-tpl.js"></script>
 
 <script>
-var p = new CooCoo.View.Page();
-p._render().toArray().forEach(function(node) {
-    document.body.appendChild(node);
-});
-
-//p.destroy();
+var app = new CooCoo.App(document.body);
 </script>
 </body>
 </html>
