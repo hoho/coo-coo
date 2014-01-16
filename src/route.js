@@ -103,7 +103,7 @@
                     }
 
                     if (!cmd.last) {
-                        ret.push(',')
+                        ret.push(',');
                     }
 
                     return ret.join('');
