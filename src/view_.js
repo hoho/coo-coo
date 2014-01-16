@@ -38,10 +38,14 @@ CooCoo.ViewBase = CooCoo.Base.extend({
             elems = self.__elems,
             elem;
 
-        if ((!self.__parent || !self.__parent.__destroyed) && elems) {
+        // TODO: Check if parent view is destroyed, to avoid removeChild from
+        //       removed nodes.
+        if (elems) {
             for (i = 0; i < elems.length; i++) {
                 elem = elems[i];
-                elem.parentNode.removeChild(elem);
+                if (elem.parentNode) {
+                    elem.parentNode.removeChild(elem);
+                }
             }
         }
 
