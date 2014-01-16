@@ -1,17 +1,18 @@
 {
-    "name": "coo-coo",
+    "name": "coocoo",
     "version": "0.0.0",
     "description": "Domain specific language to create MVC applications",
-    "main": "coo-coo.js",
+    "main": "lib/coocoo.js",
     "directories": {
-        "test": "test"
+        "lib": "lib"
     },
     "scripts": {
+        "prepublish": "grunt build",
         "test": "grunt"
     },
     "repository": {
         "type": "git",
-        "url": "git://github.com/hoho/coo-coo.git"
+        "url": "git://github.com/hoho/coocoo.git"
     },
     "keywords": [
         "MVC",
@@ -20,13 +21,10 @@
     "author": "Marat Abdullin <dakota@brokenpipe.ru>",
     "license": "MIT",
     "bugs": {
-        "url": "https://github.com/hoho/coo-coo/issues"
+        "url": "https://github.com/hoho/coocoo/issues"
     },
     "dependencies": {
-        "deep-extend": "~0.2.6",
-        "concat.js": "~0.9.0",
-        "histery": "~0.5.1",
-        "jquery-browser": "~1.10.2"
+        "deep-extend": "~0.2.6"
     },
     "devDependencies": {
         "grunt": "~0.4.1",
@@ -36,6 +34,10 @@
         "grunt-contrib-qunit": "~0.3.0",
         "grunt-contrib-watch": "~0.5.3",
         "grunt-conkitty": "~0.2.1",
-        "qunitjs": "~1.12.0"
+        "qunitjs": "~1.12.0",
+
+        "concat.js": "~0.9.0",
+        "histery": "~0.5.1",
+        "jquery-browser": "~1.10.2"
     }
 }

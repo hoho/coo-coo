@@ -14,12 +14,12 @@ module.exports = function(grunt) {
         },
 
         concat: {
-            dist: {
+            lib: {
                 src: [
                     'src/core.js',
                     'src/**/!(*_|util).js'
                 ],
-                dest: 'dist/coo-coo.js'
+                dest: 'lib/coocoo.js'
             }
         },
 
@@ -28,7 +28,7 @@ module.exports = function(grunt) {
                 expand: true,
                 flatten: true,
                 src: ['src/**/*_.js', 'src/util.js'],
-                dest: 'dist/'
+                dest: 'lib/'
             }
         },
 
@@ -69,10 +69,12 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-contrib-watch');
     grunt.loadNpmTasks('grunt-conkitty');
 
+    grunt.registerTask('build', ['jshint', 'concat', 'copy']);
+
     grunt.registerTask('test', function() {
         var run = require('./test/test.js');
         run();
     });
 
-    grunt.registerTask('default', ['jshint', 'concat', 'copy', 'test', 'conkitty', 'watch' /*, 'qunit'*/]);
+    grunt.registerTask('default', ['build', 'test', 'conkitty', 'watch' /*, 'qunit'*/]);
 };
