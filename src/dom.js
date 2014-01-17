@@ -12,8 +12,7 @@
     /* global cooAssertNotValuePusher */
 
     var DOM_FUNC = 'CooCoo.DOM',
-        DOM_OBJ = 'new ' + DOM_FUNC,
-        eventIdentifier = 0;
+        DOM_OBJ = 'new ' + DOM_FUNC;
 
     function domProcess(cmd) {
         if (!cmd.parent) {
@@ -35,9 +34,13 @@
 
                             var ret = [];
 
+                            if (!cmd.file.ret.data.eventId) {
+                                cmd.file.ret.data.eventId = 0;
+                            }
+
                             ret.push(DOM_OBJ);
                             ret.push('(this, ');
-                            ret.push(++eventIdentifier);
+                            ret.push(++cmd.file.ret.data.eventId);
 
                             var tmp = cooValueToJS(cmd, cmd.parts[1]);
                             if (tmp) {

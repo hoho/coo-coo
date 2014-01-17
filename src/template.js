@@ -10,10 +10,15 @@
     /* global cooGetParamValues */
     /* global INDENT */
 
-    var decls = {},
-        identifer = 0;
 
     function templateProcess(cmd) {
+        var decls;
+
+        if (!(decls = cmd.file.ret.data.templates)) {
+            cmd.file.ret.data.templates = decls = {};
+            cmd.file.ret.data.templateId = 0;
+        }
+
         if (cmd.parent) {
             cmd.hasSubblock = true;
 
@@ -44,7 +49,7 @@
                                     ret.push('.push(new CooCoo.Template.');
                                     ret.push(cmd.parts[1].value);
                                     ret.push('(this, ');
-                                    ret.push(++identifer);
+                                    ret.push(++cmd.file.ret.data.templateId);
                                     ret.push(')');
 
                                     if (!cmd.children.length) {

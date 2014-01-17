@@ -13,8 +13,6 @@
     /* global cooMatchCommand */
     /* global cooGetParamsDecl */
 
-    var routeId = 0;
-
     function createRouteMethod(actualName) {
         return {
             actualName: actualName,
@@ -126,13 +124,17 @@
             getCodeBeforeAfter: function(cmd) {
                 var ret = [];
 
+                if (!cmd.file.ret.data.routeId) {
+                    cmd.file.ret.data.routeId = 0;
+                }
+
                 if (cmd.debug) {
                     ret.push('\n');
                 }
 
                 ret.push(INDENT);
                 ret.push('id: ');
-                ret.push(++routeId);
+                ret.push(++cmd.file.ret.data.routeId);
                 ret.push(',');
 
                 return ret.join('');

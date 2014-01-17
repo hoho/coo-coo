@@ -4,7 +4,7 @@ module.exports = function() {
 
 
 var assert = require('assert'),
-    CooCoo = require('../dist/coo-coo.js');
+    CooCoo = require('../lib/coocoo.js');
 
 
 function test() {

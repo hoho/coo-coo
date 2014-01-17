@@ -1,5 +1,5 @@
 /*!
- * coo-coo v0.0.0, https://github.com/hoho/coo-coo
+ * coo-coo v0.0.0-1, https://github.com/hoho/coo-coo
  * (c) 2013 Marat Abdullin, MIT license
  */
 var fs = require('fs'),
@@ -405,11 +405,6 @@ function CooFile(filename) {
 
 CooFile.prototype = {
     read: function(ret) {
-        var oldRet = this.ret,
-            oldLineAt = this.lineAt,
-            oldCharAt = this.charAt,
-            oldBlockIndent = this.blockIndent;
-
         this.ret = ret;
         this.lineAt = this.charAt = 0;
         this.blockIndent = 0;
@@ -417,11 +412,6 @@ CooFile.prototype = {
         while (this.skipEmptyLines()) {
             this.readCommand();
         }
-
-        this.ret = oldRet;
-        this.lineAt = oldLineAt;
-        this.charAt = oldCharAt;
-        this.blockIndent = oldBlockIndent;
     },
 
     skipEmptyLines: function() {
@@ -1057,7 +1047,8 @@ function CooCoo(filenames, commons, project, debug) {
         base: {core: true},
         arrange: {},
         declCmd: {},
-        cmd: []
+        cmd: [],
+        data: {}
     };
 
     var i,
