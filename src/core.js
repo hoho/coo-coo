@@ -1039,7 +1039,7 @@ function cooRunGenerators(cmd, code, level) {
 }
 
 
-function CooCoo(filenames, commons, project, debug) {
+function CooCoo(filenames, common, app, debug) {
     CooCoo.decl = {};
 
     var ret = {
@@ -1083,11 +1083,16 @@ function CooCoo(filenames, commons, project, debug) {
         tmp.push('');
     }
 
-    fs.writeFileSync(commons, tmp.join('\n'));
+    if (common) {
+        fs.writeFileSync(common, tmp.join('\n'));
+    }
 
     code.unshift('(function(CooCoo, CooCooRet) {');
     code.push('})(CooCoo, CooCooRet);\n');
-    fs.writeFileSync(project, code.join('\n'));
+
+    if (app) {
+        fs.writeFileSync(app, code.join('\n'));
+    }
 }
 
 
