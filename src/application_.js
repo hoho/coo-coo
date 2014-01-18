@@ -1,6 +1,6 @@
 /* global $H */
 
-CooCoo.AppBase = CooCoo.Extendable.extend({
+CooCoo.AppBase = CooCoo.Base.extend({
     init: function() {
         var args = Array.prototype.slice.call(arguments, 0);
         args.unshift(null);
