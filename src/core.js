@@ -964,6 +964,10 @@ CooFile.prototype = {
 
     errorUndeclared: function(part) {
         this.error('Dependency is not declared', part._charAt, part._lineAt);
+    },
+
+    errorNotImplemented: function(part) {
+        this.error('Not implemented', part._charAt, part._lineAt);
     }
 };
 
@@ -1862,10 +1866,12 @@ function cooObjectBase(cmdDesc, declExt, commandExt, subCommandExt) {
                         '@': function() {
                             // `NAME` identifier (something) SET
                             //     ...
+                            cmd.file.errorNotImplemented(cmd.parts[0]);
                         },
 
                         '(': function() {
                             // `NAME` identifier (something) SET (expr)
+                            cmd.file.errorNotImplemented(cmd.parts[0]);
                         },
 
                         '': {
@@ -1874,6 +1880,8 @@ function cooObjectBase(cmdDesc, declExt, commandExt, subCommandExt) {
 
                                 cmd.hasSubblock = true;
                                 cmd.valueRequired = true;
+
+                                cmd.file.errorNotImplemented(cmd.parts[0]);
                             },
 
                             '(': function() {
@@ -1950,6 +1958,8 @@ function cooObjectBase(cmdDesc, declExt, commandExt, subCommandExt) {
                                 cmd.valueRequired = true;
 
                                 cmd.processChild = cmdProcessParams;
+
+                                cmd.file.errorNotImplemented(cmd.parts[0]);
                             },
 
                             '#': function() {
@@ -2028,6 +2038,8 @@ function cooObjectBase(cmdDesc, declExt, commandExt, subCommandExt) {
                     // `NAME` SET (expr)
                     cmdCheckContext(cmd);
                     cooAssertNotValuePusher(cmd);
+
+                    cmd.file.errorNotImplemented(cmd.parts[0]);
                 },
 
                 '': {
@@ -2248,10 +2260,6 @@ function cooObjectBase(cmdDesc, declExt, commandExt, subCommandExt) {
                     // ADD identifier identifier2 ...
                     return cmdProcessEvent(cmd, false, 1);
                 }
-            },
-
-            'REMOVE': {
-
             },
 
             'CHANGE': {

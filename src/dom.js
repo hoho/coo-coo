@@ -115,12 +115,14 @@
                         'ADD': {
                             '(': function() {
                                 // DOM (expr) CLASS ADD (expr2)
+                                cmd.file.errorNotImplemented(cmd.parts[0]);
                             }
                         },
 
                         'REMOVE': {
                             '(': function() {
                                 // DOM (expr) CLASS REMOVE (expr2)
+                                cmd.file.errorNotImplemented(cmd.parts[0]);
                             }
                         }
                     },
@@ -130,10 +132,12 @@
                             '@': function() {
                                 // DOM (expr) TRIGGER identifier
                                 //     ...
+                                cmd.file.errorNotImplemented(cmd.parts[0]);
                             },
 
                             '#': function() {
                                 // DOM (expr) TRIGGER identifier (expr) (expr2) ...
+                                cmd.file.errorNotImplemented(cmd.parts[0]);
                             }
                         }
                     },
