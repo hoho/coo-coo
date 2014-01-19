@@ -534,7 +534,8 @@ CooFile.prototype = {
                         }
                     });
                 } else {
-                    var commandHandlers = CooCoo.cmd[cmd.name];
+                    var cmdName = cmd.name === 'THIS' && cmd.root ? cmd.root.name : cmd.name,
+                        commandHandlers = CooCoo.cmd[cmdName];
 
                     if (commandHandlers) {
                         if (commandHandlers.base) {
@@ -542,7 +543,7 @@ CooFile.prototype = {
                         }
 
                         if (commandHandlers.arrange) {
-                            this.ret.arrange[cmd.name] = commandHandlers.arrange;
+                            this.ret.arrange[cmdName] = commandHandlers.arrange;
                         }
 
                         if (commandHandlers.process) {
@@ -1782,14 +1783,6 @@ function cooObjectBase(cmdDesc, declExt, commandExt, subCommandExt) {
     }
 
 
-    function cmdCheckContext(cmd) {
-        if (cmd.root.name !== cmd.name) {
-            cmd.parts[0].error = 'Not inside ' + cmd.name;
-            cmd.file.errorUnexpectedPart(cmd.parts[0]);
-        }
-    }
-
-
     function cmdProcessCommand(cmd) {
         var pattern = {};
 
@@ -2014,13 +2007,14 @@ function cooObjectBase(cmdDesc, declExt, commandExt, subCommandExt) {
                         };
                     }
                 }
-            },
+            }
+        };
 
+        pattern.THIS = {
             'SET': {
                 '@': function() {
                     // `NAME` SET
                     //     ...
-                    cmdCheckContext(cmd);
                     cooAssertNotValuePusher(cmd);
 
                     return cooProcessBlockAsValue(cmd, {
@@ -2036,7 +2030,6 @@ function cooObjectBase(cmdDesc, declExt, commandExt, subCommandExt) {
 
                 '(': function() {
                     // `NAME` SET (expr)
-                    cmdCheckContext(cmd);
                     cooAssertNotValuePusher(cmd);
 
                     cmd.file.errorNotImplemented(cmd.parts[0]);
@@ -2046,7 +2039,6 @@ function cooObjectBase(cmdDesc, declExt, commandExt, subCommandExt) {
                     '@': function() {
                         // `NAME` SET identifier
                         //     ...
-                        cmdCheckContext(cmd);
                         cooAssertNotValuePusher(cmd);
 
                         return cooProcessBlockAsValue(cmd, {
@@ -2081,7 +2073,6 @@ function cooObjectBase(cmdDesc, declExt, commandExt, subCommandExt) {
 
                     '(': function() {
                         // `NAME` SET identifier (expr)
-                        cmdCheckContext(cmd);
                         cooAssertNotValuePusher(cmd);
 
                         cmd.getCodeBefore = function() {
@@ -2105,7 +2096,6 @@ function cooObjectBase(cmdDesc, declExt, commandExt, subCommandExt) {
             'GET': {
                 '@': function() {
                     // `NAME` GET
-                    cmdCheckContext(cmd);
                     cooAssertValuePusher(cmd);
 
                     cmd.getCodeBefore = function() {
@@ -2120,7 +2110,6 @@ function cooObjectBase(cmdDesc, declExt, commandExt, subCommandExt) {
 
                 '': function() {
                     // `NAME` GET identifier
-                    cmdCheckContext(cmd);
                     cooAssertValuePusher(cmd);
 
                     cmd.getCodeBefore = function() {
@@ -2142,8 +2131,6 @@ function cooObjectBase(cmdDesc, declExt, commandExt, subCommandExt) {
                 '': {
                     '@': function() {
                         // `NAME` CALL identifier
-                        cmdCheckContext(cmd);
-
                         cmd.hasSubblock = true;
                         cmd.valueRequired = true;
 
@@ -2152,8 +2139,6 @@ function cooObjectBase(cmdDesc, declExt, commandExt, subCommandExt) {
 
                     '#': function() {
                         // `NAME` CALL identifier (expr) (expr) ...
-                        cmdCheckContext(cmd);
-
                         var params = cooExtractParamValues(cmd, 3);
 
                         cmd.getCodeBefore = function() {
@@ -2187,7 +2172,6 @@ function cooObjectBase(cmdDesc, declExt, commandExt, subCommandExt) {
 
             'DESTROY': function() {
                 // `NAME` DESTROY
-                cmdCheckContext(cmd);
                 cooAssertNotValuePusher(cmd);
 
                 cmd.getCodeBefore = function() {
