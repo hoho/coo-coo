@@ -47,6 +47,10 @@
                         };
 
                         cmd.getCodeAfter = function() {
+                            if (!cmd.children.length) {
+                                return;
+                            }
+
                             var ret = [];
 
                             ret.push(cooGetScopeRet(cmd));
