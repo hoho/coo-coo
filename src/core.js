@@ -2320,7 +2320,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt, subCommandExt) {
                             }
 
                             var hasParentMethod,
-                                decls = cmd.decls[cmdDesc.cmdName],
+                                decls = cmd.decls[cmd.root.name],
                                 extDecl = decls[decl.data.exts];
 
                             method = method.data.actualName;
@@ -2344,7 +2344,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt, subCommandExt) {
                                 ret.push('.push(');
                             }
 
-                            ret.push(cmdDesc.cmdStorage);
+                            ret.push(cmd.root.data.storage);
                             ret.push('.');
                             ret.push(cmd.root.data.name);
                             ret.push('.__super__.');
