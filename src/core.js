@@ -2300,6 +2300,10 @@ function cooObjectBase(cmdDesc, declExt, commandExt, subCommandExt) {
 
     CooCoo.cmd.SUPER = {
         process: function(cmd) {
+            if (!cmd.root) {
+                return cmd.parts[0];
+            }
+
             return cooMatchCommand(cmd, {
                 'SUPER': {
                     '#': function() {
