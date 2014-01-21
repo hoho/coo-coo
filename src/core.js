@@ -295,17 +295,14 @@ function cooGetScopeRet(cmd) {
 
 /* exported cooGetParamsDecl */
 function cooGetParamsDecl(params) {
-    var first = true,
-        ret = [];
+    var ret = [],
+        param;
 
-    for (var param in params) {
-        if (!first) { ret.push(', '); }
-        else { first = false; }
-
+    for (param in params) {
         ret.push(param);
     }
 
-    return ret.join('');
+    return ret.join(', ');
 }
 
 
