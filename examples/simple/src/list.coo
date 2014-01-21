@@ -18,17 +18,6 @@ COLLECTION List
     MODEL Item
 
 
-ROUTE Index
-    PATHNAME "^/(test)$"
-    SEARCH val
-        +JS
-            return {a: 123, b: 234, c: val}
-
-
-ROUTE NotFound
-    NOMATCH
-
-
 VIEW Item
     PROPERTY model<MODEL Item>
     PROPERTY textNode<JS val (val instanceof Node)>
@@ -44,22 +33,6 @@ VIEW Item
                 THIS DESTROY
 
     RENDER
-        ROUTE NotFound
-            ON same href p1 p2
-                JS
-                    alert(123);
-            OFF same href p4 p5
-                JS
-                    alert('abc');
-
-        ROUTE Index
-            ON href p1 p2
-                JS
-                    alert(123);
-            OFF href p4 p5
-                JS
-                    alert('abc');
-
         +TEMPLATE Item APPLY
             PARAM title
                 +MODEL Item @model GET title
