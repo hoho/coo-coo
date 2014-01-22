@@ -2388,7 +2388,10 @@ function cooObjectBase(cmdDesc, declExt, commandExt, subCommandExt) {
                 }
             },
             getAssertExpression: function(cmd, part, val) {
-                cooGetDecl(cmd, part);
+                if (part.value[1]) {
+                    cooGetDecl(cmd, part);
+                }
+
                 var ret = [];
 
                 ret.push('CooCooRet(');
