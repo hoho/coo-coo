@@ -22,14 +22,15 @@
 
                 if ((curArguments = current[self.id])) {
                     // If this route is active, run its callback.
-                    on.apply(parent, curArguments);
+                    on && on.apply(parent, curArguments);
                 }
             } else {
                 var uri,
                     uriParts,
                     key,
                     val,
-                    i;
+                    i,
+                    func;
 
                 if (self.nomatch) {
                     uri = null;
@@ -53,7 +54,8 @@
 
                         for (var key in val) {
                             i = val[key];
-                            i[on ? 'on' : 'off'].apply(i.parent, curArguments);
+                            func = i[on ? 'on' : 'off'];
+                            func && func.apply(i.parent, curArguments);
                         }
 
                         if (on) {

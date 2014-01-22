@@ -179,13 +179,8 @@
                     cmd.processChild = matchOnOff;
 
                     cmd.getCodeBefore = function() {
-                        if (!cmd.data.on) {
-                            cmd.parts[0].error = 'Missing ON declaration';
-                            cmd.file.errorUnexpectedPart(cmd.parts[0]);
-                        }
-
-                        if (!cmd.data.off) {
-                            cmd.parts[0].error = 'Missing OFF declaration';
+                        if (!cmd.data.on && !cmd.data.off) {
+                            cmd.parts[0].error = 'Missing ON or OFF declaration';
                             cmd.file.errorUnexpectedPart(cmd.parts[0]);
                         }
 
@@ -193,15 +188,21 @@
 
                         ret.push('new CooCoo.Route.' + cmd.parts[1].value + '(this, ');
 
-                        cmd.data.on.ignore = false;
-                        cooRunGenerators(cmd.data.on, ret, 1);
-                        cmd.data.on.ignore = true;
+                        if (cmd.data.on) {
+                            cmd.data.on.ignore = false;
+                            cooRunGenerators(cmd.data.on, ret, 1);
+                            cmd.data.on.ignore = true;
+                        } else {
+                            ret[ret.length - 1] += 'undefined';
+                        }
 
-                        ret[ret.length - 1] += ',';
+                        if (cmd.data.off) {
+                            ret[ret.length - 1] += ', ';
 
-                        cmd.data.off.ignore = false;
-                        cooRunGenerators(cmd.data.off, ret, 1);
-                        cmd.data.off.ignore = true;
+                            cmd.data.off.ignore = false;
+                            cooRunGenerators(cmd.data.off, ret, 1);
+                            cmd.data.off.ignore = true;
+                        }
 
                         ret.push(');');
 
