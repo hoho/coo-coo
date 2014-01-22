@@ -9,6 +9,7 @@
     /* global cooProcessParam */
     /* global cooGetParamValues */
     /* global INDENT */
+    /* global cooGetScopeVariablesDecl */
 
 
     function templateProcess(cmd) {
@@ -192,6 +193,7 @@
                             ret.push(', function(');
                             ret.push(cmd.parts[2].value);
                             ret.push(') {');
+                            ret.push(cooGetScopeVariablesDecl(cmd));
 
                             return ret.join('');
                         };
