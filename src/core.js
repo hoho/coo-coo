@@ -2004,6 +2004,43 @@ function cooObjectBase(cmdDesc, declExt, commandExt, subCommandExt) {
                         };
                     }
                 }
+            },
+
+            '(': {
+                'DESTROY': function() {
+                    // `NAME` (something) DESTROY
+                    cooAssertNotValuePusher(cmd);
+
+                    cmd.getCodeBefore = function() {
+                        var ret = [];
+
+                        if (cmd.debug) {
+                            ret.push('(function(val) { if (!(val instanceof ');
+                            ret.push(cmdDesc.baseClass.name);
+                            ret.push(')) { throw new Error("');
+
+                            var msg = cmd.file.getErrorMessage(
+                                'Not instance of ' + cmdDesc.baseClass.name,
+                                cmd.parts[1]._charAt,
+                                cmd.parts[1]._lineAt
+                            );
+                            msg = msg.split('\n').join('\\n').replace(/"/g, '\\"');
+                            ret.push(msg);
+
+                            ret.push('"); } return val; })(');
+                        }
+
+                        ret.push(cooValueToJS(cmd, cmd.parts[1]));
+
+                        if (cmd.debug) {
+                            ret.push(')');
+                        }
+
+                        ret.push('.destroy();');
+
+                        return ret.join('');
+                    };
+                }
             }
         };
 
