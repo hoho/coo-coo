@@ -176,7 +176,7 @@
                 }
             },
 
-            ELEMENT: {
+            ON: {
                 '(': {
                     '': function() {
                         cmd.hasSubblock = true;

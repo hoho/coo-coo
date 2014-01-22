@@ -37,10 +37,10 @@ VIEW Item
             PARAM title
                 +MODEL Item @model GET title
 
-            ELEMENT "text" node
+            ON "text" node
                 THIS SET textNode $node
 
-            ELEMENT "remove" node
+            ON "remove" node
                 DOM $node
                     CLICK
                         MODEL Item @model DESTROY
@@ -59,13 +59,13 @@ VIEW Page
 
     RENDER
         +TEMPLATE Page APPLY
-            ELEMENT "container" node
+            ON "container" node
                 THIS SET container $node
 
-            ELEMENT "input" node
+            ON "input" node
                 THIS SET input $node
 
-            ELEMENT "add" node
+            ON "add" node
                 DOM $node
                     CLICK
                         COLLECTION List @list ADD
