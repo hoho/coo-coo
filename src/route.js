@@ -1,7 +1,7 @@
 (function() {
     /* global cooObjectBase */
     /* global cooGetScopeVariablesDecl */
-    /* global cooGetScopeRet */
+    /* global COO_INTERNAL_VARIABLE_RET */
     /* global COO_COMMAND_PART_STRING */
     /* global COO_COMMAND_PART_JS */
     /* global COO_COMMAND_PART_IDENTIFIER */
@@ -110,7 +110,15 @@
 
             getCodeAfter: function(cmd) {
                 if (cmd.hasSubblock) {
-                    return cooGetScopeRet(cmd) + '}' + (cmd.last ? '' : ',');
+                    var ret;
+
+                    if (cmd.hasRet) {
+                        ret = INDENT + 'return CooCooRet(' + COO_INTERNAL_VARIABLE_RET + ').valueOf();\n';
+                    } else {
+                        ret = '';
+                    }
+
+                    return ret + '}' + (cmd.last ? '' : ',');
                 }
             }
         };

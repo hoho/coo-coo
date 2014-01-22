@@ -286,7 +286,7 @@ function cooGetScopeVariablesDecl(cmd) {
 /* exported cooGetScopeRet */
 function cooGetScopeRet(cmd) {
     if (cmd.hasRet) {
-        return INDENT+ 'return ' + COO_INTERNAL_VARIABLE_RET + ';\n';
+        return INDENT + 'return ' + COO_INTERNAL_VARIABLE_RET + ';\n';
     } else {
         return '';
     }

@@ -1,7 +1,6 @@
-/* global CooCooRet */
 /* global $H */
 
-(function(CooCoo, CooCooRet) {
+(function(CooCoo) {
     var routes = {},
         current = {},
         routeCallbackId = 0;
@@ -41,8 +40,7 @@
                     for (i = 0; i < uriParts.length; i++) {
                         key = uriParts[i];
                         if ((val = self[key])) {
-                            val = CooCooRet(val).valueOf();
-                            uri[key] = typeof val === 'function' ? val() : val;
+                            uri[key] = val;
                         }
                     }
                 }
@@ -90,4 +88,4 @@
             CooCoo.RouteBase.__super__.destroy.call(self);
         }
     });
-})(CooCoo, CooCooRet);
+})(CooCoo);
