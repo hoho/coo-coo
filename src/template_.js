@@ -76,7 +76,9 @@
         apply: function() {
             var self = this,
                 args = [],
-                i;
+                i,
+                prevBindings = currentBindings,
+                prevParent = currentParent;
 
             if (self._bindings) {
                 conkittyBindings[self.id] = self.bindings = self._bindings;
@@ -89,7 +91,13 @@
                 args.push(CooCooRet(arguments[i]).valueOf());
             }
 
-            return $C.tpl[self.bindings.name].apply(null, args);
+            // Reuse i variable for return value.
+            i = $C.tpl[self.bindings.name].apply(null, args);
+
+            currentBindings = prevBindings;
+            currentParent = prevParent;
+
+            return i;
         }
     });
 })();
