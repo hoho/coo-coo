@@ -113,16 +113,88 @@
 
                     'CLASS': {
                         'ADD': {
+                            '@': function() {
+                                // DOM (expr) CLASS ADD
+                                //     ...
+                                cooAssertNotValuePusher(cmd);
+
+                                return cooProcessBlockAsValue(cmd, {
+                                    getCodeBeforeBefore: function() {
+                                        var ret = [];
+
+                                        ret.push(DOM_FUNC);
+                                        ret.push('.addClass(');
+                                        ret.push(cooValueToJS(cmd, cmd.parts[1]));
+                                        ret.push(', ');
+
+                                        return ret.join('');
+                                    },
+
+                                    getCodeAfterAfter: function() {
+                                        return ');';
+                                    }
+                                });
+                            },
+
                             '(': function() {
                                 // DOM (expr) CLASS ADD (expr2)
-                                cmd.file.errorNotImplemented(cmd.parts[0]);
+                                cooAssertNotValuePusher(cmd);
+
+                                cmd.getCodeBefore = function() {
+                                    var ret = [];
+
+                                    ret.push(DOM_FUNC);
+                                    ret.push('.addClass(');
+                                    ret.push(cooValueToJS(cmd, cmd.parts[1]));
+                                    ret.push(', ');
+                                    ret.push(cooValueToJS(cmd, cmd.parts[4]));
+                                    ret.push(');');
+
+                                    return ret.join('');
+                                };
                             }
                         },
 
                         'REMOVE': {
+                            '@': function() {
+                                // DOM (expr) REMOVE ADD
+                                //     ...
+                                cooAssertNotValuePusher(cmd);
+
+                                return cooProcessBlockAsValue(cmd, {
+                                    getCodeBeforeBefore: function() {
+                                        var ret = [];
+
+                                        ret.push(DOM_FUNC);
+                                        ret.push('.removeClass(');
+                                        ret.push(cooValueToJS(cmd, cmd.parts[1]));
+                                        ret.push(', ');
+
+                                        return ret.join('');
+                                    },
+
+                                    getCodeAfterAfter: function() {
+                                        return ');';
+                                    }
+                                });
+                            },
+
                             '(': function() {
                                 // DOM (expr) CLASS REMOVE (expr2)
-                                cmd.file.errorNotImplemented(cmd.parts[0]);
+                                cooAssertNotValuePusher(cmd);
+
+                                cmd.getCodeBefore = function() {
+                                    var ret = [];
+
+                                    ret.push(DOM_FUNC);
+                                    ret.push('.removeClass(');
+                                    ret.push(cooValueToJS(cmd, cmd.parts[1]));
+                                    ret.push(', ');
+                                    ret.push(cooValueToJS(cmd, cmd.parts[4]));
+                                    ret.push(');');
+
+                                    return ret.join('');
+                                };
                             }
                         }
                     },

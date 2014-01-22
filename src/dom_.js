@@ -1,5 +1,6 @@
 /* global CooCooRet */
 /* global document */
+/* global $ */
 (function() {
     var handlers = {};
 
@@ -109,5 +110,15 @@
 
         node.innerHTML = '';
         node.appendChild(document.createTextNode(val));
+    };
+
+    CooCoo.DOM.addClass = function(node, val) {
+        node = CooCooRet(node).valueOf(true);
+        $(node).addClass(CooCooRet(val).valueOf());
+    };
+
+    CooCoo.DOM.removeClass = function(node, val) {
+        node = CooCooRet(node).valueOf(true);
+        $(node).removeClass(CooCooRet(val).valueOf());
     };
 })(CooCoo, CooCooRet);
