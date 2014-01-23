@@ -6,7 +6,11 @@
         {
             cmdName: 'DATA',
             cmdStorage: 'CooCoo.Data',
-            baseClass: {name: 'CooCoo.DataBase'}
+            baseClass: {name: 'CooCoo.DataBase'},
+            triggers: {
+                SUCCESS: {actualName: 'success'},
+                ERROR: {actualName: 'error'}
+            }
         },
         {
             specialMethods: {
@@ -41,7 +45,10 @@
                                         hasParams: false
                                     }
                                 },
-                                'load'
+                                'load',
+                                function(values) {
+                                    return 'true' + (values ? ', ' + values : '');
+                                }
                             );
                         }
                     },
@@ -65,7 +72,10 @@
                                         firstParam: false
                                     }
                                 },
-                                'save'
+                                'save',
+                                function(values) {
+                                    return 'false' + (values ? ', ' + values : '');
+                                }
                             );
                         }
                     }

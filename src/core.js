@@ -1099,12 +1099,12 @@ function CooCoo(filenames, common, app, debug) {
 
 
 /* exported cooExtractParamNames */
-function cooExtractParamNames(cmd, parts, start) {
+function cooExtractParamNames(cmd, parts, firstParam) {
     var params = {},
         i,
         part;
 
-    for (i = start; i < parts.length; i++) {
+    for (i = firstParam; i < parts.length; i++) {
         part = parts[i];
 
         if (part.type !== COO_COMMAND_PART_IDENTIFIER) {
@@ -1335,6 +1335,66 @@ function cooProcessEvent(cmd, hasName, hasParams) {
 }
 
 
+/* exported cooProcessBlockAsFunction */
+function cooProcessBlockAsFunction(cmd, valueRequired, firstParam, ext) {
+    cmd.hasSubblock = true;
+    cmd.valueRequired = valueRequired;
+
+    cooCreateScope(cmd);
+
+    var params = firstParam === undefined ? {} : cooExtractParamNames(cmd, cmd.parts, firstParam);
+
+    for (var param in params) {
+        cooPushScopeVariable(cmd, param, false);
+    }
+
+    cmd.getCodeBefore = function() {
+        var ret = [],
+            tmp;
+
+        if (ext.getCodeBeforeBefore && (tmp = ext.getCodeBeforeBefore(cmd))) {
+            ret.push(tmp);
+        }
+
+        ret.push('function(');
+        ret.push(cooGetParamsDecl(params));
+        ret.push(') {');
+        ret.push(cooGetScopeVariablesDecl(cmd));
+
+        if (ext.getCodeBeforeAfter && (tmp = ext.getCodeBeforeAfter(cmd))) {
+            ret.push(tmp);
+        }
+
+        return ret.join('');
+    };
+
+    cmd.getCodeAfter = function() {
+        var ret = [],
+            tmp;
+
+        if (ext.getCodeAfterBefore && (tmp = ext.getCodeAfterBefore(cmd))) {
+            ret.push(tmp);
+        }
+
+        tmp = cooGetScopeRet(cmd);
+
+        if (tmp) {
+            ret.push(tmp);
+        } else if (valueRequired) {
+            cmd.file.errorNoValue(cmd.parts[0]);
+        }
+
+        ret.push('}');
+
+        if (ext.getCodeAfterAfter && (tmp = ext.getCodeAfterAfter(cmd))) {
+            ret.push(tmp);
+        }
+
+        return ret.join('');
+    };
+}
+
+
 function cooGetProcessParamsAndEvents(hasParams, events) {
     return function(cmd) {
         var key,
@@ -1395,7 +1455,7 @@ function cooGetProcessParamsAndEvents(hasParams, events) {
 
 
 /* exported cooProcessCreateCommand */
-function cooProcessCreateCommand(cmd, firstParam, paramCount, events, method) {
+function cooProcessCreateCommand(cmd, firstParam, paramCount, events, method, postprocessParamValues) {
     cmd.hasSubblock = true;
 
     cmd.data.params = cooExtractParamValues(cmd, firstParam, paramCount);
@@ -1421,6 +1481,11 @@ function cooProcessCreateCommand(cmd, firstParam, paramCount, events, method) {
         }
 
         var tmp = cooGetParamValues(cmd, decl.data.methods[method], cmd.data.params, cmd.data.elemParams);
+
+        if (postprocessParamValues) {
+            tmp = postprocessParamValues(tmp);
+        }
+
         if (tmp) {
             ret.push(', ');
             ret.push(tmp);
@@ -2191,7 +2256,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
         pattern.THIS = {
             'SET': {
                 '@': function() {
-                    // `NAME` SET
+                    // THIS SET
                     //     ...
                     cooAssertNotValuePusher(cmd);
 
@@ -2207,7 +2272,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                 },
 
                 '(': function() {
-                    // `NAME` SET (expr)
+                    // THIS SET (expr)
                     cooAssertNotValuePusher(cmd);
 
                     cmd.file.errorNotImplemented(cmd.parts[0]);
@@ -2215,7 +2280,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
 
                 '': {
                     '@': function() {
-                        // `NAME` SET identifier
+                        // THIS SET identifier
                         //     ...
                         cooAssertNotValuePusher(cmd);
 
@@ -2250,7 +2315,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                     },
 
                     '(': function() {
-                        // `NAME` SET identifier (expr)
+                        // THIS SET identifier (expr)
                         cooAssertNotValuePusher(cmd);
 
                         cmd.getCodeBefore = function() {
@@ -2273,7 +2338,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
 
             'GET': {
                 '@': function() {
-                    // `NAME` GET
+                    // THIS GET
                     cooAssertValuePusher(cmd);
 
                     cmd.getCodeBefore = function() {
@@ -2287,7 +2352,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                 },
 
                 '': function() {
-                    // `NAME` GET identifier
+                    // THIS GET identifier
                     cooAssertValuePusher(cmd);
 
                     cmd.getCodeBefore = function() {
@@ -2308,7 +2373,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
             'CALL': {
                 '': {
                     '@': function() {
-                        // `NAME` CALL identifier
+                        // THIS CALL identifier
                         cmd.hasSubblock = true;
                         cmd.valueRequired = true;
 
@@ -2316,7 +2381,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                     },
 
                     '#': function() {
-                        // `NAME` CALL identifier (expr) (expr) ...
+                        // THIS CALL identifier (expr) (expr) ...
                         var params = cooExtractParamValues(cmd, 3);
 
                         cmd.getCodeBefore = function() {
@@ -2348,8 +2413,42 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                 }
             },
 
+            'TRIGGER': {
+                '': {
+                    '#': function() {
+                        // THIS TRIGGER identifier (expr) (expr) ...
+                        var events = CooCoo.cmd[cmd.root.name].triggers || {},
+                            event = events[cmd.parts[2].value];
+
+                        if (!event) {
+                            cmd.parts[2].error = 'You can\'t trigger this event';
+                            cmd.file.errorUnexpectedPart(cmd.parts[2]);
+                        }
+
+                        cmd.getCodeBefore = function() {
+                            var ret = [];
+
+                            ret.push('this.trigger("');
+                            ret.push(event.actualName);
+                            ret.push('"');
+
+                            var params = cooExtractParamValues(cmd, 3);
+
+                            if (params.length) {
+                                ret.push(', ');
+                                ret.push(params.join(', '));
+                            }
+
+                            ret.push(');');
+
+                            return ret.join('');
+                        };
+                    }
+                }
+            },
+
             'DESTROY': function() {
-                // `NAME` DESTROY
+                // THIS DESTROY
                 cooAssertNotValuePusher(cmd);
 
                 cmd.getCodeBefore = function() {
@@ -2525,7 +2624,8 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
 
             Array.prototype.splice.apply(cmdList, [0, 0].concat(cmd));
         },
-        base: cmdDesc.cmdName.toLowerCase()
+        base: cmdDesc.cmdName.toLowerCase(),
+        triggers: cmdDesc.triggers
     };
 }
 

@@ -2,6 +2,17 @@
     /* global cooProcessBlockAsValue */
     /* global cooValueToJS */
     /* global cooMatchCommand */
+    /* global cooProcessBlockAsFunction */
+
+    function checkForDuplicate(cmd, what, err) {
+        if (cmd.parent.data[what]) {
+            cmd.parts[0].error = err;
+            cmd.file.errorUnexpectedPart(cmd.parts[0]);
+        }
+        cmd.parent.data[what] = true;
+    }
+
+
     function ajaxProcess(cmd) {
         if (cmd.parent) {
             cmd.hasSubblock = true;
@@ -33,11 +44,7 @@
         return cooMatchCommand(cmd, {
             URL: {
                 '@': function() {
-                    if (cmd.parent.data.url) {
-                        cmd.file.errorUnexpectedPart(cmd.parts[0]);
-                    }
-
-                    cmd.parent.data.url = true;
+                    checkForDuplicate(cmd, 'url', 'Duplicate URL');
 
                     cooProcessBlockAsValue(cmd, {
                         getCodeBeforeBefore: function() {
@@ -51,11 +58,7 @@
                 },
 
                 '(': function() {
-                    if (cmd.parent.data.url) {
-                        cmd.file.errorUnexpectedPart(cmd.parts[0]);
-                    }
-
-                    cmd.parent.data.url = true;
+                    checkForDuplicate(cmd, 'url', 'Duplicate URL');
 
                     cmd.getCodeBefore = function() {
                         var ret = [];
@@ -73,17 +76,44 @@
             },
 
             SUCCESS: {
-                '@': function() {
-                    cmd.hasSubblock = true;
-                },
+                '*': function(cmd) {
+                    checkForDuplicate(cmd, 'success', 'Duplicate SUCCESS');
 
-                '': function() {
-                    cmd.hasSubblock = true;
+                    if (cmd.parts.length > 2) {
+                        cmd.parts[2].error = 'Too many parameters';
+                        cmd.file.errorUnexpectedPart(cmd.parts[2]);
+                    }
+
+                    cooProcessBlockAsFunction(cmd, false, 1, {
+                        getCodeBeforeBefore: function() {
+                            return 'success: ';
+                        },
+
+                        getCodeAfterAfter: function() {
+                            if (!cmd.last) {
+                                return ',';
+                            }
+                        }
+                    });
                 }
             },
 
             ERROR: {
-                '@': function() {}
+                '@': function() {
+                    checkForDuplicate(cmd, 'error', 'Duplicate ERROR');
+
+                    cooProcessBlockAsFunction(cmd, false, 1, {
+                        getCodeBeforeBefore: function() {
+                            return 'error: ';
+                        },
+
+                        getCodeAfterAfter: function() {
+                            if (!cmd.last) {
+                                return ',';
+                            }
+                        }
+                    });
+                }
             }
         });
     }
