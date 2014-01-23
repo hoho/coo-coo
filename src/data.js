@@ -1,6 +1,30 @@
 (function() {
     /* global cooObjectBase */
     /* global cooProcessCreateCommand */
+    /* global cooProcessInstance */
+    /* global cooGetProcessParamsAndEvents */
+
+    var dataEvents = {
+        LOADED: {
+            hasName: false,
+            hasParams: true
+        },
+
+        LOAD_ERROR: {
+            hasName: false,
+            hasParams: false
+        },
+
+        SAVED: {
+            hasName: false,
+            hasParams: true
+        },
+
+        SAVE_ERROR: {
+            hasName: false,
+            hasParams: false
+        }
+    };
 
     cooObjectBase(
         {
@@ -8,11 +32,14 @@
             cmdStorage: 'CooCoo.Data',
             baseClass: {name: 'CooCoo.DataBase'},
             triggers: {
-                SUCCESS: {actualName: 'success'},
-                ERROR: {actualName: 'error'}
+                LOADED: {actualName: 'loaded'},
+                LOAD_ERROR: {actualName: 'loadError'},
+                SAVEED: {actualName: 'saved'},
+                SAVE_ERROR: {actualName: 'saveError'}
             }
         },
         {
+            properties: true,
             specialMethods: {
                 LOAD: {
                     actualName: 'load'
@@ -26,57 +53,46 @@
         {
             DATA: {
                 '': {
-                    LOAD: {
+                    CREATE: {
                         '#': function(cmd) {
-                            // DATA identifier LOAD (expr) ...
+                            // DATA identifier CREATE (expr) ...
                             //     ...
                             return cooProcessCreateCommand(
                                 cmd,
                                 3,
                                 undefined,
-                                {
-                                    SUCCESS: {
-                                        hasName: false,
-                                        hasParams: true
-                                    },
-
-                                    ERROR: {
-                                        hasName: false,
-                                        hasParams: false
-                                    }
-                                },
-                                'load',
-                                function(values) {
-                                    return 'true' + (values ? ', ' + values : '');
-                                }
+                                dataEvents,
+                                'load'
                             );
                         }
                     },
 
-                    SAVE: {
-                        '#': function(cmd) {
-                            // DATA identifier SAVE (expr) ...
+                    '(': {
+                        '@': function(cmd) {
+                            // DATA identifier (expr)
                             //     ...
-                            return cooProcessCreateCommand(
+                            cooProcessInstance(
                                 cmd,
-                                3,
                                 undefined,
-                                {
-                                    SUCCESS: {
-                                        hasName: false,
-                                        firstParam: 1
-                                    },
-
-                                    ERROR: {
-                                        hasName: false,
-                                        firstParam: false
-                                    }
-                                },
-                                'save',
-                                function(values) {
-                                    return 'false' + (values ? ', ' + values : '');
-                                }
+                                4,
+                                cooGetProcessParamsAndEvents(false, dataEvents)
                             );
+                        },
+
+                        LOAD: {
+                            '#': function(cmd) {
+                                // DATA identifier (expr) LOAD (expr) ...
+                                //     ...
+                                cooProcessInstance(cmd, 'load', 4);
+                            }
+                        },
+
+                        SAVE: {
+                            '#': function(cmd) {
+                                // DATA identifier (expr) SAVE (expr) ...
+                                //     ...
+                                cooProcessInstance(cmd, 'save', 4);
+                            }
                         }
                     }
                 }

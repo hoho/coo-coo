@@ -1455,7 +1455,7 @@ function cooGetProcessParamsAndEvents(hasParams, events) {
 
 
 /* exported cooProcessCreateCommand */
-function cooProcessCreateCommand(cmd, firstParam, paramCount, events, method, postprocessParamValues) {
+function cooProcessCreateCommand(cmd, firstParam, paramCount, events) {
     cmd.hasSubblock = true;
 
     cmd.data.params = cooExtractParamValues(cmd, firstParam, paramCount);
@@ -1476,16 +1476,7 @@ function cooProcessCreateCommand(cmd, firstParam, paramCount, events, method, po
         ret.push(cls.value);
         ret.push('(this');
 
-        if (!method) {
-            method = '__construct';
-        }
-
-        var tmp = cooGetParamValues(cmd, decl.data.methods[method], cmd.data.params, cmd.data.elemParams);
-
-        if (postprocessParamValues) {
-            tmp = postprocessParamValues(tmp);
-        }
-
+        var tmp = cooGetParamValues(cmd, decl.data.methods.__construct, cmd.data.params, cmd.data.elemParams);
         if (tmp) {
             ret.push(', ');
             ret.push(tmp);
@@ -1511,6 +1502,81 @@ function cooProcessCreateCommand(cmd, firstParam, paramCount, events, method, po
     };
 
     cmd.processChild = cooGetProcessParamsAndEvents(true, events);
+}
+
+
+/* exported cooProcessInstance */
+function cooProcessInstance(cmd, name, firstParam, processChild) {
+    cmd.hasSubblock = true;
+
+    if (name) {
+        cmd.data.params = cooExtractParamValues(cmd, firstParam);
+    }
+
+    cmd.getCodeBefore = function() {
+        var cls = cmd.parts[1],
+            decl = cooGetDecl(cmd),
+            ret = [];
+
+        if (!name) {
+            cooAssertNotValuePusher(cmd);
+            cooAssertHasSubcommands(cmd);
+        }
+
+        if (cmd.valuePusher) {
+            ret.push(COO_INTERNAL_VARIABLE_RET);
+            ret.push('.push(');
+        }
+
+        if (cmd.debug) {
+            ret.push('((function(val) { if ((!val instanceof ');
+            ret.push(decl.data.storage);
+            ret.push('.');
+            ret.push(cls.value);
+            ret.push(')) { throw new Error("');
+            var msg = cmd.file.getErrorMessage(
+                'Not instance of ' + decl.data.storage + '.' + cls.value,
+                cmd.parts[2]._charAt,
+                cmd.parts[2]._lineAt
+            );
+            msg = msg.split('\n').join('\\n').replace(/"/g, '\\"');
+            ret.push(msg);
+            ret.push('"); }');
+            ret.push(' return val; })(');
+        }
+
+        ret.push(cooValueToJS(cmd, cmd.parts[2]));
+
+        if (cmd.debug) {
+            ret.push('))');
+        }
+
+        if (name) {
+            ret.push('.');
+            ret.push(name);
+            ret.push('(');
+            ret.push(cooGetParamValues(cmd, decl.data.methods[name], cmd.data.params, cmd.data.elemParams));
+            ret.push(')');
+        }
+
+        if (cmd.valuePusher) {
+            ret.push(')');
+        }
+
+        if (!cmd.children.length) {
+            ret.push(cmd.valuePusher ? ');' : ';');
+        }
+
+        return ret.join('');
+    };
+
+    cmd.getCodeAfter = function() {
+        if (cmd.children.length) {
+            return cmd.valuePusher ? ');' : ';';
+        }
+    };
+
+    cmd.processChild = processChild || (name ? cooGetProcessParamsAndEvents(true, {}) : undefined);
 }
 
 
@@ -2003,9 +2069,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                     '@': function() {
                         // `NAME` identifier (expr)
                         //     ...
-
-                        cmd.hasSubblock = true;
-                        cmd.processChild = cooGetProcessParamsAndEvents(false, {
+                        cooProcessInstance(cmd, undefined, 4, cooGetProcessParamsAndEvents(false, {
                             ADD: {
                                 hasName: false,
                                 hasParams: true
@@ -2020,45 +2084,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                                 hasName: false,
                                 hasParams: false
                             }
-                        });
-
-                        cmd.getCodeBefore = function() {
-                            var ret = [],
-                                decl = cooGetDecl(cmd);
-
-                            cooAssertHasSubcommands(cmd);
-
-                            if (cmd.debug) {
-                                ret.push('((function(val) { if ((!val instanceof ');
-                                ret.push(cmdDesc.cmdStorage);
-                                ret.push('.');
-                                ret.push(decl.data.name);
-                                ret.push(')) { throw new Error("');
-                                var msg = cmd.file.getErrorMessage(
-                                    'Not instance of ' + cmdDesc.cmdStorage + '.' + decl.data.name,
-                                    cmd.parts[2]._charAt,
-                                    cmd.parts[2]._lineAt
-                                );
-                                msg = msg.split('\n').join('\\n').replace(/"/g, '\\"');
-                                ret.push(msg);
-                                ret.push('"); }');
-                                ret.push(' return val; })(');
-                            }
-
-                            ret.push(cooValueToJS(cmd, cmd.parts[2]));
-
-                            if (cmd.debug) {
-                                ret.push('))');
-                            }
-
-                            return ret.join('');
-                        };
-
-                        cmd.getCodeAfter = function() {
-                            if (cmd.children.length) {
-                                return ';';
-                            }
-                        };
+                        }));
                     },
 
                     'SET': {

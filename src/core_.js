@@ -15,6 +15,12 @@
             } else {
                 return new CooCooRet(val);
             }
+        },
+
+        isPlainObject = function(obj) {
+            // XXX: Rather simplified version of isPlainObject. Fix in case of
+            //      necessity.
+            return obj && (obj.constructor === objConstructor);
         };
 
 
@@ -122,6 +128,11 @@
             CooCoo.Base.__super__.destroy.call(self);
         },
 
+        __construct: function(attrs) {
+            attrs = CooCooRet(attrs).valueOf();
+            if (isPlainObject(attrs)) { this._d = attrs; }
+        },
+
         on: function(name, callback, context) {
             var self = this,
                 sep = name.indexOf(':'),
@@ -193,9 +204,7 @@
 
             name = CooCooRet(name).valueOf();
 
-            // XXX: Rather simplified version of isPlainObject. Fix in case of
-            //      necessity.
-            if (name && (name.constructor === objConstructor)) {
+            if (isPlainObject(name)) {
                 vals = name;
             } else {
                 vals = {};

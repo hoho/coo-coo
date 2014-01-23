@@ -384,6 +384,7 @@
                 }
 
                 ret.push(') {');
+                ret.push(cooGetScopeVariablesDecl(cmd));
 
                 return ret.join('');
             };
