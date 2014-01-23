@@ -1820,17 +1820,12 @@ function cooObjectBase(cmdDesc, declExt, commandExt, subCommandExt) {
 
                             cooAssertHasSubcommands(cmd);
 
-                            ret.push(cooValueToJS(cmd, cmd.parts[2]));
-
                             if (cmd.debug) {
-                                ret.push('\n');
-                                ret.push(INDENT);
-                                ret.push('.assert(');
+                                ret.push('((function(val) { if ((!val instanceof ');
                                 ret.push(cmdDesc.cmdStorage);
                                 ret.push('.');
                                 ret.push(decl.data.name);
-                                ret.push(', "');
-
+                                ret.push(')) { throw new Error("');
                                 var msg = cmd.file.getErrorMessage(
                                     'Not instance of ' + cmdDesc.cmdStorage + '.' + decl.data.name,
                                     cmd.parts[2]._charAt,
@@ -1838,8 +1833,14 @@ function cooObjectBase(cmdDesc, declExt, commandExt, subCommandExt) {
                                 );
                                 msg = msg.split('\n').join('\\n').replace(/"/g, '\\"');
                                 ret.push(msg);
+                                ret.push('"); }');
+                                ret.push(' return val; })(');
+                            }
 
-                                ret.push('")');
+                            ret.push(cooValueToJS(cmd, cmd.parts[2]));
+
+                            if (cmd.debug) {
+                                ret.push('))');
                             }
 
                             return ret.join('');
