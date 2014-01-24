@@ -13,6 +13,9 @@ CooCoo.Ajax = CooCoo.Extendable.extend({
 
         self._req = $.ajax({
             url: settings.url,
+            type: settings.method,
+            dataType: settings.type,
+            data: settings.data,
 
             success: function(data) {
                 if (!self._aborted) {
