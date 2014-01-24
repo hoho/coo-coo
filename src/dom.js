@@ -347,6 +347,7 @@
         SCROLL: 'scroll',
         SELECT: 'select',
         CHANGE: 'change',
+        INPUT: 'input',
         SUBMIT: 'submit',
         RESET: 'reset',
         FOCUS: 'focus',
