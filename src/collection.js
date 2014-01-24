@@ -13,6 +13,7 @@
             baseClass: {name: 'CooCoo.CollectionBase'}
         },
         {
+            methods: true,
             specialMethods: {
                 MODEL: {
                     actualName: 'model',
