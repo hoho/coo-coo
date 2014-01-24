@@ -39,6 +39,7 @@
             }
         },
         {
+            init: true,
             properties: true,
             specialMethods: {
                 LOAD: {

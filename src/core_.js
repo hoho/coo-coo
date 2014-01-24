@@ -39,7 +39,7 @@
 
 
     CooCoo.Extendable.prototype = {
-        init: function(parent, attrs) {
+        init: function(parent/*, ...*/) {
             var self = this;
 
             self.__parent = parent;
@@ -53,7 +53,7 @@
 
             console.log('Create: ' + self.__what);
 
-            self.__construct(attrs);
+            self.__construct.apply(self, Array.prototype.slice.call(arguments, 1));
         },
 
         destroy: function() {
@@ -116,10 +116,10 @@
 
 
     CooCoo.Base = CooCoo.Extendable.extend({
-        init: function(parent, attrs) {
+        init: function(/*parent, ...*/) {
             this._h = {};
             this._d = {};
-            CooCoo.Base.__super__.init.call(this, parent, attrs);
+            CooCoo.Base.__super__.init.apply(this, arguments);
         },
 
         destroy: function() {

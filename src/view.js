@@ -50,7 +50,7 @@
                                     ret.push('.push(');
                                     ret.push(cooValueToJS(cmd, cmd.parts[2]));
                                     ret.push('._render(');
-                                    ret.push(cooGetParamValues(cmd, decl.data.methods.render, params, cmd.data.elemParams));
+                                    ret.push(cooGetParamValues(cmd, decl.data.methods.__render, params, cmd.data.elemParams));
                                     ret.push('));');
 
                                     return ret.join('');

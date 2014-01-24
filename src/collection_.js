@@ -2,12 +2,21 @@
 CooCoo.Collection = {};
 
 CooCoo.CollectionBase = CooCoo.Base.extend({
-    init: function(parent, items) {
+    init: function(/*parent, ...*/) {
         this._c = [];
-        CooCoo.CollectionBase.__super__.init.call(this, parent, items);
+        CooCoo.CollectionBase.__super__.init.apply(this, arguments);
     },
 
     __construct: function(items) {
+        this.set(items);
+    },
+
+    get: function(index) {
+        var c = this._c;
+        return index === undefined ? c : c[index];
+    },
+
+    set: function(items) {
         var self = this,
             i;
 

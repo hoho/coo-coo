@@ -1165,7 +1165,7 @@ function cooProcessBlockAsValue(cmd, ext) {
             ret.push(tmp);
         }
 
-        ret.push('(function() {');
+        ret.push('CooCooRet((function() {');
         ret.push(cooGetScopeVariablesDecl(cmd));
 
         if (ext.getCodeBeforeAfter && (tmp = ext.getCodeBeforeAfter(cmd))) {
@@ -1191,7 +1191,7 @@ function cooProcessBlockAsValue(cmd, ext) {
             cmd.file.errorNoValue(cmd.parts[0]);
         }
 
-        ret.push('}).call(this)');
+        ret.push('}).call(this)).valueOf()');
 
         if (ext.getCodeAfterAfter && (tmp = ext.getCodeAfterAfter(cmd))) {
             ret.push(tmp);
@@ -1246,6 +1246,8 @@ function cooGetParamValues(cmd, names, paramsArray, elemParams) {
         return paramsArray.join(', ');
     } else if (elemParams) {
         var ret = [];
+
+        names = names || {};
 
         for (param in elemParams) {
             if (!(param in names)) {
@@ -1843,11 +1845,6 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                 return part;
             }
 
-            if (methodName === '__construct' && cmd.parts.length > 2) {
-                cmd.parts[2].error = 'Constructor expects only one parameter';
-                cmd.file.errorUnexpectedPart(cmd.parts[2]);
-            }
-
             cmd.hasSubblock = true;
             cmd.valueRequired = specialData ? !specialData.noValue : true;
 
@@ -2046,7 +2043,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                     '#': function() {
                         // `NAME` identifier CREATE (expr1) (expr2) ...
                         //     ...
-                        cooProcessCreateCommand(cmd, 3, 1, {
+                        cooProcessCreateCommand(cmd, 3, undefined, {
                             ADD: {
                                 hasName: false,
                                 hasParams: true
