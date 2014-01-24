@@ -18,13 +18,19 @@ CooCoo.CollectionBase = CooCoo.Base.extend({
 
     set: function(items) {
         var self = this,
-            i;
+            i,
+            model;
 
         items = CooCooRet(items).valueOf();
-        if (!(items instanceof Array)) { items = [items]; }
 
-        for (i = 0; i < items.length; i++) {
-            self._c.push(new self.model(self, items[i]));
+        if (items !== undefined) {
+            if (!(items instanceof Array)) { items = [items]; }
+
+            for (i = 0; i < items.length; i++) {
+                model = new self.model(self, items[i]);
+                model._p = self;
+                self._c.push(model);
+            }
         }
     },
 
@@ -41,9 +47,9 @@ CooCoo.CollectionBase = CooCoo.Base.extend({
 
         for (i = 0; i < val.length; i++) {
             m = new self.model(self, val[i]);
+            m._p = self;
             self._c.push(m);
-            self.trigger('add', m);
-            m.trigger('add', m);
+            m.trigger('add');
         }
 
         return self;

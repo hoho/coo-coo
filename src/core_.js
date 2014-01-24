@@ -51,7 +51,7 @@
 
             self.__children = [];
 
-            console.log('Create: ' + self.__what);
+            //console.log('Create: ' + self.__what);
 
             self.__construct.apply(self, Array.prototype.slice.call(arguments, 1));
         },
@@ -79,7 +79,7 @@
                 }
             }
 
-            console.log('Destroy: ' + self.__what);
+            //console.log('Destroy: ' + self.__what);
         },
 
         __construct: function() {},
@@ -163,6 +163,7 @@
 
         trigger: function(name/*, ...*/) {
             var self = this,
+                nameSrc = name,
                 sep = name.indexOf(':'),
                 prop,
                 handlers,
@@ -190,6 +191,12 @@
                         callback[0].apply(callback[1] || self, args);
                     }
                 }
+            }
+
+            if (self._p) {
+                args.unshift(self);
+                args.unshift(nameSrc);
+                self.trigger.apply(self._p, args);
             }
 
             return self;

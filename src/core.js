@@ -1290,14 +1290,24 @@ function cooProcessEvent(cmd, hasName, hasParams) {
     cooCreateScope(cmd);
 
     var params,
-        tmp;
+        tmp,
+        changeHack = -1;
 
     if (hasParams) {
-        params = hasName ? {'_': true} : {};
+        params = {};
+
+        if (hasName) {
+            changeHack = cmd.parent.name === 'COLLECTION' ? 2 : 1;
+        }
 
         tmp = cooExtractParamNames(cmd, cmd.parts, hasParams);
 
         for (var param in tmp) {
+            if (changeHack >= 0) { changeHack--; }
+            if (changeHack === 0) {
+                params._ = true;
+            }
+            params[param] = tmp[param];
             cooPushScopeVariable(cmd, param, false);
         }
 
