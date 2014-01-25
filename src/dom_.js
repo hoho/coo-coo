@@ -1,10 +1,11 @@
 /* global CooCooRet */
 /* global document */
 /* global $ */
-(function() {
-    var handlers = {};
+(function(CooCoo, CooCooRet) {
+    var handlers = {},
+        CooCooDOM;
 
-    CooCoo.DOM = CooCoo.Extendable.extend({
+    CooCooDOM = CooCoo.DOM = CooCoo.Extendable.extend({
         init: function(parent, id, node) {
             var self = this,
                 h = handlers[id];
@@ -40,7 +41,7 @@
                 delete handlers[self.id];
             }
 
-            CooCoo.DOM.__super__.destroy.call(self);
+            CooCooDOM.__super__.destroy.call(self);
         },
 
         on: function(event, callback) {
@@ -84,7 +85,7 @@
         }
     });
 
-    CooCoo.DOM.val = function(node, val) {
+    CooCooDOM.val = function(node, val) {
         node = CooCooRet(node).valueOf(true);
         val = CooCooRet(val).valueOf();
 
@@ -95,7 +96,7 @@
         }
     };
 
-    CooCoo.DOM.append = function(parent, node) {
+    CooCooDOM.append = function(parent, node) {
         parent = CooCooRet(parent).valueOf();
         node = CooCooRet(node).toArray();
 
@@ -104,7 +105,7 @@
         }
     };
 
-    CooCoo.DOM.text = function(node, val) {
+    CooCooDOM.text = function(node, val) {
         node = CooCooRet(node).valueOf(true);
         val = CooCooRet(val).valueOf();
 
@@ -112,12 +113,12 @@
         node.appendChild(document.createTextNode(val));
     };
 
-    CooCoo.DOM.addClass = function(node, val) {
+    CooCooDOM.addClass = function(node, val) {
         node = CooCooRet(node).valueOf(true);
         $(node).addClass(CooCooRet(val).valueOf());
     };
 
-    CooCoo.DOM.removeClass = function(node, val) {
+    CooCooDOM.removeClass = function(node, val) {
         node = CooCooRet(node).valueOf(true);
         $(node).removeClass(CooCooRet(val).valueOf());
     };
