@@ -1,0 +1,119 @@
+VIEW App
+    PROPERTY todos<COLLECTION Todos>
+    PROPERTY list<Node>
+    PROPERTY new<Node>
+    PROPERTY toggleAll<Node>
+
+    CONSTRUCT
+        THIS SET todos
+            +COLLECTION Todos CREATE
+                ADD m
+                    DOM @list APPEND [+VIEW Todo [+VIEW Todo CREATE $m] RENDER]
+
+    RENDER
+        +TEMPLATE App APPLY
+            ON "new" node
+                THIS SET new $node
+
+                DOM $node
+                    KEYPRESS e
+                        SET val [+DOM @new VALUE GET]
+
+                        TEST (e.which === 13 && (val = val.trim()))
+                            DOM @new VALUE SET ""
+                            COLLECTION @todos ADD $val
+
+            ON "toggle-all" node
+                THIS SET toggleAll $node
+
+                DOM $node
+                    CLICK
+                        SET checked [+DOM @toggleAll CHECKED GET]
+                        COLLECTION Todos @todos EACH model
+                            MODEL Todo $model SET completed $checked
+
+            ON "list" node
+                THIS SET list $node
+
+            ON "footer" node
+
+
+
+VIEW Todo
+    PROPERTY model<MODEL Todo>
+    PROPERTY item<Node>
+    PROPERTY completed<Node>
+    PROPERTY title<Node>
+    PROPERTY edit<Node>
+
+    CONSTRUCT m
+        THIS SET model $m
+
+        MODEL Todo $m
+            CHANGE "title" val
+                CHOOSE
+                    WHEN ((val = val.trim()))
+                        DOM @edit VALUE SET $val
+                        DOM @title TEXT SET $val
+                    OTHERWISE
+                        MODEL @model DESTROY
+
+            CHANGE "completed" val
+                DOM @item CLASS TOGGLE "completed" $val
+                DOM @completed CHECKED SET $val
+
+            DESTROY
+                THIS DESTROY
+
+    RENDER
+        +TEMPLATE Todo APPLY
+            PARAM title
+                +MODEL Todo @model GET title
+            PARAM completed
+                +MODEL Todo @model GET completed
+
+            ON "item" node
+                THIS SET item $node
+
+            ON "completed" node
+                THIS SET completed $node
+
+                DOM $node
+                    CLICK
+                        MODEL @model SET completed [+DOM @completed CHECKED GET]
+
+            ON "title" node
+                THIS SET title $node
+
+                DOM $node
+                    DBLCLICK
+                        DOM @item CLASS ADD "editing"
+                        DOM @item TRIGGER FOCUS
+
+            ON "edit" node
+                THIS SET edit $node
+
+                DOM $node
+                    BLUR
+                        THIS CALL editTitle
+
+                    KEYPRESS e
+                        TEST (e.which === 13)
+                            THIS CALL editTitle
+
+            ON "destroy" node
+                DOM $node
+                    CLICK
+                        MODEL @model DESTROY
+
+    METHOD editTitle
+        DOM @item CLASS REMOVE "editing"
+        MODEL @model SET title [+DOM @edit VALUE GET]
+
+
+TEMPLATE App
+    ORIGIN "conkitty:app"
+
+
+TEMPLATE Todo title completed
+    ORIGIN "conkitty:item"

@@ -1,0 +1,66 @@
+app
+    header#header
+        h1
+            "todos"
+        input#new-todo[placeholder="What needs to be done?"][autofocus]
+            TRIGGER "new"
+
+    section#main
+        input#toggle-all[type="checkbox"]
+            TRIGGER "toggle-all"
+        label[for="toggle-all"]
+            "Mark all as complete"
+        ul#todo-list
+            TRIGGER "list"
+
+    footer
+        TRIGGER "footer"
+
+
+item title completed
+    li
+        TRIGGER "item"
+        div.view
+            input.toggle[type="checkbox"]
+                TEST (completed)
+                    @checked "checked"
+                TRIGGER "completed"
+
+            label
+                TRIGGER "title"
+                (title)
+
+            button.destroy
+                TRIGGER "destroy"
+
+        input.edit
+            @value (title)
+            TRIGGER "edit"
+
+
+stats remaining completed
+    span#todo-count
+        strong
+            CHOOSE
+                WHEN (remaining === 1)
+                    "item"
+                OTHERWISE
+                    "items"
+        "left"
+
+    ul#filters
+        li
+            a.selected[href="#/"]
+                "All"
+        li
+            a[href="#/active"]
+                "Active"
+        li
+            a[href="#/completed"]
+                "Completed"
+
+    TEST (completed)
+        button#clear-completed
+            "Clear completed ("
+            (completed)
+            ")"

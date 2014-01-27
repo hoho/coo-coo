@@ -1,0 +1,6 @@
+MODEL Todo
+    PROPERTY title<String>
+    PROPERTY completed<JS val (typeof val === 'boolean')>
+
+    CONSTRUCT title
+        THIS SET title $title

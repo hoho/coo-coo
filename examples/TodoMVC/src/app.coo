@@ -1,0 +1,3 @@
+APPLICATION
+    CONSTRUCT parentNode
+        DOM $parentNode APPEND [+VIEW App [+VIEW App CREATE] RENDER]
