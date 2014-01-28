@@ -1000,9 +1000,10 @@ CooFile.prototype = {
         if (this.code[this.lineAt].length <= this.charAt) {
             this.nextLine();
             noIndentCheck = false;
+            this.blockIndent = this.getIndent();
+        } else {
+            this.blockIndent = part._charAt + 1;
         }
-
-        this.blockIndent = part._charAt + 1;
 
         part.value = new CooCommand(this, parent, this.ret.declCmd);
         part.value.valueRequired = true;
