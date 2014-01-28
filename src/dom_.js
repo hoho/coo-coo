@@ -1,9 +1,44 @@
 /* global CooCooRet */
 /* global document */
-/* global $ */
 (function(CooCoo, CooCooRet) {
     var handlers = {},
-        CooCooDOM;
+        CooCooDOM,
+        captureEvents = {focus: true, blur: true};
+
+    function splitClass(val) {
+        var ret = {},
+            i;
+
+        val = (val || '').split(' ');
+
+        for (i = 0; i < val.length; i++) {
+            ret[val[i]] = true;
+        }
+
+        return ret;
+    }
+
+    function modifyClass(node, val, remove) {
+        var cls,
+            ret = [],
+            nodeClass = splitClass(node.getAttribute('class'));
+
+        val = splitClass(val);
+
+        for (cls in val) {
+            if (remove) {
+                delete nodeClass[cls];
+            } else {
+                nodeClass[cls] = true;
+            }
+        }
+
+        for (cls in nodeClass) {
+            ret.push(cls);
+        }
+
+        node.setAttribute('class', ret.join(' '));
+    }
 
     CooCooDOM = CooCoo.DOM = CooCoo.Extendable.extend({
         init: function(parent, id, node) {
@@ -74,7 +109,8 @@
 
                                 return ret;
                             }
-                        })
+                        }),
+                        event in captureEvents
                     );
                 }
 
@@ -115,11 +151,11 @@
 
     CooCooDOM.addClass = function(node, val) {
         node = CooCooRet(node).valueOf(true);
-        $(node).addClass(CooCooRet(val).valueOf());
+        modifyClass(node, val, false);
     };
 
     CooCooDOM.removeClass = function(node, val) {
         node = CooCooRet(node).valueOf(true);
-        $(node).removeClass(CooCooRet(val).valueOf());
+        modifyClass(node, val, true);
     };
 })(CooCoo, CooCooRet);

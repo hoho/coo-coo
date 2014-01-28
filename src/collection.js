@@ -88,8 +88,9 @@
                                 });
                             },
 
-                            '(': function() {
+                            '(': function(cmd) {
                                 // COLLECTION identifier (expr) ADD (expr2)
+                                cmd.file.errorNotImplemented(cmd.parts[0]);
                             }
                         }
                     }
