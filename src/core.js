@@ -1,5 +1,5 @@
 /*!
- * coo-coo v0.0.0-1, https://github.com/hoho/coo-coo
+ * coo-coo v0.0.2, https://github.com/hoho/coocoo
  * (c) 2013 Marat Abdullin, MIT license
  */
 var fs = require('fs'),
@@ -16,6 +16,7 @@ var INDENT_WITH = ' ',
     COO_COMMAND_PART_PROPERTY_GETTER = 'property getter',
     COO_COMMAND_PART_VARIABLE_GETTER = 'variable getter',
     COO_COMMAND_PART_TYPIFICATION = 'typification',
+    COO_COMMAND_PART_SUBCOOCOO = 'sub CooCoo',
 
     COO_INTERNAL_VARIABLE_RET = '__ret';
 
@@ -109,6 +110,7 @@ function cooMatchCommand(cmd, patterns, pos) {
             case COO_COMMAND_PART_JS:
             case COO_COMMAND_PART_PROPERTY_GETTER:
             case COO_COMMAND_PART_VARIABLE_GETTER:
+            case COO_COMMAND_PART_SUBCOOCOO:
                 if (part.type === COO_COMMAND_PART_STRING) {
                     /* jshint -W061 */
                     var val = JSON.stringify(eval(part.value));
@@ -368,6 +370,105 @@ function cooCheckProperty(cmd, decl, part, assert) {
 }
 
 
+/* exported cooProcessBlockAsValue */
+function cooProcessBlockAsValue(cmd, ext) {
+    cmd.hasSubblock = true;
+    cmd.valueRequired = true;
+
+    cooCreateScope(cmd);
+
+    cmd.getCodeBefore = function() {
+        var ret = [],
+            tmp;
+
+        if (ext.getCodeBeforeBefore && (tmp = ext.getCodeBeforeBefore(cmd))) {
+            ret.push(tmp);
+        }
+
+        ret.push('CooCooRet((function() {');
+        ret.push(cooGetScopeVariablesDecl(cmd));
+
+        if (ext.getCodeBeforeAfter && (tmp = ext.getCodeBeforeAfter(cmd))) {
+            ret.push(tmp);
+        }
+
+        return ret.join('');
+    };
+
+    cmd.getCodeAfter = function() {
+        var ret = [],
+            tmp;
+
+        if (ext.getCodeAfterBefore && (tmp = ext.getCodeAfterBefore(cmd))) {
+            ret.push(tmp);
+        }
+
+        tmp = cooGetScopeRet(cmd);
+
+        if (tmp) {
+            ret.push(tmp);
+        } else {
+            cmd.file.errorNoValue(cmd.parts[0]);
+        }
+
+        ret.push('}).call(this)).valueOf()');
+
+        if (ext.getCodeAfterAfter && (tmp = ext.getCodeAfterAfter(cmd))) {
+            ret.push(tmp);
+        }
+
+        return ret.join('');
+    };
+}
+
+
+function cooRunGenerators(cmd, code, level) {
+    if (cmd.ignore) {
+        return;
+    }
+
+    var c = cmd.children,
+        i,
+        indent = (new Array(level + 1)).join(INDENT);
+
+    if (cmd.getCodeBefore && (i = cmd.getCodeBefore())) {
+        code.push(indent + i.split('\n').join('\n' + indent));
+    }
+
+    if (c) {
+        var last,
+            first = true,
+            subcmd;
+
+        for (i = 0; i < c.length; i++) {
+            subcmd = c[i];
+
+            if (subcmd.getCodeBefore || subcmd.getCodeAfter) {
+                if (first) {
+                    subcmd.first = true;
+                    first = false;
+                }
+
+                last = subcmd;
+            }
+        }
+
+        if (last) {
+            last.last = true;
+        }
+
+        for (i = 0; i < c.length; i++) {
+            subcmd = c[i];
+            cooRunGenerators(subcmd, code, level + subcmd.indent);
+        }
+    }
+
+    if (cmd.getCodeAfter && (i = cmd.getCodeAfter())) {
+        code.push(indent + i.split('\n').join('\n' + indent));
+    }
+}
+
+
 /* exported cooValueToJS */
 function cooValueToJS(cmd, part) {
     switch (part.type) {
@@ -382,6 +483,11 @@ function cooValueToJS(cmd, part) {
         case COO_COMMAND_PART_PROPERTY_GETTER:
             cooCheckProperty(cmd, cmd.root, part);
             return 'this.get("' + part.value + '")';
+
+        case COO_COMMAND_PART_SUBCOOCOO:
+            var ret = [];
+            cooRunGenerators(part.value, ret, 0);
+            return ret.join('\n');
 
         default:
             part.error = 'Incorrect type';
@@ -405,6 +511,7 @@ CooFile.prototype = {
         this.ret = ret;
         this.lineAt = this.charAt = 0;
         this.blockIndent = 0;
+        this._inSubCooCoo = 0;
 
         while (this.skipEmptyLines()) {
             this.readCommand();
@@ -412,6 +519,16 @@ CooFile.prototype = {
     },
 
     skipEmptyLines: function() {
+        if (this.lineAt < this.code.length) {
+            this.skipWhitespaces(true);
+
+            if (this._inSubCooCoo &&
+                this.code[this.lineAt][this.charAt] === ']')
+            {
+                return false;
+            }
+        }
+
         for (var i = this.lineAt; i < this.code.length; i++) {
             if (this.code[i] !== '') {
                 break;
@@ -424,18 +541,20 @@ CooFile.prototype = {
         return this.lineAt < this.code.length;
     },
 
-    readCommand: function(parent) {
+    readCommand: function(parent, noIndentCheck) {
         var i,
             line = this.code[this.lineAt],
             cmd = new CooCommand(this, parent, this.ret.declCmd);
 
-        for (i = 0; i < this.blockIndent; i++) {
-            if (line[i] !== INDENT_WITH) {
-                this.errorBadIndentation(i);
+        if (!noIndentCheck) {
+            for (i = 0; i < this.blockIndent; i++) {
+                if (line[i] !== INDENT_WITH) {
+                    this.errorBadIndentation(i);
+                }
             }
         }
 
-        i = this.blockIndent;
+        i = noIndentCheck ? this.charAt : this.blockIndent;
 
         if (line[i] === '+') {
             if (!parent || !parent.valueRequired) {
@@ -455,7 +574,7 @@ CooFile.prototype = {
         }
 
         if (line[i].match(/[a-zA-Z"'(_$@]/)) {
-            var parts = cmd.parts = this.readCommandParts(i);
+            var parts = cmd.parts = this.readCommandParts(i, cmd);
 
             if (cmd.valuePusher) {
                 cooSetScopeRet(cmd);
@@ -591,7 +710,7 @@ CooFile.prototype = {
         }
     },
 
-    readCommandParts: function(charAt) {
+    readCommandParts: function(charAt, cmd) {
         var parts = [];
 
         this.charAt = charAt;
@@ -608,6 +727,14 @@ CooFile.prototype = {
                 case '(':
                     parts.push(this.readJS(0));
                     break;
+
+                case '[':
+                    parts.push(this.readSubCooCoo(cmd));
+                    break;
+
+                case ']':
+                    if (!this._inSubCooCoo) { this.errorUnexpectedSymbol(); }
+                    return parts;
 
                 case '<':
                     parts.push(this.readTypification());
@@ -859,6 +986,52 @@ CooFile.prototype = {
         return part;
     },
 
+    readSubCooCoo: function(parent) {
+        this._inSubCooCoo++;
+
+        var part = new CooCommandPart(COO_COMMAND_PART_SUBCOOCOO, this.lineAt, this.charAt),
+            noIndentCheck = true,
+            oldIndent = this.blockIndent;
+
+        this.charAt++;
+
+        this.skipWhitespaces(true);
+
+        if (this.code[this.lineAt].length <= this.charAt) {
+            this.nextLine();
+            noIndentCheck = false;
+        }
+
+        this.blockIndent = part._charAt + 1;
+
+        part.value = new CooCommand(this, parent, this.ret.declCmd);
+        part.value.valueRequired = true;
+
+        cooProcessBlockAsValue(part.value, {});
+
+        do {
+            this.readCommand(part.value, noIndentCheck);
+            noIndentCheck = false;
+        } while (this.skipEmptyLines());
+
+        this.skipWhitespaces();
+
+        if (!this.code[this.lineAt] || this.code[this.lineAt][this.charAt] !== ']') {
+            part.error = 'Unterminated expression';
+            this.errorUnexpectedPart(part);
+        }
+
+        this.charAt++;
+
+        this.skipWhitespaces();
+
+        this.blockIndent = oldIndent;
+
+        this._inSubCooCoo--;
+
+        return part;
+    },
+
     readBlock: function(parent) {
         if (!this.nextLine()) {
             return false;
@@ -885,6 +1058,13 @@ CooFile.prototype = {
     },
 
     nextLine: function() {
+        if (this.lineAt < this.code.length &&
+            this._inSubCooCoo &&
+            this.code[this.lineAt][this.charAt] === ']')
+        {
+            return false;
+        }
+
         this.lineAt++;
         this.charAt = 0;
 
@@ -908,12 +1088,18 @@ CooFile.prototype = {
             whitespace = /[\x20\t\r\n\f]/;
 
         if (!noException && (this.charAt < line.length && !line[this.charAt].match(whitespace))) {
+            if (this._inSubCooCoo && line[this.charAt] === ']') {
+                return false;
+            }
+
             this.errorUnexpectedSymbol();
         }
 
         while (this.charAt < line.length && line[this.charAt].match(whitespace)) {
             this.charAt++;
         }
+
+        return true;
     },
 
     getErrorMessage: function(msg, charAt, lineAt) {
@@ -990,53 +1176,6 @@ function cooAssertValuePusher(cmd) {
 function cooAssertHasSubcommands(cmd) {
     if (!cmd.children.length) {
         cmd.file.errorMeaninglessCommand(cmd.parts[0]);
-    }
-}
-
-
-function cooRunGenerators(cmd, code, level) {
-    if (cmd.ignore) {
-        return;
-    }
-
-    var c = cmd.children,
-        i,
-        indent = (new Array(level + 1)).join(INDENT);
-
-    if (cmd.getCodeBefore && (i = cmd.getCodeBefore())) {
-        code.push(indent + i.split('\n').join('\n' + indent));
-    }
-
-    if (c) {
-        var last,
-            first = true,
-            subcmd;
-
-        for (i = 0; i < c.length; i++) {
-            subcmd = c[i];
-
-            if (subcmd.getCodeBefore || subcmd.getCodeAfter) {
-                if (first) {
-                    subcmd.first = true;
-                    first = false;
-                }
-
-                last = subcmd;
-            }
-        }
-
-        if (last) {
-            last.last = true;
-        }
-
-        for (i = 0; i < c.length; i++) {
-            subcmd = c[i];
-            cooRunGenerators(subcmd, code, level + subcmd.indent);
-        }
-    }
-
-    if (cmd.getCodeAfter && (i = cmd.getCodeAfter())) {
-        code.push(indent + i.split('\n').join('\n' + indent));
     }
 }
 
@@ -1147,58 +1286,6 @@ function cooExtractParamValues(cmd, firstParam, paramCount) {
     }
 
     return values;
-}
-
-
-/* exported cooProcessBlockAsValue */
-function cooProcessBlockAsValue(cmd, ext) {
-    cmd.hasSubblock = true;
-    cmd.valueRequired = true;
-
-    cooCreateScope(cmd);
-
-    cmd.getCodeBefore = function() {
-        var ret = [],
-            tmp;
-
-        if (ext.getCodeBeforeBefore && (tmp = ext.getCodeBeforeBefore(cmd))) {
-            ret.push(tmp);
-        }
-
-        ret.push('CooCooRet((function() {');
-        ret.push(cooGetScopeVariablesDecl(cmd));
-
-        if (ext.getCodeBeforeAfter && (tmp = ext.getCodeBeforeAfter(cmd))) {
-            ret.push(tmp);
-        }
-
-        return ret.join('');
-    };
-
-    cmd.getCodeAfter = function() {
-        var ret = [],
-            tmp;
-
-        if (ext.getCodeAfterBefore && (tmp = ext.getCodeAfterBefore(cmd))) {
-            ret.push(tmp);
-        }
-
-        tmp = cooGetScopeRet(cmd);
-
-        if (tmp) {
-            ret.push(tmp);
-        } else {
-            cmd.file.errorNoValue(cmd.parts[0]);
-        }
-
-        ret.push('}).call(this)).valueOf()');
-
-        if (ext.getCodeAfterAfter && (tmp = ext.getCodeAfterAfter(cmd))) {
-            ret.push(tmp);
-        }
-
-        return ret.join('');
-    };
 }
 
 
@@ -1777,7 +1864,8 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
 
             if (part) {
                 if (part.type === COO_COMMAND_PART_PROPERTY_GETTER ||
-                    part.type === COO_COMMAND_PART_VARIABLE_GETTER)
+                    part.type === COO_COMMAND_PART_VARIABLE_GETTER ||
+                    part.type === COO_COMMAND_PART_SUBCOOCOO)
                 {
                     part.error = 'Unexpected ' + part.type;
                     return part;
