@@ -1208,7 +1208,7 @@ function CooCoo(filenames, common, app, debug) {
         tmp[i](ret.declCmd, ret.cmd);
     }
 
-    // Super dump vay to put collections at the bottom (they depend on models).
+    // Super dumb way to put collections at the bottom (they depend on models).
     // XXX: Implement this thing in arrange function.
     tmp = ret.cmd.filter(function(item) { return item.name !== 'COLLECTION'; });
     cooRunGenerators({children: tmp}, code, 0);
@@ -1377,29 +1377,14 @@ function cooProcessEvent(cmd, hasName, hasParams) {
 
     cooCreateScope(cmd);
 
-    var params,
-        tmp,
-        changeHack = -1;
+    var params;
 
     if (hasParams) {
-        params = {};
+        params = cooExtractParamNames(cmd, cmd.parts, hasParams);
 
-        if (hasName) {
-            changeHack = cmd.parent.name === 'COLLECTION' ? 2 : 1;
-        }
-
-        tmp = cooExtractParamNames(cmd, cmd.parts, hasParams);
-
-        for (var param in tmp) {
-            if (changeHack >= 0) { changeHack--; }
-            if (changeHack === 0) {
-                params._ = true;
-            }
-            params[param] = tmp[param];
+        for (var param in params) {
             cooPushScopeVariable(cmd, param, false);
         }
-
-        params = extend(params, tmp);
     }
 
     cmd.getCodeBefore = function() {
@@ -1533,7 +1518,7 @@ function cooGetProcessParamsAndEvents(hasParams, events) {
                             '': {
                                 '*': function() {
                                     // EVENT identifier identifier2 ...
-                                    return cooProcessEvent(cmd, false, 2);
+                                    return cooProcessEvent(cmd, false, 1);
                                 }
                             }
                         };

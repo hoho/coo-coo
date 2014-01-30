@@ -196,7 +196,7 @@
             if (self._p) {
                 args.unshift(self);
                 args.unshift(nameSrc);
-                self.trigger.apply(self._p, args);
+                self._p.trigger.apply(self._p, args);
             }
 
             return self;
@@ -223,7 +223,7 @@
                 val = data[n] = vals[n];
 
                 if (val !== prev) {
-                    self.trigger('change:' + n, n, val, prev);
+                    self.trigger('change:' + n, val, n, prev);
                 }
             }
 
