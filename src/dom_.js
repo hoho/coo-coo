@@ -34,7 +34,7 @@
         }
 
         for (cls in nodeClass) {
-            ret.push(cls);
+            cls && ret.push(cls);
         }
 
         node.setAttribute('class', ret.join(' '));
