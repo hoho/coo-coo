@@ -12,7 +12,8 @@
 
         LOAD_ERROR: {
             hasName: false,
-            hasParams: false
+            hasParams: false,
+            actualName: 'loadError'
         },
 
         SAVED: {
@@ -22,7 +23,8 @@
 
         SAVE_ERROR: {
             hasName: false,
-            hasParams: false
+            hasParams: false,
+            actualName: 'saveError'
         }
     };
 
@@ -34,7 +36,7 @@
             triggers: {
                 LOADED: {actualName: 'loaded'},
                 LOAD_ERROR: {actualName: 'loadError'},
-                SAVEED: {actualName: 'saved'},
+                SAVED: {actualName: 'saved'},
                 SAVE_ERROR: {actualName: 'saveError'}
             }
         },

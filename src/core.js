@@ -1372,7 +1372,7 @@ function cooGetParamValues(cmd, names, paramsArray, elemParams) {
 }
 
 
-function cooProcessEvent(cmd, hasName, hasParams) {
+function cooProcessEvent(cmd, hasName, hasParams, actualName) {
     cmd.hasSubblock = true;
 
     cooCreateScope(cmd);
@@ -1391,7 +1391,7 @@ function cooProcessEvent(cmd, hasName, hasParams) {
         var ret = [];
 
         ret.push('.on("');
-        ret.push(cmd.parts[0].value.toLowerCase());
+        ret.push(actualName || cmd.parts[0].value.toLowerCase());
 
         if (hasName) {
             var name = cmd.parts[1];
@@ -1503,7 +1503,7 @@ function cooGetProcessParamsAndEvents(hasParams, events) {
             (function(name, event) {
                 if (event.hasParams === false) {
                     patterns[name] = function() {
-                        return cooProcessEvent(cmd, false, false);
+                        return cooProcessEvent(cmd, false, false, event.actualName);
                     };
                 } else {
                     if (event.hasName) {
@@ -1511,14 +1511,14 @@ function cooGetProcessParamsAndEvents(hasParams, events) {
                             '(': {
                                 '*': function() {
                                     // EVENT (expr) identifier identifier2 ...
-                                    return cooProcessEvent(cmd, true, 2);
+                                    return cooProcessEvent(cmd, true, 2, event.actualName);
                                 }
                             },
 
                             '': {
                                 '*': function() {
                                     // EVENT identifier identifier2 ...
-                                    return cooProcessEvent(cmd, false, 1);
+                                    return cooProcessEvent(cmd, false, 1, event.actualName);
                                 }
                             }
                         };
@@ -1526,7 +1526,7 @@ function cooGetProcessParamsAndEvents(hasParams, events) {
                         patterns[name] = {
                             '*': function() {
                                 // ADD identifier identifier2 ...
-                                return cooProcessEvent(cmd, false, 1);
+                                return cooProcessEvent(cmd, false, 1, event.actualName);
                             }
                         };
                     }
