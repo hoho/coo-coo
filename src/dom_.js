@@ -158,4 +158,16 @@
         node = CooCooRet(node).valueOf(true);
         modifyClass(node, val, true);
     };
+
+    CooCooDOM.attr = function(node, attr, val) {
+        node = CooCooRet(node).valueOf(true);
+        attr = CooCooRet(attr).valueOf(true);
+        val = CooCooRet(val).valueOf();
+
+        if (val === undefined) {
+            return node.getAttribute(attr);
+        } else {
+            node.setAttribute(attr, val);
+        }
+    };
 })(CooCoo, CooCooRet);

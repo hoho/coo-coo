@@ -14,6 +14,107 @@
     var DOM_FUNC = 'CooCoo.DOM',
         DOM_OBJ = 'new ' + DOM_FUNC;
 
+
+    function getSetter(method, params) {
+        return {
+            '@': function(cmd) {
+                // DOM (expr) CLASS ADD
+                //     ...
+                cooAssertNotValuePusher(cmd);
+
+                return cooProcessBlockAsValue(cmd, {
+                    getCodeBeforeBefore: function() {
+                        var ret = [];
+
+                        ret.push(DOM_FUNC);
+                        ret.push('.');
+                        ret.push(method);
+                        ret.push('(');
+                        ret.push(cooValueToJS(cmd, cmd.parts[1]));
+
+                        for (var i = 0; i < params.length; i++) {
+                            if (params[i] === 'b') { break; }
+                            ret.push(', ');
+                            ret.push(cooValueToJS(cmd, cmd.parts[params[i]]));
+                        }
+
+                        ret.push(', ');
+
+                        return ret.join('');
+                    },
+
+                    getCodeAfterAfter: function() {
+                        var ret = [];
+
+                        for (var i = params.indexOf('b') + 2; i < params.length; i++) {
+                            ret.push(', ');
+                            ret.push(cooValueToJS(cmd, cmd.parts[params[i]]));
+                        }
+
+                        ret.push(');');
+
+                        return ret.join('');
+                    }
+                });
+            },
+
+            '(': function(cmd) {
+                // DOM (expr) CLASS ADD (expr2)
+                cooAssertNotValuePusher(cmd);
+
+                cmd.getCodeBefore = function() {
+                    var ret = [];
+
+                    ret.push(DOM_FUNC);
+                    ret.push('.');
+                    ret.push(method);
+                    ret.push('(');
+                    ret.push(cooValueToJS(cmd, cmd.parts[1]));
+
+                    for (var i = 0; i < params.length; i++) {
+                        if (params[i] === 'b') { continue; }
+                        ret.push(', ');
+                        ret.push(cooValueToJS(cmd, cmd.parts[params[i]]));
+                    }
+
+                    ret.push(');');
+
+                    return ret.join('');
+                };
+            }
+        };
+    }
+
+
+    function getGetter(method, params) {
+        return function(cmd) {
+            // DOM (expr) VALUE GET
+            cooAssertValuePusher(cmd);
+
+            cmd.getCodeBefore = function() {
+                var ret = [];
+
+                ret.push(COO_INTERNAL_VARIABLE_RET);
+                ret.push('.push(');
+                ret.push(DOM_FUNC);
+                ret.push('.');
+                ret.push(method);
+                ret.push('(');
+                ret.push(cooValueToJS(cmd, cmd.parts[1]));
+
+                for (var i = 0; i < params.length; i++) {
+                    ret.push(', ');
+                    ret.push(cooValueToJS(cmd, cmd.parts[params[i]]));
+                }
+
+                ret.push('));');
+
+                return ret.join('');
+            };
+        };
+    }
+
+
     function domProcess(cmd) {
         if (!cmd.parent) {
             return cmd.parts[0];
@@ -56,6 +157,13 @@
                         cmd.getCodeAfter = function() {
                             return ';';
                         };
+                    },
+
+                    'ATTR': {
+                        '(': {
+                            'SET': getSetter('attr', [3, 'b', 5]),
+                            'GET': getGetter('attr', [3])
+                        }
                     },
 
                     'APPEND': {
@@ -112,91 +220,8 @@
                     },
 
                     'CLASS': {
-                        'ADD': {
-                            '@': function() {
-                                // DOM (expr) CLASS ADD
-                                //     ...
-                                cooAssertNotValuePusher(cmd);
-
-                                return cooProcessBlockAsValue(cmd, {
-                                    getCodeBeforeBefore: function() {
-                                        var ret = [];
-
-                                        ret.push(DOM_FUNC);
-                                        ret.push('.addClass(');
-                                        ret.push(cooValueToJS(cmd, cmd.parts[1]));
-                                        ret.push(', ');
-
-                                        return ret.join('');
-                                    },
-
-                                    getCodeAfterAfter: function() {
-                                        return ');';
-                                    }
-                                });
-                            },
-
-                            '(': function() {
-                                // DOM (expr) CLASS ADD (expr2)
-                                cooAssertNotValuePusher(cmd);
-
-                                cmd.getCodeBefore = function() {
-                                    var ret = [];
-
-                                    ret.push(DOM_FUNC);
-                                    ret.push('.addClass(');
-                                    ret.push(cooValueToJS(cmd, cmd.parts[1]));
-                                    ret.push(', ');
-                                    ret.push(cooValueToJS(cmd, cmd.parts[4]));
-                                    ret.push(');');
-
-                                    return ret.join('');
-                                };
-                            }
-                        },
-
-                        'REMOVE': {
-                            '@': function() {
-                                // DOM (expr) REMOVE ADD
-                                //     ...
-                                cooAssertNotValuePusher(cmd);
-
-                                return cooProcessBlockAsValue(cmd, {
-                                    getCodeBeforeBefore: function() {
-                                        var ret = [];
-
-                                        ret.push(DOM_FUNC);
-                                        ret.push('.removeClass(');
-                                        ret.push(cooValueToJS(cmd, cmd.parts[1]));
-                                        ret.push(', ');
-
-                                        return ret.join('');
-                                    },
-
-                                    getCodeAfterAfter: function() {
-                                        return ');';
-                                    }
-                                });
-                            },
-
-                            '(': function() {
-                                // DOM (expr) CLASS REMOVE (expr2)
-                                cooAssertNotValuePusher(cmd);
-
-                                cmd.getCodeBefore = function() {
-                                    var ret = [];
-
-                                    ret.push(DOM_FUNC);
-                                    ret.push('.removeClass(');
-                                    ret.push(cooValueToJS(cmd, cmd.parts[1]));
-                                    ret.push(', ');
-                                    ret.push(cooValueToJS(cmd, cmd.parts[4]));
-                                    ret.push(');');
-
-                                    return ret.join('');
-                                };
-                            }
-                        }
+                        'ADD': getSetter('addClass', ['b', 4]),
+                        'REMOVE': getSetter('removeClass', ['b', 4])
                     },
 
                     'TRIGGER': {
@@ -215,105 +240,13 @@
                     },
 
                     'VALUE': {
-                        'SET': {
-                            '@': function() {
-                                // DOM (expr) VALUE SET
-                                //     ...
-                                cooAssertNotValuePusher(cmd);
-
-                                return cooProcessBlockAsValue(cmd, {
-                                    getCodeBeforeBefore: function() {
-                                        var ret = [];
-
-                                        ret.push(DOM_FUNC);
-                                        ret.push('.val(');
-                                        ret.push(cooValueToJS(cmd, cmd.parts[1]));
-                                        ret.push(', ');
-
-                                        return ret.join('');
-                                    },
-
-                                    getCodeAfterAfter: function() {
-                                        return ');';
-                                    }
-                                });
-                            },
-
-                            '(': function() {
-                                // DOM (expr) VALUE SET (expr2)
-                                cooAssertNotValuePusher(cmd);
-
-                                cmd.getCodeBefore = function() {
-                                    var ret = [];
-
-                                    ret.push(DOM_FUNC);
-                                    ret.push('.val(');
-                                    ret.push(cooValueToJS(cmd, cmd.parts[1]));
-                                    ret.push(', ');
-                                    ret.push(cooValueToJS(cmd, cmd.parts[4]));
-                                    ret.push(');');
-
-                                    return ret.join('');
-                                };
-                            }
-                        },
-
-                        'GET': function() {
-                            // DOM (expr) VALUE GET
-                            cooAssertValuePusher(cmd);
-
-                            cmd.getCodeBefore = function() {
-                                var ret = [];
-
-                                ret.push(COO_INTERNAL_VARIABLE_RET);
-                                ret.push('.push(');
-                                ret.push(DOM_FUNC);
-                                ret.push('.val(');
-                                ret.push(cooValueToJS(cmd, cmd.parts[1]));
-                                ret.push('));');
-
-                                return ret.join('');
-                            };
-                        }
+                        'SET': getSetter('val', ['b', 4]),
+                        'GET': getGetter('val', [])
                     },
 
                     'TEXT': {
-                        '@': function() {
-                            // DOM (expr) TEXT
-                            //     ...
-                            return cooProcessBlockAsValue(cmd, {
-                                getCodeBeforeBefore: function() {
-                                    var ret = [];
-
-                                    ret.push(DOM_FUNC);
-                                    ret.push('.text(');
-                                    ret.push(cooValueToJS(cmd, cmd.parts[1]));
-                                    ret.push(', ');
-
-                                    return ret.join('');
-                                },
-
-                                getCodeAfterAfter: function() {
-                                    return ');';
-                                }
-                            });
-                        },
-
-                        '(': function() {
-                            // DOM (expr) TEXT (expr2)
-                            cmd.getCodeBefore = function() {
-                                var ret = [];
-
-                                ret.push(DOM_FUNC);
-                                ret.push('.text(');
-                                ret.push(cooValueToJS(cmd, cmd.parts[1]));
-                                ret.push(', ');
-                                ret.push(cooValueToJS(cmd, cmd.parts[3]));
-                                ret.push(');');
-
-                                return ret.join('');
-                            };
-                        }
+                        'SET': getSetter('text', ['b', 4]),
+                        'GET': getGetter('text', [])
                     }
                 }
             }

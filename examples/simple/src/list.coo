@@ -27,7 +27,7 @@ VIEW Item
 
         MODEL Item $m
             CHANGE "title" val
-                DOM @textNode TEXT $val
+                DOM @textNode TEXT SET $val
 
             DESTROY
                 THIS DESTROY
