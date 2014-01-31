@@ -93,12 +93,16 @@
                     document.body.addEventListener(
                         event,
                         (eventHandler.h = function(e) {
-                            var parent = e.target['_coo' + self.id],
-                                i,
+                            var parent = e.target,
+                                i = '_coo' + self.id,
                                 ret,
                                 cur;
 
-                            if (parent) {
+                            while (parent && !parent[i]) {
+                                parent = parent.parentNode;
+                            }
+
+                            if (parent && ((parent = parent[i]))) {
                                 for (i = 0; i < funcs.length; i++) {
                                     cur = funcs[i].call(parent, e);
 
