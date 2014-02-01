@@ -2118,6 +2118,24 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
     }
 
 
+    var instanceEvents = {
+        ADD: {
+            hasName: false,
+            hasParams: true
+        },
+
+        CHANGE: {
+            hasName: true,
+            hasParams: true
+        },
+
+        DESTROY: {
+            hasName: false,
+            hasParams: false
+        }
+    };
+
+
     function cmdProcessCommand(cmd) {
         var pattern = {};
 
@@ -2127,22 +2145,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                     '#': function() {
                         // `NAME` identifier CREATE (expr1) (expr2) ...
                         //     ...
-                        cooProcessCreateCommand(cmd, 3, undefined, {
-                            ADD: {
-                                hasName: false,
-                                hasParams: true
-                            },
-
-                            CHANGE: {
-                                hasName: true,
-                                hasParams: true
-                            },
-
-                            DESTROY: {
-                                hasName: false,
-                                hasParams: false
-                            }
-                        });
+                        cooProcessCreateCommand(cmd, 3, undefined, instanceEvents);
                     }
                 },
 
@@ -2150,22 +2153,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                     '@': function() {
                         // `NAME` identifier (expr)
                         //     ...
-                        cooProcessInstance(cmd, undefined, 4, cooGetProcessParamsAndEvents(false, {
-                            ADD: {
-                                hasName: false,
-                                hasParams: true
-                            },
-
-                            CHANGE: {
-                                hasName: true,
-                                hasParams: true
-                            },
-
-                            DESTROY: {
-                                hasName: false,
-                                hasParams: false
-                            }
-                        }));
+                        cooProcessInstance(cmd, undefined, 4, cooGetProcessParamsAndEvents(false, instanceEvents));
                     },
 
                     'SET': {
@@ -2361,6 +2349,23 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
         };
 
         pattern.THIS = {
+            '@': function(cmd) {
+                cmd.hasSubblock = true;
+                cooAssertNotValuePusher(cmd);
+
+                cmd.processChild = cooGetProcessParamsAndEvents(false, instanceEvents);
+
+                cmd.getCodeBefore = function() {
+                    cooAssertHasSubcommands(cmd);
+
+                    return 'this';
+                };
+
+                cmd.getCodeAfter = function() {
+                    return ';';
+                };
+            },
+
             'SET': {
                 '@': function() {
                     // THIS SET
