@@ -68,19 +68,12 @@ VIEW Page
             ON "add" node
                 DOM $node
                     CLICK
-                        COLLECTION List @list ADD
-                            +DOM @input VALUE GET
-
+                        COLLECTION List @list ADD [+DOM @input VALUE GET]
                         DOM @input VALUE SET ""
 
     METHOD addItem m
         DOM @container APPEND
-            SET tmp
-                +VIEW Item CREATE $m
-
-            +VIEW Item $tmp RENDER
-
-        //+VIEW Item [+VIEW Item CREATE $m] RENDER
+            +VIEW Item [+VIEW Item CREATE $m] RENDER
 
 
 TEMPLATE Page

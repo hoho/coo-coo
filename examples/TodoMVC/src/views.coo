@@ -21,14 +21,14 @@ VIEW App
 
                         TEST (e.which === 13 && (val = val.trim()))
                             DOM @new VALUE SET ""
-                            COLLECTION @todos ADD $val
+                            COLLECTION Todos @todos ADD $val
 
             ON "toggle-all" node
                 THIS SET toggleAll $node
 
                 DOM $node
                     CLICK
-                        SET checked [+DOM @toggleAll CHECKED GET]
+                        SET checked [+DOM @toggleAll ATTR "checked" GET]
                         COLLECTION Todos @todos EACH model
                             MODEL Todo $model SET completed $checked
 

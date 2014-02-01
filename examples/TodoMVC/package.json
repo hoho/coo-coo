@@ -6,7 +6,7 @@
     "license": "MIT",
     "devDependencies": {
         "grunt": "~0.4.1",
-        "grunt-coocoo": "~0.0.2",
+        "grunt-coocoo": "~0.0.3",
         "grunt-conkitty": "~0.2.1",
         "grunt-contrib-watch": "~0.5.3"
     }

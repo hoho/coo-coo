@@ -5,6 +5,7 @@
     /* global cooGetScopeRet */
     /* global cooProcessBlockAsValue */
     /* global cooValueToJS */
+    /* global cooAssertNotValuePusher */
 
     cooObjectBase(
         {
@@ -77,6 +78,8 @@
                                 cmd.hasSubblock = true;
                                 cmd.valueRequired = true;
 
+                                cooAssertNotValuePusher(cmd);
+
                                 return cooProcessBlockAsValue(cmd, {
                                     getCodeBeforeBefore: function() {
                                         return cooValueToJS(cmd, cmd.parts[2]) + '.add(';
@@ -90,7 +93,18 @@
 
                             '(': function(cmd) {
                                 // COLLECTION identifier (expr) ADD (expr2)
-                                cmd.file.errorNotImplemented(cmd.parts[0]);
+                                cooAssertNotValuePusher(cmd);
+
+                                cmd.getCodeBefore = function() {
+                                    var ret = [];
+
+                                    ret.push(cooValueToJS(cmd, cmd.parts[2]));
+                                    ret.push('.add(');
+                                    ret.push(cooValueToJS(cmd, cmd.parts[4]));
+                                    ret.push(');');
+
+                                    return ret.join('');
+                                };
                             }
                         }
                     }
