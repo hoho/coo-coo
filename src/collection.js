@@ -134,7 +134,7 @@
                                 };
 
                                 cmd.getCodeAfter = function() {
-                                    return '});';
+                                    return '}, this);';
                                 };
                             }
                         }

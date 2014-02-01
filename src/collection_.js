@@ -39,13 +39,13 @@ CooCoo.CollectionBase = CooCoo.Base.extend({
         return self;
     },
 
-    each: function(callback) {
+    each: function(callback, parent) {
         var self = this,
             i,
             items = self._c;
 
         for (i = 0; i < items.length; i++) {
-            callback.call(self, items[i]);
+            callback.call(parent || self, items[i]);
         }
     }
 });
