@@ -37,5 +37,15 @@ CooCoo.CollectionBase = CooCoo.Base.extend({
         }
 
         return self;
+    },
+
+    each: function(callback) {
+        var self = this,
+            i,
+            items = self._c;
+
+        for (i = 0; i < items.length; i++) {
+            callback.call(self, items[i]);
+        }
     }
 });

@@ -6,6 +6,9 @@
     /* global cooProcessBlockAsValue */
     /* global cooValueToJS */
     /* global cooAssertNotValuePusher */
+    /* global cooCreateScope */
+    /* global cooPushScopeVariable */
+    /* global cooGetDecl */
 
     cooObjectBase(
         {
@@ -104,6 +107,34 @@
                                     ret.push(');');
 
                                     return ret.join('');
+                                };
+                            }
+                        },
+
+                        'EACH': {
+                            '': function(cmd) {
+                                // COLLECTION identifier (expr) EACH identifier
+                                cmd.hasSubblock = true;
+                                cooAssertNotValuePusher(cmd);
+
+                                cooCreateScope(cmd);
+                                cooPushScopeVariable(cmd, cmd.parts[4].value, false);
+
+                                cmd.getCodeBefore = function() {
+                                    var ret = [];
+
+                                    cooGetDecl(cmd);
+
+                                    ret.push(cooValueToJS(cmd, cmd.parts[2]));
+                                    ret.push('.each(function(');
+                                    ret.push(cmd.parts[4].value);
+                                    ret.push(') {');
+
+                                    return ret.join('');
+                                };
+
+                                cmd.getCodeAfter = function() {
+                                    return '});';
                                 };
                             }
                         }
