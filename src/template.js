@@ -177,31 +177,29 @@
                 }
             },
 
-            ON: {
-                '(': {
-                    '': function() {
-                        cmd.hasSubblock = true;
+            '(': {
+                '': function() {
+                    cmd.hasSubblock = true;
 
-                        cooCreateScope(cmd);
-                        cooPushScopeVariable(cmd, cmd.parts[2].value, false);
+                    cooCreateScope(cmd);
+                    cooPushScopeVariable(cmd, cmd.parts[1].value, false);
 
-                        cmd.getCodeBefore = function() {
-                            var ret = [];
+                    cmd.getCodeBefore = function() {
+                        var ret = [];
 
-                            ret.push('.on(');
-                            ret.push(cooValueToJS(cmd, cmd.parts[1]));
-                            ret.push(', function(');
-                            ret.push(cmd.parts[2].value);
-                            ret.push(') {');
-                            ret.push(cooGetScopeVariablesDecl(cmd));
+                        ret.push('.on(');
+                        ret.push(cooValueToJS(cmd, cmd.parts[0]));
+                        ret.push(', function(');
+                        ret.push(cmd.parts[1].value);
+                        ret.push(') {');
+                        ret.push(cooGetScopeVariablesDecl(cmd));
 
-                            return ret.join('');
-                        };
+                        return ret.join('');
+                    };
 
-                        cmd.getCodeAfter = function() {
-                            return '})';
-                        };
-                    }
+                    cmd.getCodeAfter = function() {
+                        return '})';
+                    };
                 }
             }
         });

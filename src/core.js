@@ -580,10 +580,11 @@ CooFile.prototype = {
                 cooSetScopeRet(cmd);
             }
 
-            if (parts[0].type === COO_COMMAND_PART_STRING ||
-                parts[0].type === COO_COMMAND_PART_JS ||
-                parts[0].type === COO_COMMAND_PART_VARIABLE_GETTER ||
-                parts[0].type === COO_COMMAND_PART_PROPERTY_GETTER)
+            if ((parts[0].type === COO_COMMAND_PART_STRING ||
+                 parts[0].type === COO_COMMAND_PART_JS ||
+                 parts[0].type === COO_COMMAND_PART_VARIABLE_GETTER ||
+                 parts[0].type === COO_COMMAND_PART_PROPERTY_GETTER) &&
+                (!parent || !parent.processChild))
             {
                 // Check for certain conditions in case command begins with
                 // a string or with a JavaScript expression.
@@ -1388,10 +1389,18 @@ function cooProcessEvent(cmd, hasName, hasParams, actualName) {
     }
 
     cmd.getCodeBefore = function() {
-        var ret = [];
+        var ret = [],
+            nameIsJSVal;
 
-        ret.push('.on("');
-        ret.push(actualName || cmd.parts[0].value.toLowerCase());
+        ret.push('.on(');
+
+        if (!actualName && cmd.parts[0].type !== COO_COMMAND_PART_IDENTIFIER) {
+            ret.push(cooValueToJS(cmd, cmd.parts[0]));
+            nameIsJSVal = true;
+        } else {
+            ret.push('"');
+            ret.push(actualName || cmd.parts[0].value.toLowerCase());
+        }
 
         if (hasName) {
             var name = cmd.parts[1];
@@ -1403,7 +1412,7 @@ function cooProcessEvent(cmd, hasName, hasParams, actualName) {
                 ret.push('" + ');
                 ret.push(cooValueToJS(cmd, name));
             }
-        } else {
+        } else if (!nameIsJSVal) {
             ret.push('"');
         }
 
@@ -1533,6 +1542,13 @@ function cooGetProcessParamsAndEvents(hasParams, events) {
                 }
             })(key, events[key]);
         }
+
+        patterns['('] = {
+            '*': function() {
+                // "custom-event" identifier identifier2 ...
+                return cooProcessEvent(cmd, false, 1);
+            }
+        };
 
         return cooMatchCommand(cmd, patterns);
     };
@@ -2534,6 +2550,8 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                 '': {
                     '#': function() {
                         // THIS TRIGGER identifier (expr) (expr) ...
+                        cooAssertNotValuePusher(cmd);
+
                         var events = CooCoo.cmd[cmd.root.name].triggers || {},
                             event = events[cmd.parts[2].value];
 
@@ -2548,6 +2566,31 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                             ret.push('this.trigger("');
                             ret.push(event.actualName);
                             ret.push('"');
+
+                            var params = cooExtractParamValues(cmd, 3);
+
+                            if (params.length) {
+                                ret.push(', ');
+                                ret.push(params.join(', '));
+                            }
+
+                            ret.push(');');
+
+                            return ret.join('');
+                        };
+                    }
+                },
+
+                '(': {
+                    '#': function() {
+                        // THIS TRIGGER "custom-event" (expr) (expr) ...
+                        cooAssertNotValuePusher(cmd);
+
+                        cmd.getCodeBefore = function() {
+                            var ret = [];
+
+                            ret.push('this.trigger(');
+                            ret.push(cooValueToJS(cmd, cmd.parts[2]));
 
                             var params = cooExtractParamValues(cmd, 3);
 
