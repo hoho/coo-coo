@@ -179,4 +179,11 @@
             }
         }
     };
+
+    CooCooDOM.trigger = function(node, name/*, ...*/) {
+        /* global $ */
+        node = CooCooRet(node).valueOf(true);
+        name = CooCooRet(name).valueOf(true);
+        $(node).trigger(name);
+    };
 })(CooCoo, CooCooRet);

@@ -12,7 +12,41 @@
     /* global cooAssertNotValuePusher */
 
     var DOM_FUNC = 'CooCoo.DOM',
-        DOM_OBJ = 'new ' + DOM_FUNC;
+        DOM_OBJ = 'new ' + DOM_FUNC,
+        eventList = {
+            CLICK: 'click',
+            DBLCLICK: 'dblclick',
+            MOUSEDOWN: 'mousedown',
+            MOUSEUP: 'mouseup',
+            MOUSEOVER: 'mouseover',
+            MOUSEMOVE: 'mousemove',
+            MOUSEOUT: 'mouseout',
+            DRAGSTART: 'dragstart',
+            DRAG: 'drag',
+            DRAGENTER: 'dragenter',
+            DRAGLEAVE: 'dragleave',
+            DRAGOVER: 'dragover',
+            DROP: 'drop',
+            DRAGEND: 'dragend',
+            KEYDOWN: 'keydown',
+            KEYPRESS: 'keypress',
+            KEYUP: 'keyup',
+            LOAD: 'load',
+            UNLOAD: 'unload',
+            ABORT: 'abort',
+            ERROR: 'error',
+            RESIZE: 'resize',
+            SCROLL: 'scroll',
+            SELECT: 'select',
+            CHANGE: 'change',
+            INPUT: 'input',
+            SUBMIT: 'submit',
+            RESET: 'reset',
+            FOCUS: 'focus',
+            BLUR: 'blur',
+            FOCUSIN: 'focusin',
+            FOCUSOUT: 'focusout'
+        };
 
 
     function getSetter(method, params) {
@@ -131,6 +165,7 @@
                         cmd.processChild = domProcessEvents;
 
                         cmd.getCodeBefore = function() {
+                            cooAssertNotValuePusher(cmd);
                             cooAssertHasSubcommands(cmd);
 
                             var ret = [];
@@ -170,6 +205,8 @@
                         '@': function() {
                             // DOM (expr) APPEND
                             //     ...
+                            cooAssertNotValuePusher(cmd);
+
                             cmd.hasSubblock = true;
                             cmd.valueRequired = true;
 
@@ -204,6 +241,8 @@
 
                         '(': function() {
                             // DOM (expr) APPEND (expr2)
+                            cooAssertNotValuePusher(cmd);
+
                             cmd.getCodeBefore = function() {
                                 var ret = [];
 
@@ -226,15 +265,33 @@
 
                     'TRIGGER': {
                         '': {
-                            '@': function() {
-                                // DOM (expr) TRIGGER identifier
-                                //     ...
-                                cmd.file.errorNotImplemented(cmd.parts[0]);
-                            },
-
                             '#': function() {
                                 // DOM (expr) TRIGGER identifier (expr) (expr2) ...
-                                cmd.file.errorNotImplemented(cmd.parts[0]);
+                                cooAssertNotValuePusher(cmd);
+
+                                if (!(cmd.parts[3].value in eventList)) {
+                                    cmd.file.errorUnexpectedPart(cmd.parts[3]);
+                                }
+
+                                cmd.getCodeBefore = function() {
+                                    var ret = [];
+
+                                    ret.push(DOM_FUNC);
+                                    ret.push('.trigger(');
+                                    ret.push(cooValueToJS(cmd, cmd.parts[1]));
+                                    ret.push(', "');
+                                    ret.push(eventList[cmd.parts[3].value]);
+                                    ret.push('"');
+
+                                    for (var i = 4; i < cmd.parts.length; i++) {
+                                        ret.push(', ');
+                                        ret.push(cooValueToJS(cmd, cmd.parts[i]));
+                                    }
+
+                                    ret.push(');');
+
+                                    return ret.join('');
+                                };
                             }
                         }
                     },
@@ -252,42 +309,6 @@
             }
         });
     }
-
-
-    var eventList = {
-        CLICK: 'click',
-        DBLCLICK: 'dblclick',
-        MOUSEDOWN: 'mousedown',
-        MOUSEUP: 'mouseup',
-        MOUSEOVER: 'mouseover',
-        MOUSEMOVE: 'mousemove',
-        MOUSEOUT: 'mouseout',
-        DRAGSTART: 'dragstart',
-        DRAG: 'drag',
-        DRAGENTER: 'dragenter',
-        DRAGLEAVE: 'dragleave',
-        DRAGOVER: 'dragover',
-        DROP: 'drop',
-        DRAGEND: 'dragend',
-        KEYDOWN: 'keydown',
-        KEYPRESS: 'keypress',
-        KEYUP: 'keyup',
-        LOAD: 'load',
-        UNLOAD: 'unload',
-        ABORT: 'abort',
-        ERROR: 'error',
-        RESIZE: 'resize',
-        SCROLL: 'scroll',
-        SELECT: 'select',
-        CHANGE: 'change',
-        INPUT: 'input',
-        SUBMIT: 'submit',
-        RESET: 'reset',
-        FOCUS: 'focus',
-        BLUR: 'blur',
-        FOCUSIN: 'focusin',
-        FOCUSOUT: 'focusout'
-    };
 
     var eventPatterns = {
 
