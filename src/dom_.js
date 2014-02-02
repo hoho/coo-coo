@@ -3,7 +3,8 @@
 (function(CooCoo, CooCooRet) {
     var handlers = {},
         CooCooDOM,
-        captureEvents = {focus: true, blur: true};
+        captureEvents = {focus: true, blur: true},
+        props = {checked: true};
 
     function splitClass(val) {
         var ret = {},
@@ -169,9 +170,13 @@
         val = CooCooRet(val).valueOf();
 
         if (val === undefined) {
-            return node.getAttribute(attr);
+            return attr in props ? node[attr] : node.getAttribute(attr);
         } else {
-            node.setAttribute(attr, val);
+            if (attr in props) {
+                node[attr] = val;
+            } else {
+                node.setAttribute(attr, val);
+            }
         }
     };
 })(CooCoo, CooCooRet);

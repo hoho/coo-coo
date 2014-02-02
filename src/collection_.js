@@ -9,6 +9,7 @@ CooCoo.CollectionBase = CooCoo.Base.extend({
 
     __construct: function(items) {
         this.add(items);
+        this.on('destroy', function(m) { this.remove(m); });
     },
 
     item: function(index) {
@@ -19,7 +20,7 @@ CooCoo.CollectionBase = CooCoo.Base.extend({
     add: function(val) {
         var self = this,
             i,
-            m;
+            model;
 
         val = CooCooRet(val).valueOf();
 
@@ -29,14 +30,32 @@ CooCoo.CollectionBase = CooCoo.Base.extend({
             }
 
             for (i = 0; i < val.length; i++) {
-                m = new self.model(self, val[i]);
-                m._p = self;
-                self._c.push(m);
-                m.trigger('add');
+                model = new self.model(self, val[i]);
+                model._p = self;
+                self._c.push(model);
+                model.trigger('add');
             }
         }
 
         return self;
+    },
+
+    remove: function(model) {
+        if (model) {
+            // TODO: Do something with linear complexity of this method.
+            var self = this,
+                i,
+                items = self._c;
+
+            for (i = 0; i < items.length; i++) {
+                if (items[i] === model) {
+                    items.splice(i, 1);
+                    model.trigger('remove');
+                    model._p = null;
+                    break;
+                }
+            }
+        }
     },
 
     each: function(callback, parent) {

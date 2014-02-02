@@ -2124,6 +2124,11 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
             hasParams: true
         },
 
+        REMOVE: {
+            hasName: false,
+            hasParams: cmdDesc.cmdName === 'COLLECTION'
+        },
+
         CHANGE: {
             hasName: true,
             hasParams: true
@@ -2131,7 +2136,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
 
         DESTROY: {
             hasName: false,
-            hasParams: false
+            hasParams: cmdDesc.cmdName === 'COLLECTION'
         }
     };
 
