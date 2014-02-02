@@ -61,7 +61,7 @@ CooCoo.CollectionBase = CooCoo.Base.extend({
     each: function(callback, parent) {
         var self = this,
             i,
-            items = self._c;
+            items = self._c.slice(0);
 
         for (i = 0; i < items.length; i++) {
             callback.call(parent || self, items[i]);
