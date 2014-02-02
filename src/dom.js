@@ -69,6 +69,11 @@
                         for (var i = 0; i < params.length; i++) {
                             if (params[i] === 'b') { break; }
                             ret.push(', ');
+
+                            if (!cmd.parts[params[i]]) {
+                                cmd.file.errorIncompleteCommand(cmd.parts[cmd.parts.length - 1]);
+                            }
+
                             ret.push(cooValueToJS(cmd, cmd.parts[params[i]]));
                         }
 
@@ -82,6 +87,11 @@
 
                         for (var i = params.indexOf('b') + 2; i < params.length; i++) {
                             ret.push(', ');
+
+                            if (!cmd.parts[params[i]]) {
+                                cmd.file.errorIncompleteCommand(cmd.parts[cmd.parts.length - 1]);
+                            }
+
                             ret.push(cooValueToJS(cmd, cmd.parts[params[i]]));
                         }
 
@@ -92,7 +102,7 @@
                 });
             },
 
-            '(': function(cmd) {
+            '#': function(cmd) {
                 // DOM (expr) CLASS ADD (expr2)
                 cooAssertNotValuePusher(cmd);
 
@@ -107,6 +117,11 @@
 
                     for (var i = 0; i < params.length; i++) {
                         if (params[i] === 'b') { continue; }
+
+                        if (!cmd.parts[params[i]]) {
+                            cmd.file.errorIncompleteCommand(cmd.parts[cmd.parts.length - 1]);
+                        }
+
                         ret.push(', ');
                         ret.push(cooValueToJS(cmd, cmd.parts[params[i]]));
                     }
@@ -260,7 +275,8 @@
 
                     'CLASS': {
                         'ADD': getSetter('addClass', ['b', 4]),
-                        'REMOVE': getSetter('removeClass', ['b', 4])
+                        'REMOVE': getSetter('removeClass', ['b', 4]),
+                        'TOGGLE': getSetter('toggleClass', ['b', 4, 5])
                     },
 
                     'TRIGGER': {

@@ -1,0 +1,14 @@
+#todo-list.active li.completed
+{
+    display: none;
+}
+
+#todo-list.completed li
+{
+    display: none;
+}
+
+#todo-list.completed li.completed
+{
+    display: block;
+}

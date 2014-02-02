@@ -1154,6 +1154,10 @@ CooFile.prototype = {
 
     errorNotImplemented: function(part) {
         this.error('Not implemented', part._charAt, part._lineAt);
+    },
+
+    errorIncompleteCommand: function(part) {
+        this.error('Incomplete command', part._charEnd, part._lineEnd);
     }
 };
 

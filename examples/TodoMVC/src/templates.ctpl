@@ -6,14 +6,18 @@ app
             TRIGGER "new"
 
     section#main
+        TRIGGER "main"
+
         input#toggle-all[type="checkbox"]
             TRIGGER "toggle-all"
+
         label[for="toggle-all"]
             "Mark all as complete"
+
         ul#todo-list
             TRIGGER "list"
 
-    footer
+    footer#footer
         TRIGGER "footer"
 
 
@@ -38,29 +42,37 @@ item title completed
             TRIGGER "edit"
 
 
-stats remaining completed
+stats remaining completed filter
     span#todo-count
         strong
-            CHOOSE
-                WHEN (remaining === 1)
-                    "item"
-                OTHERWISE
-                    "items"
-        "left"
+            (remaining)
+        CHOOSE
+            WHEN (remaining === 1)
+                " item"
+            OTHERWISE
+                " items"
+        " left"
 
     ul#filters
         li
-            a.selected[href="#/"]
+            a[href="#/"]
+                TEST (!filter)
+                    @class "selected"
                 "All"
         li
             a[href="#/active"]
+                TEST (filter === 'active')
+                    @class "selected"
                 "Active"
         li
             a[href="#/completed"]
+                TEST (filter === 'completed')
+                    @class "selected"
                 "Completed"
 
     TEST (completed)
         button#clear-completed
+            TRIGGER "clear"
             "Clear completed ("
             (completed)
             ")"

@@ -23,6 +23,13 @@ module.exports = function(grunt) {
             }
         },
 
+        concat: {
+            css: {
+                src: 'src/**/*.css',
+                dest: 'css/app.css'
+            }
+        },
+
         watch: {
             coo: {
                 files: ['src/**/*.coo'],
@@ -32,13 +39,19 @@ module.exports = function(grunt) {
             ctpl: {
                 files: ['src/**/*.ctpl'],
                 tasks: ['conkitty']
+            },
+
+            css: {
+                files: ['src/**/*.css'],
+                tasks: ['concat']
             }
         }
     });
 
     grunt.loadNpmTasks('grunt-coocoo');
     grunt.loadNpmTasks('grunt-conkitty');
+    grunt.loadNpmTasks('grunt-contrib-concat');
     grunt.loadNpmTasks('grunt-contrib-watch');
 
-    grunt.registerTask('default', ['coocoo', 'conkitty', 'watch']);
+    grunt.registerTask('default', ['coocoo', 'conkitty', 'concat', 'watch']);
 };

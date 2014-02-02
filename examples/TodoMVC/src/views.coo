@@ -1,18 +1,45 @@
 VIEW App
     PROPERTY todos<COLLECTION Todos>
+    PROPERTY main<Node>
     PROPERTY list<Node>
     PROPERTY new<Node>
     PROPERTY toggleAll<Node>
+    PROPERTY footer<Node>
+    PROPERTY stats<VIEW Stats>
+    PROPERTY filter<String>
+
+    PROPERTY remaining<Number>
 
     CONSTRUCT
+        THIS SET remaining (0)
+
         THIS SET todos
             +COLLECTION Todos CREATE
                 ADD m
                     DOM @list APPEND [+VIEW Todo [+VIEW Todo CREATE $m] RENDER]
+                    DOM @toggleAll ATTR "checked" SET (false)
+                    THIS SET remaining (this.get('remaining') + 1)
+
+                CHANGE "completed" m val
+                    THIS SET remaining (this.get('remaining') - (val ? 1 : -1))
+
+                REMOVE m
+                    CHOOSE
+                        WHEN (m && !m.get('completed'))
+                            THIS SET remaining (this.get('remaining') - 1)
+                        WHEN $m
+                            THIS CALL setStats
+
+        THIS
+            CHANGE "remaining" val
+                TEST (val === 0)
+                    DOM @toggleAll ATTR "checked" SET (true)
+
+                THIS CALL setStats
 
     RENDER
         +TEMPLATE App APPLY
-            ON "new" node
+            "new" node
                 THIS SET new $node
 
                 DOM $node
@@ -23,20 +50,62 @@ VIEW App
                             DOM @new VALUE SET ""
                             COLLECTION Todos @todos ADD $val
 
-            ON "toggle-all" node
+            "toggle-all" node
                 THIS SET toggleAll $node
 
                 DOM $node
                     CLICK
                         SET checked [+DOM @toggleAll ATTR "checked" GET]
+
                         COLLECTION Todos @todos EACH model
                             MODEL Todo $model SET completed $checked
 
-            ON "list" node
+            "main" node
+                THIS SET main $node
+
+            "list" node
                 THIS SET list $node
 
-            ON "footer" node
+            "footer" node
+                THIS SET footer $node
 
+        ROUTE All
+            ON
+                THIS SET filter ""
+                THIS CALL setStats
+
+        ROUTE Active
+            ON
+                THIS SET filter "active"
+                THIS CALL setStats
+
+        ROUTE Completed
+            ON
+                THIS SET filter "completed"
+                THIS CALL setStats
+
+    METHOD setStats
+        TEST @stats
+            VIEW @stats DESTROY
+
+        THIS SET stats
+            +VIEW Stats CREATE
+                "clear-completed"
+                    COLLECTION Todos @todos EACH model
+                        TEST [+MODEL Todo $model GET completed]
+                            MODEL $model DESTROY
+
+        SET total (this.get('todos').item().length)
+        SET completed (total - this.get('remaining'))
+
+        DOM @list CLASS REMOVE "active completed"
+        DOM @list CLASS ADD @filter
+
+        DOM @main CLASS TOGGLE "hidden" (!total)
+        DOM @footer CLASS TOGGLE "hidden" (!total)
+
+        DOM @footer APPEND
+            +VIEW Stats @stats RENDER @remaining $completed @filter
 
 
 VIEW Todo
@@ -60,7 +129,7 @@ VIEW Todo
 
             CHANGE "completed" val
                 DOM @item CLASS TOGGLE "completed" $val
-                DOM @completed CHECKED SET $val
+                DOM @completed ATTR "checked" SET $val
 
             DESTROY
                 THIS DESTROY
@@ -72,25 +141,25 @@ VIEW Todo
             PARAM completed
                 +MODEL Todo @model GET completed
 
-            ON "item" node
+            "item" node
                 THIS SET item $node
 
-            ON "completed" node
+            "completed" node
                 THIS SET completed $node
 
                 DOM $node
                     CLICK
-                        MODEL @model SET completed [+DOM @completed CHECKED GET]
+                        MODEL Todo @model SET completed [+DOM @completed ATTR "checked" GET]
 
-            ON "title" node
+            "title" node
                 THIS SET title $node
 
                 DOM $node
                     DBLCLICK
                         DOM @item CLASS ADD "editing"
-                        DOM @item TRIGGER FOCUS
+                        DOM @edit TRIGGER FOCUS
 
-            ON "edit" node
+            "edit" node
                 THIS SET edit $node
 
                 DOM $node
@@ -101,14 +170,23 @@ VIEW Todo
                         TEST (e.which === 13)
                             THIS CALL editTitle
 
-            ON "destroy" node
+            "destroy" node
                 DOM $node
                     CLICK
                         MODEL @model DESTROY
 
     METHOD editTitle
         DOM @item CLASS REMOVE "editing"
-        MODEL @model SET title [+DOM @edit VALUE GET]
+        MODEL Todo @model SET title [+DOM @edit VALUE GET]
+
+
+VIEW Stats
+    RENDER remaining completed filter
+        +TEMPLATE Stats APPLY $remaining $completed $filter
+            "clear" node
+                DOM $node
+                    CLICK
+                        THIS TRIGGER "clear-completed"
 
 
 TEMPLATE App
@@ -117,3 +195,7 @@ TEMPLATE App
 
 TEMPLATE Todo title completed
     ORIGIN "conkitty:item"
+
+
+TEMPLATE Stats remaining completed filter
+    ORIGIN "conkitty:stats"

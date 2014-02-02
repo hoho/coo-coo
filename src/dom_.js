@@ -6,6 +6,18 @@
         captureEvents = {focus: true, blur: true},
         props = {checked: true};
 
+    function unwrapArguments(args, firsts) {
+        var i,
+            first;
+
+        if (!firsts) { firsts = []; }
+
+        for (i = 0; i < args.length; i++) {
+            first = firsts[i];
+            args[i] = CooCooRet(args[i])[first === 'a' ? 'toArray' : 'valueOf'](first);
+        }
+    }
+
     function splitClass(val) {
         var ret = {},
             i;
@@ -127,8 +139,7 @@
     });
 
     CooCooDOM.val = function(node, val) {
-        node = CooCooRet(node).valueOf(true);
-        val = CooCooRet(val).valueOf();
+        unwrapArguments(arguments, [true, false]);
 
         if (val === undefined) {
             return node.value || '';
@@ -138,8 +149,7 @@
     };
 
     CooCooDOM.append = function(parent, node) {
-        parent = CooCooRet(parent).valueOf();
-        node = CooCooRet(node).toArray();
+        unwrapArguments(arguments, [false, 'a']);
 
         for (var i = 0; i < node.length; i++) {
             parent.appendChild(node[i]);
@@ -147,27 +157,28 @@
     };
 
     CooCooDOM.text = function(node, val) {
-        node = CooCooRet(node).valueOf(true);
-        val = CooCooRet(val).valueOf();
-
+        unwrapArguments(arguments, [true, false]);
         node.innerHTML = '';
         node.appendChild(document.createTextNode(val));
     };
 
     CooCooDOM.addClass = function(node, val) {
-        node = CooCooRet(node).valueOf(true);
+        unwrapArguments(arguments, [true, false]);
         modifyClass(node, val, false);
     };
 
     CooCooDOM.removeClass = function(node, val) {
-        node = CooCooRet(node).valueOf(true);
+        unwrapArguments(arguments, [true, false]);
         modifyClass(node, val, true);
     };
 
+    CooCooDOM.toggleClass = function(node, cls, on) {
+        unwrapArguments(arguments, [true, true, true]);
+        modifyClass(node, cls, !on);
+    };
+
     CooCooDOM.attr = function(node, attr, val) {
-        node = CooCooRet(node).valueOf(true);
-        attr = CooCooRet(attr).valueOf(true);
-        val = CooCooRet(val).valueOf();
+        unwrapArguments(arguments, [true, true, false]);
 
         if (val === undefined) {
             return attr in props ? node[attr] : node.getAttribute(attr);
@@ -182,8 +193,7 @@
 
     CooCooDOM.trigger = function(node, name/*, ...*/) {
         /* global $ */
-        node = CooCooRet(node).valueOf(true);
-        name = CooCooRet(name).valueOf(true);
+        unwrapArguments(arguments, [true, true]);
         $(node).trigger(name);
     };
 })(CooCoo, CooCooRet);
