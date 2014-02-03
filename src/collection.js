@@ -17,6 +17,8 @@
             baseClass: {name: 'CooCoo.CollectionBase'}
         },
         {
+            init: true,
+            properties: true,
             methods: true,
             specialMethods: {
                 MODEL: {
