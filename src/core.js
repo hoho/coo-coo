@@ -2270,17 +2270,6 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
 
                     'CALL': {
                         '': {
-                            '@': function() {
-                                // `NAME` identifier (something) CALL identifier
-                                //     ...
-                                cmd.hasSubblock = true;
-                                cmd.valueRequired = true;
-
-                                cmd.processChild = cooGetProcessParamsAndEvents(true, {});
-
-                                cmd.file.errorNotImplemented(cmd.parts[0]);
-                            },
-
                             '#': function() {
                                 // `NAME` identifier (something) CALL identifier (expr) (expr) ...
                                 var params = cooExtractParamValues(cmd, 5);

@@ -5,7 +5,6 @@
     /* global cooValueToJS */
     /* global cooGetScopeVariablesDecl */
     /* global cooGetScopeRet */
-    /* global cooProcessBlockAsValue */
     /* global COO_INTERNAL_VARIABLE_RET */
     /* global cooAssertHasSubcommands */
     /* global cooAssertValuePusher */
@@ -51,59 +50,8 @@
 
     function getSetter(method, params) {
         return {
-            '@': function(cmd) {
-                // DOM (expr) CLASS ADD
-                //     ...
-                cooAssertNotValuePusher(cmd);
-
-                return cooProcessBlockAsValue(cmd, {
-                    getCodeBeforeBefore: function() {
-                        var ret = [];
-
-                        ret.push(DOM_FUNC);
-                        ret.push('.');
-                        ret.push(method);
-                        ret.push('(');
-                        ret.push(cooValueToJS(cmd, cmd.parts[1]));
-
-                        for (var i = 0; i < params.length; i++) {
-                            if (params[i] === 'b') { break; }
-                            ret.push(', ');
-
-                            if (!cmd.parts[params[i]]) {
-                                cmd.file.errorIncompleteCommand(cmd.parts[cmd.parts.length - 1]);
-                            }
-
-                            ret.push(cooValueToJS(cmd, cmd.parts[params[i]]));
-                        }
-
-                        ret.push(', ');
-
-                        return ret.join('');
-                    },
-
-                    getCodeAfterAfter: function() {
-                        var ret = [];
-
-                        for (var i = params.indexOf('b') + 2; i < params.length; i++) {
-                            ret.push(', ');
-
-                            if (!cmd.parts[params[i]]) {
-                                cmd.file.errorIncompleteCommand(cmd.parts[cmd.parts.length - 1]);
-                            }
-
-                            ret.push(cooValueToJS(cmd, cmd.parts[params[i]]));
-                        }
-
-                        ret.push(');');
-
-                        return ret.join('');
-                    }
-                });
-            },
-
             '#': function(cmd) {
-                // DOM (expr) CLASS ADD (expr2)
+                // DOM (expr) CLASS ADD (expr2) ...
                 cooAssertNotValuePusher(cmd);
 
                 cmd.getCodeBefore = function() {
@@ -116,8 +64,6 @@
                     ret.push(cooValueToJS(cmd, cmd.parts[1]));
 
                     for (var i = 0; i < params.length; i++) {
-                        if (params[i] === 'b') { continue; }
-
                         if (!cmd.parts[params[i]]) {
                             cmd.file.errorIncompleteCommand(cmd.parts[cmd.parts.length - 1]);
                         }
@@ -211,7 +157,7 @@
 
                     'ATTR': {
                         '(': {
-                            'SET': getSetter('attr', [3, 'b', 5]),
+                            'SET': getSetter('attr', [3, 5]),
                             'GET': getGetter('attr', [3])
                         }
                     },
@@ -274,9 +220,9 @@
                     },
 
                     'CLASS': {
-                        'ADD': getSetter('addClass', ['b', 4]),
-                        'REMOVE': getSetter('removeClass', ['b', 4]),
-                        'TOGGLE': getSetter('toggleClass', ['b', 4, 5])
+                        'ADD': getSetter('addClass', [4]),
+                        'REMOVE': getSetter('removeClass', [4]),
+                        'TOGGLE': getSetter('toggleClass', [4, 5])
                     },
 
                     'TRIGGER': {
@@ -313,12 +259,12 @@
                     },
 
                     'VALUE': {
-                        'SET': getSetter('val', ['b', 4]),
+                        'SET': getSetter('val', [4]),
                         'GET': getGetter('val', [])
                     },
 
                     'TEXT': {
-                        'SET': getSetter('text', ['b', 4]),
+                        'SET': getSetter('text', [4]),
                         'GET': getGetter('text', [])
                     }
                 }
