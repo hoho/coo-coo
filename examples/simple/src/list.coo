@@ -33,8 +33,8 @@ VIEW Item
                 THIS DESTROY
 
     RENDER
-        +TEMPLATE Item APPLY
-            PARAM title
+        +TEMPLATE "conkitty:item" APPLY
+            PARAM
                 +MODEL Item @model GET title
 
             "text" node
@@ -58,7 +58,7 @@ VIEW Page
                     THIS CALL addItem $m
 
     RENDER
-        +TEMPLATE Page APPLY
+        +TEMPLATE "conkitty:page" APPLY
             "container" node
                 THIS SET container $node
 
@@ -74,11 +74,3 @@ VIEW Page
     METHOD addItem m
         DOM @container APPEND
             +VIEW Item [+VIEW Item CREATE $m] RENDER
-
-
-TEMPLATE Page
-    ORIGIN "conkitty:page"
-
-
-TEMPLATE Item title
-    ORIGIN "conkitty:item"

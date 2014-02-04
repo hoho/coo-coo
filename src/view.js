@@ -43,14 +43,15 @@
                                 var params = cooExtractParamValues(cmd, 4);
 
                                 cmd.getCodeBefore = function() {
-                                    var decl = cooGetDecl(cmd),
-                                        ret = [];
+                                    cooGetDecl(cmd);
+
+                                    var ret = [];
 
                                     ret.push(COO_INTERNAL_VARIABLE_RET);
                                     ret.push('.push(');
                                     ret.push(cooValueToJS(cmd, cmd.parts[2]));
                                     ret.push('._render(');
-                                    ret.push(cooGetParamValues(cmd, decl.data.methods.__render, params, cmd.data.elemParams));
+                                    ret.push(cooGetParamValues(cmd, params, cmd.data.elemParams));
                                     ret.push('));');
 
                                     return ret.join('');
@@ -66,14 +67,12 @@
     function processParams(cmd) {
         return cooMatchCommand(cmd, {
             PARAM: {
-                '': {
-                    '@': function() {
-                        return cooProcessParam(cmd, false);
-                    },
+                '@': function() {
+                    return cooProcessParam(cmd, false);
+                },
 
-                    '(': function() {
-                        return cooProcessParam(cmd, true);
-                    }
+                '(': function() {
+                    return cooProcessParam(cmd, true);
                 }
             }
         });

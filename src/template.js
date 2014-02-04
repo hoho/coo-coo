@@ -5,65 +5,52 @@
     /* global cooMatchCommand */
     /* global cooExtractParamValues */
     /* global COO_INTERNAL_VARIABLE_RET */
-    /* global cooExtractParamNames */
     /* global cooProcessParam */
     /* global cooGetParamValues */
-    /* global INDENT */
     /* global cooGetScopeVariablesDecl */
+    /* global cooAssertValuePusher */
 
 
     function templateProcess(cmd) {
-        var decls;
-
-        if (!(decls = cmd.file.ret.data.templates)) {
-            cmd.file.ret.data.templates = decls = {};
-            cmd.file.ret.data.templateId = 0;
-        }
-
         if (cmd.parent) {
+            if (!cmd.file.ret.data.templateId) {
+                cmd.file.ret.data.templateId = 1;
+            }
+
             cmd.hasSubblock = true;
 
             cmd.processChild = templateProcessParamsAndElements;
 
             return cooMatchCommand(cmd, {
                 'TEMPLATE': {
-                    '': {
+                    '(': {
                         'APPLY': {
                             '#': function() {
-                                if (!cmd.valuePusher) {
-                                    cmd.file.errorMeaninglessValue(cmd.parts[0]);
-                                }
+                                cooAssertValuePusher(cmd);
 
                                 var inlineParams = cooExtractParamValues(cmd, 3),
                                     paramValues;
 
                                 cmd.getCodeBefore = function() {
-                                    var decl = decls[cmd.parts[1].value];
-
-                                    if (!decl) {
-                                        cmd.file.errorUndeclared(cmd.parts[1]);
-                                    }
-
                                     var ret = [];
 
                                     ret.push(COO_INTERNAL_VARIABLE_RET);
-                                    ret.push('.push(new CooCoo.Template.');
-                                    ret.push(cmd.parts[1].value);
-                                    ret.push('(this, ');
-                                    ret.push(++cmd.file.ret.data.templateId);
+                                    ret.push('.push(new CooCoo.Template(this, ');
+                                    ret.push(cmd.file.ret.data.templateId++);
+                                    ret.push(', ');
+                                    ret.push(cooValueToJS(cmd, cmd.parts[1]));
                                     ret.push(')');
 
                                     if (!cmd.children.length) {
                                         ret.push('.apply(');
 
                                         if (inlineParams.length) {
-                                            ret.push('null, ');
                                             ret.push(inlineParams.join(', '));
                                         }
 
                                         ret.push('));');
                                     } else {
-                                        paramValues = cooGetParamValues(cmd, decl.data.params, inlineParams, cmd.data.elemParams);
+                                        paramValues = cooGetParamValues(cmd, inlineParams, cmd.data.elemParams);
                                     }
 
                                     return ret.join('');
@@ -75,9 +62,6 @@
 
                                         ret.push('.apply(');
                                         if (paramValues) {
-                                            ret.push('\n');
-                                            ret.push(INDENT);
-                                            ret.push('null, ');
                                             ret.push(paramValues);
                                         }
                                         ret.push('));');
@@ -91,89 +75,20 @@
                 }
             });
         } else {
-            // Template declaration.
-            return cooMatchCommand(cmd, {
-                'TEMPLATE': {
-                    '': {
-                        '*': function() {
-                            cmd.hasSubblock = true;
-
-                            cmd.processChild = templateProcessDecl;
-
-                            var params = cooExtractParamNames(cmd, cmd.parts, 2);
-
-                            cmd.data = {
-                                origin: null,
-                                params: params,
-                                elemParams: null
-                            };
-
-                            if (cmd.parts[1].value in decls) {
-                                cmd.parts[1].error = 'Redeclaration';
-                                cmd.file.errorUnexpectedPart(cmd.parts[1]);
-                            } else {
-                                decls[cmd.parts[1].value] = cmd;
-                            }
-
-                            cmd.getCodeBefore = function() {
-                                var ret = [];
-
-                                ret.push('CooCoo.Template.');
-                                ret.push(cmd.parts[1].value);
-                                ret.push(' = CooCoo.TemplateBase.extend({\n');
-
-                                if (cmd.debug) {
-                                    ret.push(INDENT);
-                                    ret.push('__what: "');
-                                    ret.push('CooCoo.Template.');
-                                    ret.push(cmd.parts[1].value);
-                                    ret.push('",\n');
-                                }
-
-                                ret.push(INDENT);
-                                ret.push('origin: ');
-                                ret.push(cmd.data.origin);
-                                ret.push('\n});');
-
-                                return ret.join('');
-                            };
-                        }
-                    }
-                }
-            });
+            return cmd.parts[0];
         }
-    }
-
-
-    function templateProcessDecl(cmd) {
-        /* global cooMatchCommand */
-        return cooMatchCommand(cmd, {
-            'ORIGIN': {
-                '(': function() {
-                    // ORIGIN "text"
-                    if (cmd.parent.data.origin !== null) {
-                        cmd.parts[0].error = 'Duplicate origin';
-                        return cmd.parts[0];
-                    }
-
-                    cmd.parent.data.origin = cooValueToJS(cmd, cmd.parts[1]);
-                }
-            }
-        });
     }
 
 
     function templateProcessParamsAndElements(cmd) {
         return cooMatchCommand(cmd, {
             PARAM: {
-                '': {
-                    '@': function() {
-                        return cooProcessParam(cmd, false);
-                    },
+                '@': function() {
+                    return cooProcessParam(cmd, false);
+                },
 
-                    '(': function() {
-                        return cooProcessParam(cmd, true);
-                    }
+                '(': function() {
+                    return cooProcessParam(cmd, true);
                 }
             },
 

@@ -17,45 +17,48 @@
         }
     });
 
-    CooCoo.Template = {};
-
-    CooCoo.TemplateBase = CooCoo.Extendable.extend({
-        init: function(parent, id) {
+    CooCoo.Template = CooCoo.Extendable.extend({
+        init: function(parent, id, origin) {
             var self = this,
-                bindings = conkittyBindings[(self.id = id)];
+                bindings;
 
             self.parent = parent;
+            self.origin = origin;
 
-            if (bindings) {
+            if (origin.substring(0, 9) !== 'conkitty:') {
+                throw new Error('Template is not recognized: "' + origin + '"');
+            }
+
+            if (!((bindings = conkittyBindings[(self.id = id)]))) {
+                bindings = conkittyBindings[id] = {};
+            }
+
+            if ((bindings = bindings[origin])) {
                 bindings.count++;
                 self.bindings = bindings;
             } else {
-                if (self.origin.substring(0, 9) === 'conkitty:') {
-                    self._bindings = {
-                        count: 1,
-                        name: self.origin.substring(9),
-                        funcs: {}
-                    };
-                } else {
-                    throw new Error('Template origin is not recognized');
-                }
+                conkittyBindings[id][origin] = self._bindings = {
+                    count: 1,
+                    name: origin.substring(9),
+                    funcs: {}
+                };
             }
 
-            CooCoo.TemplateBase.__super__.init.call(self, parent);
+            CooCoo.Template.__super__.init.call(self, parent);
         },
 
         destroy: function() {
             var self = this,
-                bindings = conkittyBindings[self.id];
+                bindings = conkittyBindings[self.id][self.origin];
 
             if (bindings) {
                 bindings.count--;
                 if (!bindings.count) {
-                    delete conkittyBindings[self.id];
+                    delete conkittyBindings[self.id][self.origin];
                 }
             }
 
-            CooCoo.TemplateBase.__super__.destroy.call(self);
+            CooCoo.Template.__super__.destroy.call(self);
         },
 
         on: function(name, func) {
@@ -75,13 +78,13 @@
 
         apply: function() {
             var self = this,
-                args = [],
+                args = [null],
                 i,
                 prevBindings = currentBindings,
                 prevParent = currentParent;
 
             if (self._bindings) {
-                conkittyBindings[self.id] = self.bindings = self._bindings;
+                conkittyBindings[self.id][self.origin] = self.bindings = self._bindings;
             }
 
             currentBindings = self.bindings.funcs;

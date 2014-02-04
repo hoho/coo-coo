@@ -1299,21 +1299,14 @@ function cooExtractParamValues(cmd, firstParam, paramCount) {
 function cooProcessParam(cmd, hasValue) {
     var elemParams = cmd.parent.data.elemParams;
 
-    if (!elemParams) { elemParams = cmd.parent.data.elemParams = {}; }
+    if (!elemParams) { elemParams = cmd.parent.data.elemParams = []; }
 
-    var name = cmd.parts[1];
-
-    if (name.value in elemParams) {
-        name.error = 'Duplicate parameter';
-        cmd.file.errorUnexpectedPart(name);
-    }
-
-    elemParams[name.value] = cmd;
+    elemParams.push(cmd);
 
     if (hasValue) {
         cmd.getCodeBefore = function() {
             cmd.ignore = true;
-            return cooValueToJS(cmd, cmd.parts[2]);
+            return cooValueToJS(cmd, cmd.parts[1]);
         };
     } else {
         return cooProcessBlockAsValue(cmd, {
@@ -1326,46 +1319,31 @@ function cooProcessParam(cmd, hasValue) {
 
 
 /* exported cooGetParamValues */
-function cooGetParamValues(cmd, names, paramsArray, elemParams) {
+function cooGetParamValues(cmd, inlineParams, elemParams) {
     var param;
 
-    if (paramsArray.length > 0 && elemParams) {
-        param = elemParams[Object.keys(elemParams)[0]];
+    inlineParams = inlineParams || [];
+    elemParams = elemParams || [];
+
+    if (inlineParams.length && elemParams.length) {
+        param = elemParams[0];
         param.parts[0].error = 'Can\'t mix PARAM commands with inline params';
         param.file.errorUnexpectedPart(param.parts[0]);
     }
 
-    if (paramsArray.length) {
-        return paramsArray.join(', ');
-    } else if (elemParams) {
+    if (inlineParams.length) {
+        return inlineParams.join(', ');
+    } else if (elemParams.length) {
         var ret = [];
 
-        names = names || {};
+        ret.push('');
 
-        for (param in elemParams) {
-            if (!(param in names)) {
-                param = elemParams[param];
-                param.parts[1].error = 'Unknown parameter';
-                param.file.errorUnexpectedPart(param.parts[1]);
-            }
-        }
+        for (var i = 0; i < elemParams.length; i++) {
+            param = elemParams[i];
 
-        names = Object.keys(names);
+            cooRunGenerators(param, ret, 1);
 
-        if (names.length) {
-            ret.push('');
-        }
-
-        for (var i = 0; i < names.length; i++) {
-            param = elemParams[names[i]];
-
-            if (param) {
-                cooRunGenerators(param, ret, 1);
-            } else {
-                ret.push(INDENT + 'undefined');
-            }
-
-            if (i < names.length - 1) {
+            if (i < elemParams.length - 1) {
                 ret[ret.length - 1] += ',';
             }
         }
@@ -1500,14 +1478,12 @@ function cooGetProcessParamsAndEvents(hasParams, events) {
 
         if (hasParams) {
             patterns.PARAM = {
-                '': {
-                    '@': function() {
-                        return cooProcessParam(cmd, false);
-                    },
+                '@': function() {
+                    return cooProcessParam(cmd, false);
+                },
 
-                    '(': function() {
-                        return cooProcessParam(cmd, true);
-                    }
+                '(': function() {
+                    return cooProcessParam(cmd, true);
                 }
             };
         }
@@ -1581,7 +1557,7 @@ function cooProcessCreateCommand(cmd, firstParam, paramCount, events) {
         ret.push(cls.value);
         ret.push('(this');
 
-        var tmp = cooGetParamValues(cmd, decl.data.methods.__construct, cmd.data.params, cmd.data.elemParams);
+        var tmp = cooGetParamValues(cmd, cmd.data.params, cmd.data.elemParams);
         if (tmp) {
             ret.push(', ');
             ret.push(tmp);
@@ -1660,7 +1636,7 @@ function cooProcessInstance(cmd, name, firstParam, processChild) {
             ret.push('.');
             ret.push(name);
             ret.push('(');
-            ret.push(cooGetParamValues(cmd, decl.data.methods[name], cmd.data.params, cmd.data.elemParams));
+            ret.push(cooGetParamValues(cmd, cmd.data.params, cmd.data.elemParams));
             ret.push(')');
         }
 
@@ -2671,7 +2647,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                             ret.push(method);
                             ret.push('.call(this');
 
-                            var tmp = cooGetParamValues(cmd, extDecl.data.methods[method], cmd.data.params, cmd.data.elemParams);
+                            var tmp = cooGetParamValues(cmd, cmd.data.params, cmd.data.elemParams);
                             if (tmp) {
                                 ret.push(', ');
                                 ret.push(tmp);
