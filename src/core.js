@@ -1401,6 +1401,7 @@ function cooProcessEvent(cmd, hasName, hasParams, actualName) {
         ret.push(', function(');
         ret.push(cooGetParamsDecl(params));
         ret.push(') {');
+        ret.push(cooGetScopeVariablesDecl(cmd));
 
         return ret.join('');
     };
