@@ -140,6 +140,24 @@
                         }
                     });
                 }
+            },
+
+            COMPLETE: {
+                '@': function() {
+                    checkForDuplicate(cmd, 'complete', 'Duplicate COMPLETE');
+
+                    cooProcessBlockAsFunction(cmd, false, 1, {
+                        getCodeBeforeBefore: function() {
+                            return 'complete: ';
+                        },
+
+                        getCodeAfterAfter: function() {
+                            if (!cmd.last) {
+                                return ',';
+                            }
+                        }
+                    });
+                }
             }
         });
     }

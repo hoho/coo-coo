@@ -32,6 +32,10 @@ CooCoo.Ajax = CooCoo.Extendable.extend({
             },
 
             complete: function() {
+                if (!self._aborted) {
+                    var complete = settings.complete;
+                    if (complete) { complete.call(parent); }
+                }
                 self._req = null;
             }
         });
