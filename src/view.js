@@ -4,9 +4,10 @@
     /* global COO_INTERNAL_VARIABLE_RET */
     /* global cooValueToJS */
     /* global cooGetDecl */
-    /* global cooProcessParam */
-    /* global cooMatchCommand */
     /* global cooGetParamValues */
+    /* global cooAssertValuePusher */
+    /* global cooProcessParams */
+
 
     cooObjectBase(
         {
@@ -32,13 +33,10 @@
                         'RENDER': {
                             '#': function(cmd) {
                                 // VIEW identifier (expr) RENDER (expr2) (expr3) ...
-                                if (!cmd.valuePusher) {
-                                    cmd.file.errorMeaninglessValue(cmd.parts[0]);
-                                }
+                                cooAssertValuePusher(cmd);
 
                                 cmd.hasSubblock = true;
-
-                                cmd.processChild = processParams;
+                                cmd.processChild = cooProcessParams;
 
                                 var params = cooExtractParamValues(cmd, 4);
 
@@ -63,18 +61,4 @@
             }
         }
     );
-
-    function processParams(cmd) {
-        return cooMatchCommand(cmd, {
-            PARAM: {
-                '@': function() {
-                    return cooProcessParam(cmd, false);
-                },
-
-                '(': function() {
-                    return cooProcessParam(cmd, true);
-                }
-            }
-        });
-    }
 })();

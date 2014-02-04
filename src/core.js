@@ -1535,6 +1535,22 @@ function cooGetProcessParamsAndEvents(hasParams, events) {
 }
 
 
+/* exported cooProcessParams */
+function cooProcessParams(cmd) {
+    return cooMatchCommand(cmd, {
+        PARAM: {
+            '@': function() {
+                return cooProcessParam(cmd, false);
+            },
+
+            '(': function() {
+                return cooProcessParam(cmd, true);
+            }
+        }
+    });
+}
+
+
 /* exported cooProcessCreateCommand */
 function cooProcessCreateCommand(cmd, firstParam, paramCount, events) {
     cmd.hasSubblock = true;
@@ -2248,6 +2264,9 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                         '': {
                             '#': function() {
                                 // `NAME` identifier (something) CALL identifier (expr) (expr) ...
+                                cmd.hasSubblock = true;
+                                cmd.processChild = cooProcessParams;
+
                                 var params = cooExtractParamValues(cmd, 5);
 
                                 cmd.getCodeBefore = function() {
@@ -2268,7 +2287,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                                     ret.push('.');
                                     ret.push(cmd.parts[4].value);
                                     ret.push('(');
-                                    ret.push(params.join(', '));
+                                    ret.push(cooGetParamValues(cmd, params, cmd.data.elemParams));
 
                                     if (cmd.valuePusher) {
                                         ret.push(')');
@@ -2474,16 +2493,11 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
 
             'CALL': {
                 '': {
-                    '@': function() {
-                        // THIS CALL identifier
-                        cmd.hasSubblock = true;
-                        cmd.valueRequired = true;
-
-                        cmd.processChild = cooGetProcessParamsAndEvents(true, {});
-                    },
-
                     '#': function() {
                         // THIS CALL identifier (expr) (expr) ...
+                        cmd.hasSubblock = true;
+                        cmd.processChild = cooProcessParams;
+
                         var params = cooExtractParamValues(cmd, 3);
 
                         cmd.getCodeBefore = function() {
@@ -2501,7 +2515,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                             ret.push('this.');
                             ret.push(cmd.parts[2].value);
                             ret.push('(');
-                            ret.push(params.join(', '));
+                            ret.push(cooGetParamValues(cmd, params, cmd.data.elemParams));
 
                             if (cmd.valuePusher) {
                                 ret.push(')');
