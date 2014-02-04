@@ -38,7 +38,7 @@ VIEW App
                 THIS CALL setStats
 
     RENDER
-        +TEMPLATE App APPLY
+        +TEMPLATE "conkitty:app" APPLY
             "new" node
                 THIS SET new $node
 
@@ -135,10 +135,10 @@ VIEW Todo
                 THIS DESTROY
 
     RENDER
-        +TEMPLATE Todo APPLY
-            PARAM title
+        +TEMPLATE "conkitty:item" APPLY
+            PARAM
                 +MODEL Todo @model GET title
-            PARAM completed
+            PARAM
                 +MODEL Todo @model GET completed
 
             "item" node
@@ -182,20 +182,8 @@ VIEW Todo
 
 VIEW Stats
     RENDER remaining completed filter
-        +TEMPLATE Stats APPLY $remaining $completed $filter
+        +TEMPLATE "conkitty:stats" APPLY $remaining $completed $filter
             "clear" node
                 DOM $node
                     CLICK
                         THIS TRIGGER "clear-completed"
-
-
-TEMPLATE App
-    ORIGIN "conkitty:app"
-
-
-TEMPLATE Todo title completed
-    ORIGIN "conkitty:item"
-
-
-TEMPLATE Stats remaining completed filter
-    ORIGIN "conkitty:stats"
