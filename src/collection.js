@@ -163,8 +163,8 @@
                                 ret.push(cooWrapWithTypeCheck(
                                     cmd,
                                     cmd.parts[2],
-                                    cooValueToJS(cmd, cmd.parts[2]),
-                                    'val instanceof CooCoo.Collection.' + cmd.parts[1].value
+                                    'val instanceof CooCoo.Collection.' + cmd.parts[1].value,
+                                    cooValueToJS(cmd, cmd.parts[2])
                                 ));
 
                                 ret.push('.length()');
