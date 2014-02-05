@@ -1186,6 +1186,32 @@ function cooAssertHasSubcommands(cmd) {
 }
 
 
+/* exported cooWrapWithTypeCheck */
+function cooWrapWithTypeCheck(cmd, part, val, type) {
+    if (!cmd.debug) {
+        return val;
+    }
+
+    var ret = [];
+
+    // (function cooTypeCheck(val) { if (!(type)) { throw new Error("msg"); } return val; })(val)
+
+    ret.push('(function cooTypeCheck(val) { if (!(');
+    ret.push(type);
+    ret.push(')) { throw new Error("');
+
+    var msg = cmd.file.getErrorMessage('Type check error', part._charAt, part._lineAt);
+    msg = msg.split('\n').join('\\n').replace(/"/g, '\\"');
+    ret.push(msg);
+
+    ret.push('"); } return val; })(');
+    ret.push(val);
+    ret.push(')');
+
+    return ret.join('');
+}
+
+
 function CooCoo(filenames, common, app, debug) {
     CooCoo.decl = {};
 

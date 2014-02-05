@@ -9,6 +9,9 @@
     /* global cooCreateScope */
     /* global cooPushScopeVariable */
     /* global cooGetDecl */
+    /* global cooAssertValuePusher */
+    /* global cooWrapWithTypeCheck */
+    /* global COO_INTERNAL_VARIABLE_RET */
 
     cooObjectBase(
         {
@@ -87,6 +90,8 @@
 
                                 return cooProcessBlockAsValue(cmd, {
                                     getCodeBeforeBefore: function() {
+                                        cooGetDecl(cmd);
+
                                         return cooValueToJS(cmd, cmd.parts[2]) + '.add(';
                                     },
 
@@ -101,6 +106,8 @@
                                 cooAssertNotValuePusher(cmd);
 
                                 cmd.getCodeBefore = function() {
+                                    cooGetDecl(cmd);
+
                                     var ret = [];
 
                                     ret.push(cooValueToJS(cmd, cmd.parts[2]));
@@ -123,9 +130,9 @@
                                 cooPushScopeVariable(cmd, cmd.parts[4].value, false);
 
                                 cmd.getCodeBefore = function() {
-                                    var ret = [];
-
                                     cooGetDecl(cmd);
+
+                                    var ret = [];
 
                                     ret.push(cooValueToJS(cmd, cmd.parts[2]));
                                     ret.push('.each(function(');
@@ -139,6 +146,32 @@
                                     return '}, this);';
                                 };
                             }
+                        },
+
+                        'LENGTH': function(cmd) {
+                            // COLLECTION identifier (expr) LENGTH
+                            cooAssertValuePusher(cmd);
+
+                            cmd.getCodeBefore = function() {
+                                cooGetDecl(cmd);
+
+                                var ret = [];
+
+                                ret.push(COO_INTERNAL_VARIABLE_RET);
+                                ret.push('.push(');
+
+                                ret.push(cooWrapWithTypeCheck(
+                                    cmd,
+                                    cmd.parts[2],
+                                    cooValueToJS(cmd, cmd.parts[2]),
+                                    'val instanceof CooCoo.Collection.' + cmd.parts[1].value
+                                ));
+
+                                ret.push('.length()');
+                                ret.push(');');
+
+                                return ret.join('');
+                            };
                         }
                     }
                 }

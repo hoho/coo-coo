@@ -9,9 +9,12 @@ CooCoo.CollectionBase = CooCoo.Base.extend({
 
     __construct: function(items) {
         var self = this;
-        self.length = 0;
         self.add(items);
         self.on('destroy', function(m) { self.remove(m); });
+    },
+
+    length: function() {
+        return this._c.length;
     },
 
     item: function(index) {
@@ -35,7 +38,6 @@ CooCoo.CollectionBase = CooCoo.Base.extend({
                 model = new self.model(self, val[i]);
                 model._p = self;
                 self._c.push(model);
-                self.length++;
                 model.trigger('add');
             }
         }
@@ -53,7 +55,6 @@ CooCoo.CollectionBase = CooCoo.Base.extend({
             for (i = 0; i < items.length; i++) {
                 if (items[i] === model) {
                     items.splice(i, 1);
-                    self.length--;
                     model.trigger('remove');
                     model._p = null;
                     break;
