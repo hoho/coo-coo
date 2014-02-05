@@ -1,6 +1,7 @@
 /* global window */
 (function(window) {
     var objConstructor = {}.constructor,
+        lastId = 0,
 
         CooCoo = window.CooCoo = {
             Extendable: function() {}
@@ -42,14 +43,15 @@
         init: function(parent/*, ...*/) {
             var self = this;
 
+            self.__id = ++lastId;
             self.__parent = parent;
 
             if (parent) {
                 self.__root = parent.__root || parent;
-                parent.__children.push(self);
+                parent.__children[self.__id] = self;
             }
 
-            self.__children = [];
+            self.__children = {};
 
             //console.log('Create: ' + self.__what);
 
@@ -64,19 +66,12 @@
             self.__destroyed = true;
             self.__destruct();
 
-            for (i = 0; i < children.length; i++) {
+            for (i in children) {
                 children[i].destroy();
             }
 
             if (self.__parent && !self.__parent.__destroyed) {
-                children = self.__parent.__children;
-
-                for (i = 0; i < children.length; i++) {
-                    if (children[i] === self) {
-                        children.splice(i, 1);
-                        break;
-                    }
-                }
+                delete self.__parent.__children[self.__id];
             }
 
             self.__parent = self.__children = null;
