@@ -137,8 +137,8 @@
             var self = this,
                 sep = name.indexOf(':'),
                 prop,
-                propHandlers,
-                handlers;
+                handlers,
+                dest;
 
             if (sep < 0) { sep = name.length; }
 
@@ -150,12 +150,25 @@
             }
 
             if (prop) {
-                if (!((propHandlers = handlers.props[prop]))) {
-                    propHandlers = handlers.props[prop] = [];
+                if (!((dest = handlers.props[prop]))) {
+                    dest = handlers.props[prop] = [];
                 }
-                propHandlers.push([callback, context]);
             } else {
-                handlers.any.push([callback, context]);
+                dest = handlers.any;
+            }
+
+            dest.push((prop = [callback, context]));
+
+            if (name !== 'destroy') {
+                // Remove handler on context destruction.
+                context.on('destroy', function() {
+                    for (sep = 0; sep < dest.length; sep++) {
+                        if (dest[sep] === prop) {
+                            dest.splice(sep, 1);
+                            break;
+                        }
+                    }
+                }, self);
             }
 
             return self;
