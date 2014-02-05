@@ -10,7 +10,7 @@ CooCoo.CollectionBase = CooCoo.Base.extend({
     __construct: function(items) {
         var self = this;
         self.add(items);
-        self.on('destroy', function(m) { self.remove(m); });
+        self.on('destroy', function(m) { self.remove(m); }, self);
     },
 
     length: function() {

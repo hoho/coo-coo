@@ -79,6 +79,8 @@
                 }
             }
 
+            self.__parent = self.__children = null;
+
             //console.log('Destroy: ' + self.__what);
         },
 
@@ -117,20 +119,34 @@
 
     CooCoo.Base = CooCoo.Extendable.extend({
         init: function(/*parent, ...*/) {
-            this._h = {};
-            this._d = {};
+            var self = this;
+            // Storage for event handlers.
+            self.__h = {};
+            // Storage for properties.
+            self.__d = {};
+            // Storage for internal destroy handlers.
+            self.__dh = [];
             CooCoo.Base.__super__.init.apply(this, arguments);
         },
 
         destroy: function() {
-            var self = this;
+            var self = this,
+                i;
+
             self.trigger('destroy', self);
+
+            for (i = 0; i < self.__dh.length; i++) {
+                self.__dh[i]();
+            }
+
             CooCoo.Base.__super__.destroy.call(self);
+
+            self.__h = self.__d = self.__dh = null;
         },
 
         __construct: function(attrs) {
             attrs = CooCooRet(attrs).valueOf();
-            if (isPlainObject(attrs)) { this._d = attrs; }
+            if (isPlainObject(attrs)) { this.__d = attrs; }
         },
 
         on: function(name, callback, context) {
@@ -145,8 +161,8 @@
             prop = name.substring(sep + 1);
             name = name.substring(0, sep);
 
-            if (!((handlers = self._h[name]))) {
-                handlers = self._h[name] = {props: {}, any: []};
+            if (!((handlers = self.__h[name]))) {
+                handlers = self.__h[name] = {props: {}, any: []};
             }
 
             if (prop) {
@@ -159,17 +175,15 @@
 
             dest.push((prop = [callback, context]));
 
-            if (name !== 'destroy') {
-                // Remove handler on context destruction.
-                context.on('destroy', function() {
-                    for (sep = 0; sep < dest.length; sep++) {
-                        if (dest[sep] === prop) {
-                            dest.splice(sep, 1);
-                            break;
-                        }
+            // Remove handler on context destruction.
+            context.__dh.push(function() {
+                for (sep = 0; sep < dest.length; sep++) {
+                    if (dest[sep] === prop) {
+                        dest.splice(sep, 1);
+                        break;
                     }
-                }, self);
-            }
+                }
+            });
 
             return self;
         },
@@ -190,7 +204,7 @@
             prop = name.substring(sep + 1);
             name = name.substring(0, sep);
 
-            if ((handlers = self._h[name])) {
+            if ((handlers = self.__h[name])) {
                 callbacks = handlers.any;
 
                 for (i = 0; i < callbacks.length; i++) {
@@ -219,7 +233,7 @@
             var self = this,
                 vals,
                 n,
-                data = self._d,
+                data = self.__d,
                 prev;
 
             name = CooCooRet(name).valueOf();
@@ -244,7 +258,7 @@
         },
 
         get: function(name) {
-            var d = this._d;
+            var d = this.__d;
             return name === undefined ? d : d[name];
         }
     });
