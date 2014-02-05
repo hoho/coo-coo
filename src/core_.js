@@ -43,7 +43,7 @@
         init: function(parent/*, ...*/) {
             var self = this;
 
-            self.__id = ++lastId;
+            self.__id = 'i' + (++lastId);
             self.__parent = parent;
 
             if (parent) {
@@ -61,13 +61,15 @@
         destroy: function() {
             var self = this,
                 children = self.__children,
-                i;
+                i,
+                c;
 
             self.__destroyed = true;
             self.__destruct();
 
             for (i in children) {
-                children[i].destroy();
+                c = children[i];
+                !c.__destroyed && children[i].destroy();
             }
 
             if (self.__parent && !self.__parent.__destroyed) {
@@ -121,6 +123,9 @@
             self.__d = {};
             // Storage for internal destroy handlers.
             self.__dh = [];
+            // Storage for event propagation parents.
+            self.__e = {};
+
             CooCoo.Base.__super__.init.apply(this, arguments);
         },
 
@@ -136,7 +141,7 @@
 
             CooCoo.Base.__super__.destroy.call(self);
 
-            self.__h = self.__d = self.__dh = null;
+            self.__h = self.__d = self.__dh = self.__e = null;
         },
 
         __construct: function(attrs) {
@@ -215,10 +220,13 @@
                 }
             }
 
-            if (self._p) {
-                args.unshift(self);
-                args.unshift(nameSrc);
-                self._p.trigger.apply(self._p, args);
+            args.unshift(self);
+            args.unshift(nameSrc);
+            // Reuse prop and handlers variables.
+            handlers = self.__e;
+            for (i in handlers) {
+                prop = handlers[i];
+                prop.trigger.apply(prop, args);
             }
 
             return self;

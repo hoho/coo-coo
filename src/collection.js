@@ -167,7 +167,7 @@
                                     cooValueToJS(cmd, cmd.parts[2])
                                 ));
 
-                                ret.push('.length()');
+                                ret.push('.length');
                                 ret.push(');');
 
                                 return ret.join('');

@@ -1,75 +1,105 @@
 /* global CooCooRet */
-CooCoo.Collection = {};
+(function(CooCoo, CooCooRet) {
 
-CooCoo.CollectionBase = CooCoo.Base.extend({
-    init: function(/*parent, ...*/) {
-        this._c = [];
-        CooCoo.CollectionBase.__super__.init.apply(this, arguments);
-    },
+    function getKeys(items) {
+        var ret = [],
+            i;
 
-    __construct: function(items) {
-        var self = this;
-        self.add(items);
-        self.on('destroy', function(m) { self.remove(m); }, self);
-    },
-
-    length: function() {
-        return this._c.length;
-    },
-
-    item: function(index) {
-        var c = this._c;
-        return index === undefined ? c.slice(0) : c[index];
-    },
-
-    add: function(val) {
-        var self = this,
-            i,
-            model;
-
-        val = CooCooRet(val).valueOf();
-
-        if (val !== undefined) {
-            if (!(val instanceof Array)) {
-                val = [val];
-            }
-
-            for (i = 0; i < val.length; i++) {
-                model = new self.model(self, val[i]);
-                model._p = self;
-                self._c.push(model);
-                model.trigger('add');
-            }
+        for (i in items) {
+            ret.push(i);
         }
 
-        return self;
-    },
+        return ret;
+    }
 
-    remove: function(model) {
-        if (model) {
-            // TODO: Do something with linear complexity of this method.
+    CooCoo.Collection = {};
+
+    CooCoo.CollectionBase = CooCoo.Base.extend({
+        init: function(/*parent, ...*/) {
+            // Collection items.
+            this.__i = {};
+            this.length = 0;
+
+            CooCoo.CollectionBase.__super__.init.apply(this, arguments);
+        },
+
+        __construct: function(items) {
+            var self = this;
+
+            self.add(items);
+
+            self.on('destroy', function(m) {
+                if (m) {
+                    self.remove(m);
+                } else {
+                    var i,
+                        item,
+                        items = self.__i,
+                        ids = getKeys(items);
+
+                    for (i = 0; i < ids.length; i++) {
+                        if ((item = items[ids[i]])) {
+                            if (item.__parent === self) {
+                                item.destroy();
+                            } else {
+                                self.remove(item);
+                            }
+                        }
+                    }
+                }
+            }, self);
+        },
+
+        add: function(val) {
             var self = this,
                 i,
-                items = self._c;
+                model;
 
-            for (i = 0; i < items.length; i++) {
-                if (items[i] === model) {
-                    items.splice(i, 1);
+            val = CooCooRet(val).valueOf();
+
+            if (val !== undefined) {
+                if (!(val instanceof Array)) {
+                    val = [val];
+                }
+
+                for (i = 0; i < val.length; i++) {
+                    model = new self.model(self, val[i]);
+                    model.__e[self.__id] = self;
+                    self.__i[model.__id] = model;
+                    self.length++;
+                    model.trigger('add');
+                }
+            }
+
+            return self;
+        },
+
+        remove: function(model) {
+            if (model) {
+                var self = this;
+
+                if (self.__i[model.__id]) {
+                    self.length--;
+                    delete self.__i[model.__id];
                     model.trigger('remove');
-                    model._p = null;
-                    break;
+                    delete model.__e[self.__id];
+                }
+            }
+        },
+
+        each: function(callback, parent) {
+            var self = this,
+                i,
+                item,
+                items = self.__i,
+                ids = getKeys(items);
+
+            for (i = 0; i < ids.length; i++) {
+                if ((item = items[ids[i]])) {
+                    callback.call(parent || self, item);
                 }
             }
         }
-    },
+    });
 
-    each: function(callback, parent) {
-        var self = this,
-            i,
-            items = self._c.slice(0);
-
-        for (i = 0; i < items.length; i++) {
-            callback.call(parent || self, items[i]);
-        }
-    }
-});
+})(CooCoo, CooCooRet);
