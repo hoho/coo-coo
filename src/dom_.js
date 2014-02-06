@@ -196,4 +196,9 @@
         unwrapArguments(arguments, [true, true]);
         $(node).trigger(name);
     };
+
+    CooCooDOM.serialize = function(node) {
+        unwrapArguments(arguments, [true]);
+        return $(node).serializeArray();
+    };
 })(CooCoo, CooCooRet);

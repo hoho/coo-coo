@@ -253,6 +253,10 @@
                     'TEXT': {
                         'SET': getSetter('text', [4]),
                         'GET': getGetter('text', [])
+                    },
+
+                    'FORM': {
+                        'SERIALIZE': getGetter('serialize', [])
                     }
                 }
             }
