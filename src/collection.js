@@ -11,7 +11,7 @@
     /* global cooGetDecl */
     /* global cooAssertValuePusher */
     /* global cooWrapWithTypeCheck */
-    /* global COO_INTERNAL_VARIABLE_RET */
+    /* global cooWrapRet */
 
     cooObjectBase(
         {
@@ -155,20 +155,18 @@
                             cmd.getCodeBefore = function() {
                                 cooGetDecl(cmd);
 
-                                var ret = [];
+                                var ret = [],
+                                    retWrap = cooWrapRet(cmd);
 
-                                ret.push(COO_INTERNAL_VARIABLE_RET);
-                                ret.push('.push(');
-
+                                ret.push(retWrap[0]);
                                 ret.push(cooWrapWithTypeCheck(
                                     cmd,
                                     cmd.parts[2],
                                     'val instanceof CooCoo.Collection.' + cmd.parts[1].value,
                                     cooValueToJS(cmd, cmd.parts[2])
                                 ));
-
                                 ret.push('.length');
-                                ret.push(');');
+                                ret.push(retWrap[1]);
 
                                 return ret.join('');
                             };

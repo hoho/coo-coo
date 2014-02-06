@@ -188,6 +188,18 @@ function cooMatchCommand(cmd, patterns, pos) {
 }
 
 
+/* exported cooWrapRet */
+function cooWrapRet(cmd) {
+    if (!cmd.valuePusher) {
+        return ['', ';'];
+    } else if (cmd.single) {
+        return ['', ''];
+    } else {
+        return [COO_INTERNAL_VARIABLE_RET + '.push(', ');'];
+    }
+}
+
+
 /* exported cooPushScopeVariable */
 function cooPushScopeVariable(cmd, name, value) {
     var tmp = cmd,
@@ -342,6 +354,8 @@ function cooProcessBlockAsValue(cmd, ext) {
     cooCreateScope(cmd);
 
     cmd.getCodeBefore = function() {
+        if (!cmd.children.length) { return ''; }
+
         var ret = [],
             tmp;
 
@@ -349,8 +363,12 @@ function cooProcessBlockAsValue(cmd, ext) {
             ret.push(tmp);
         }
 
-        ret.push('CooCooRet((function() {');
-        ret.push(cooGetScopeVariablesDecl(cmd));
+        if (cmd.children.length === 1 && cmd.children[0].valuePusher) {
+            cmd.children[0].single = true;
+        } else {
+            ret.push('(function() {');
+            ret.push(cooGetScopeVariablesDecl(cmd));
+        }
 
         if (ext.getCodeBeforeAfter && (tmp = ext.getCodeBeforeAfter(cmd))) {
             ret.push(tmp);
@@ -360,6 +378,8 @@ function cooProcessBlockAsValue(cmd, ext) {
     };
 
     cmd.getCodeAfter = function() {
+        if (!cmd.children.length) { return ''; }
+
         var ret = [],
             tmp;
 
@@ -367,15 +387,17 @@ function cooProcessBlockAsValue(cmd, ext) {
             ret.push(tmp);
         }
 
-        tmp = cooGetScopeRet(cmd);
+        if (cmd.children.length !== 1 || !cmd.children[0].single) {
+            tmp = cooGetScopeRet(cmd);
 
-        if (tmp) {
-            ret.push(tmp);
-        } else {
-            cmd.file.errorNoValue(cmd.parts[0]);
+            if (tmp) {
+                ret.push(tmp);
+            } else {
+                cmd.file.errorNoValue(cmd.parts[0]);
+            }
+
+            ret.push('}).call(this)');
         }
-
-        ret.push('}).call(this)).valueOf()');
 
         if (ext.getCodeAfterAfter && (tmp = ext.getCodeAfterAfter(cmd))) {
             ret.push(tmp);
@@ -554,12 +576,12 @@ CooFile.prototype = {
                 // a string or with a JavaScript expression.
                 if (parent && parent.valueRequired && cmd.valuePusher) {
                     cmd.getCodeBefore = function() {
-                        var ret = [];
+                        var ret = [],
+                            retWrap = cooWrapRet(cmd);
 
-                        ret.push(COO_INTERNAL_VARIABLE_RET);
-                        ret.push('.push(');
+                        ret.push(retWrap[0]);
                         ret.push(cooValueToJS(cmd, cmd.parts[0]));
-                        ret.push(');');
+                        ret.push(retWrap[1]);
 
                         return ret.join('');
                     };
@@ -588,10 +610,9 @@ CooFile.prototype = {
                             cmd.getCodeBefore = function() {
                                 var ret = [];
 
-                                if (cmd.valuePusher) {
-                                    ret.push(COO_INTERNAL_VARIABLE_RET);
-                                    ret.push('.push(');
-                                }
+                                cmd.retWrap = cooWrapRet(cmd);
+
+                                ret.push(cmd.retWrap[0]);
 
                                 ret.push('(function() {\n');
                                 ret.push(val.value);
@@ -603,12 +624,7 @@ CooFile.prototype = {
                                 var ret = [];
 
                                 ret.push('}).call(this)');
-
-                                if (cmd.valuePusher) {
-                                    ret.push(')');
-                                }
-
-                                ret.push(';');
+                                ret.push(cmd.retWrap[1]);
 
                                 return ret.join('');
                             };
@@ -1563,10 +1579,9 @@ function cooProcessCreateCommand(cmd, firstParam, paramCount, events) {
             decl = cooGetDecl(cmd),
             ret = [];
 
-        if (cmd.valuePusher) {
-            ret.push(COO_INTERNAL_VARIABLE_RET);
-            ret.push('.push((');
-        }
+        cmd.retWrap = cooWrapRet(cmd);
+
+        ret.push(cmd.retWrap[0]);
 
         ret.push('new ');
         ret.push(decl.data.storage);
@@ -1582,12 +1597,8 @@ function cooProcessCreateCommand(cmd, firstParam, paramCount, events) {
 
         ret.push(')');
 
-        if (cmd.valuePusher) {
-            ret.push(')');
-        }
-
         if (!cmd.children.length) {
-            ret.push(cmd.valuePusher ? ');' : ';');
+            ret.push(cmd.retWrap[1]);
         }
 
         return ret.join('');
@@ -1595,7 +1606,7 @@ function cooProcessCreateCommand(cmd, firstParam, paramCount, events) {
 
     cmd.getCodeAfter = function() {
         if (cmd.children.length) {
-            return cmd.valuePusher ? ');' : ';';
+            return cmd.retWrap[1];
         }
     };
 
@@ -1621,11 +1632,9 @@ function cooProcessInstance(cmd, name, firstParam, processChild) {
             cooAssertHasSubcommands(cmd);
         }
 
-        if (cmd.valuePusher) {
-            ret.push(COO_INTERNAL_VARIABLE_RET);
-            ret.push('.push(');
-        }
+        cmd.retWrap = cooWrapRet(cmd);
 
+        ret.push(cmd.retWrap[0]);
         ret.push(cooWrapWithTypeCheck(
             cmd,
             cmd.parts[2],
@@ -1642,7 +1651,7 @@ function cooProcessInstance(cmd, name, firstParam, processChild) {
         }
 
         if (!cmd.children.length) {
-            ret.push(cmd.valuePusher ? ');' : ';');
+            ret.push(cmd.retWrap[1]);
         }
 
         return ret.join('');
@@ -1650,7 +1659,7 @@ function cooProcessInstance(cmd, name, firstParam, processChild) {
 
     cmd.getCodeAfter = function() {
         if (cmd.children.length) {
-            return cmd.valuePusher ? ');' : ';';
+            return cmd.retWrap[1];
         }
     };
 
@@ -2213,12 +2222,13 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                             cmd.getCodeBefore = function() {
                                 cooGetDecl(cmd);
 
-                                var ret = [];
+                                var ret = [],
+                                    retWrap = cooWrapRet(cmd);
 
-                                ret.push(COO_INTERNAL_VARIABLE_RET);
-                                ret.push('.push(');
+                                ret.push(retWrap[0]);
                                 ret.push(cooValueToJS(cmd, cmd.parts[2]));
-                                ret.push('.get());');
+                                ret.push('.get()');
+                                ret.push(retWrap[1]);
 
                                 return ret.join('');
                             };
@@ -2230,16 +2240,17 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
 
                             cmd.getCodeBefore = function() {
                                 var decl = cooGetDecl(cmd),
-                                    ret = [];
+                                    ret = [],
+                                    retWrap = cooWrapRet(cmd);
 
                                 cooCheckProperty(cmd, decl, cmd.parts[4]);
 
-                                ret.push(COO_INTERNAL_VARIABLE_RET);
-                                ret.push('.push(');
+                                ret.push(retWrap[0]);
                                 ret.push(cooValueToJS(cmd, cmd.parts[2]));
                                 ret.push('.get("');
                                 ret.push(cmd.parts[4].value);
-                                ret.push('"));');
+                                ret.push('")');
+                                ret.push(retWrap[1]);
 
                                 return ret.join('');
                             };
@@ -2262,24 +2273,17 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                                         cmd.file.errorUnknownMethod(cmd.parts[4]);
                                     }
 
-                                    var ret = [];
+                                    var ret = [],
+                                        retWrap = cooWrapRet(cmd);
 
-                                    if (cmd.valuePusher) {
-                                        ret.push(COO_INTERNAL_VARIABLE_RET);
-                                        ret.push('.push(');
-                                    }
-
+                                    ret.push(retWrap[0]);
                                     ret.push(cooValueToJS(cmd, cmd.parts[2]));
                                     ret.push('.');
                                     ret.push(cmd.parts[4].value);
                                     ret.push('(');
                                     ret.push(cooGetParamValues(cmd, params, cmd.data.elemParams));
-
-                                    if (cmd.valuePusher) {
-                                        ret.push(')');
-                                    }
-
-                                    ret.push(');');
+                                    ret.push(')');
+                                    ret.push(retWrap[1]);
 
                                     return ret.join('');
                                 };
@@ -2448,10 +2452,12 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                     cooAssertValuePusher(cmd);
 
                     cmd.getCodeBefore = function() {
-                        var ret = [];
+                        var ret = [],
+                            retWrap = cooWrapRet(cmd);
 
-                        ret.push(COO_INTERNAL_VARIABLE_RET);
-                        ret.push('.push(this.get());');
+                        ret.push(retWrap[0]);
+                        ret.push('this.get()');
+                        ret.push(retWrap[1]);
 
                         return ret.join('');
                     };
@@ -2464,12 +2470,14 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                     cmd.getCodeBefore = function() {
                         cooCheckProperty(cmd, cmd.root, cmd.parts[2]);
 
-                        var ret = [];
+                        var ret = [],
+                            retWrap = cooWrapRet(cmd);
 
-                        ret.push(COO_INTERNAL_VARIABLE_RET);
-                        ret.push('.push(this.get("');
+                        ret.push(retWrap[0]);
+                        ret.push('this.get("');
                         ret.push(cmd.parts[2].value);
-                        ret.push('"));');
+                        ret.push('")');
+                        ret.push(retWrap[1]);
 
                         return ret.join('');
                     };
@@ -2490,23 +2498,16 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                                 cmd.file.errorUnknownMethod(cmd.parts[2]);
                             }
 
-                            var ret = [];
+                            var ret = [],
+                                retWrap = cooWrapRet(cmd);
 
-                            if (cmd.valuePusher) {
-                                ret.push(COO_INTERNAL_VARIABLE_RET);
-                                ret.push('.push(');
-                            }
-
+                            ret.push(retWrap[0]);
                             ret.push('this.');
                             ret.push(cmd.parts[2].value);
                             ret.push('(');
                             ret.push(cooGetParamValues(cmd, params, cmd.data.elemParams));
-
-                            if (cmd.valuePusher) {
-                                ret.push(')');
-                            }
-
-                            ret.push(');');
+                            ret.push(')');
+                            ret.push(retWrap[1]);
 
                             return ret.join('');
                         };
@@ -2607,7 +2608,8 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                         cmd.getCodeBefore = function() {
                             var decl = cooGetDecl(cmd.root),
                                 method,
-                                ret = [];
+                                ret = [],
+                                retWrap = cooWrapRet(cmd);
 
                             method = cmd;
                             while (method.parent !== cmd.root) {
@@ -2634,11 +2636,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                                 cmd.file.errorUnexpectedPart(cmd.parts[0]);
                             }
 
-                            if (cmd.valuePusher) {
-                                ret.push(COO_INTERNAL_VARIABLE_RET);
-                                ret.push('.push(');
-                            }
-
+                            ret.push(retWrap[0]);
                             ret.push(cmd.root.data.storage);
                             ret.push('.');
                             ret.push(cmd.root.data.name);
@@ -2652,11 +2650,8 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                                 ret.push(tmp);
                             }
 
-                            if (cmd.valuePusher) {
-                                ret.push(')');
-                            }
-
-                            ret.push(');');
+                            ret.push(')');
+                            ret.push(retWrap[1]);
 
                             return ret.join('');
                         };

@@ -25,16 +25,19 @@ VIEW App
 
                 REMOVE m
                     CHOOSE
-                        WHEN (m && !m.get('completed'))
-                            THIS SET remaining (this.get('remaining') - 1)
-                        WHEN $m
+                        WHEN [+MODEL Todo $m GET completed]
                             THIS CALL setStats
+                        WHEN $m
+                            THIS SET remaining (this.get('remaining') - 1)
 
         THIS
             CHANGE "remaining" val
                 TEST (val === 0)
                     DOM @toggleAll ATTR "checked" SET (true)
 
+                THIS CALL setStats
+
+            CHANGE "filter"
                 THIS CALL setStats
 
     RENDER
@@ -72,19 +75,18 @@ VIEW App
         ROUTE All
             ON
                 THIS SET filter ""
-                THIS CALL setStats
 
         ROUTE Active
             ON
                 THIS SET filter "active"
-                THIS CALL setStats
 
         ROUTE Completed
             ON
                 THIS SET filter "completed"
-                THIS CALL setStats
 
     METHOD setStats
+        // v = cooSet(v, nv);
+
         TEST @stats
             VIEW @stats DESTROY
 
@@ -95,7 +97,7 @@ VIEW App
                         TEST [+MODEL Todo $model GET completed]
                             MODEL $model DESTROY
 
-        SET total (this.get('todos').item().length)
+        SET total [+COLLECTION Todos @todos LENGTH] //(this.get('todos').length)
         SET completed (total - this.get('remaining'))
 
         DOM @list CLASS REMOVE "active completed"
@@ -168,7 +170,7 @@ VIEW Todo
 
                     KEYPRESS e
                         TEST (e.which === 13)
-                            THIS CALL editTitle
+                            DOM @edit TRIGGER BLUR
 
             "destroy" node
                 DOM $node

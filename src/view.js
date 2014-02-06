@@ -1,7 +1,7 @@
 (function() {
     /* global cooObjectBase */
     /* global cooExtractParamValues */
-    /* global COO_INTERNAL_VARIABLE_RET */
+    /* global cooWrapRet */
     /* global cooValueToJS */
     /* global cooGetDecl */
     /* global cooGetParamValues */
@@ -43,14 +43,15 @@
                                 cmd.getCodeBefore = function() {
                                     cooGetDecl(cmd);
 
-                                    var ret = [];
+                                    var ret = [],
+                                        retWrap = cooWrapRet(cmd);
 
-                                    ret.push(COO_INTERNAL_VARIABLE_RET);
-                                    ret.push('.push(');
+                                    ret.push(retWrap[0]);
                                     ret.push(cooValueToJS(cmd, cmd.parts[2]));
                                     ret.push('._render(');
                                     ret.push(cooGetParamValues(cmd, params, cmd.data.elemParams));
-                                    ret.push('));');
+                                    ret.push(')');
+                                    ret.push(retWrap[1]);
 
                                     return ret.join('');
                                 };

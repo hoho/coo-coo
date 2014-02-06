@@ -69,7 +69,7 @@
 
             for (i in children) {
                 c = children[i];
-                !c.__destroyed && children[i].destroy();
+                !c.__destroyed && c.destroy();
             }
 
             if (self.__parent && !self.__parent.__destroyed) {

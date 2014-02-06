@@ -4,11 +4,11 @@
     /* global cooPushScopeVariable */
     /* global cooValueToJS */
     /* global cooGetScopeVariablesDecl */
-    /* global cooGetScopeRet */
-    /* global COO_INTERNAL_VARIABLE_RET */
+    /* global cooWrapRet */
     /* global cooAssertHasSubcommands */
     /* global cooAssertValuePusher */
     /* global cooAssertNotValuePusher */
+    /* global cooProcessBlockAsValue */
 
     var DOM_FUNC = 'CooCoo.DOM',
         DOM_OBJ = 'new ' + DOM_FUNC,
@@ -87,10 +87,10 @@
             cooAssertValuePusher(cmd);
 
             cmd.getCodeBefore = function() {
-                var ret = [];
+                var ret = [],
+                    retWrap = cooWrapRet(cmd);
 
-                ret.push(COO_INTERNAL_VARIABLE_RET);
-                ret.push('.push(');
+                ret.push(retWrap[0]);
                 ret.push(DOM_FUNC);
                 ret.push('.');
                 ret.push(method);
@@ -102,7 +102,8 @@
                     ret.push(cooValueToJS(cmd, cmd.parts[params[i]]));
                 }
 
-                ret.push('));');
+                ret.push(')');
+                ret.push(retWrap[1]);
 
                 return ret.join('');
             };
@@ -168,36 +169,22 @@
                             //     ...
                             cooAssertNotValuePusher(cmd);
 
-                            cmd.hasSubblock = true;
-                            cmd.valueRequired = true;
+                            return cooProcessBlockAsValue(cmd, {
+                                getCodeBeforeBefore: function() {
+                                    var ret = [];
 
-                            cooCreateScope(cmd);
+                                    ret.push(DOM_FUNC);
+                                    ret.push('.append(');
+                                    ret.push(cooValueToJS(cmd, cmd.parts[1]));
+                                    ret.push(', ');
 
-                            cmd.getCodeBefore = function() {
-                                var ret = [];
+                                    return ret.join('');
+                                },
 
-                                ret.push(DOM_FUNC);
-                                ret.push('.append(');
-                                ret.push(cooValueToJS(cmd, cmd.parts[1]));
-                                ret.push(', ');
-                                ret.push('(function() {');
-                                ret.push(cooGetScopeVariablesDecl(cmd));
-
-                                return ret.join('');
-                            };
-
-                            cmd.getCodeAfter = function() {
-                                var ret = [],
-                                    tmp = cooGetScopeRet(cmd);
-
-                                if (tmp) {
-                                    ret.push(tmp);
+                                getCodeAfterAfter: function() {
+                                    return ');';
                                 }
-
-                                ret.push('}).call(this));');
-
-                                return ret.join('');
-                            };
+                            });
                         },
 
                         '(': function() {
@@ -212,7 +199,7 @@
                                 ret.push(cooValueToJS(cmd, cmd.parts[1]));
                                 ret.push(', ');
                                 ret.push(cooValueToJS(cmd, cmd.parts[3]));
-                                ret.push(')');
+                                ret.push(');');
 
                                 return ret.join('');
                             };
