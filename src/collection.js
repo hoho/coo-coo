@@ -13,6 +13,44 @@
     /* global cooWrapWithTypeCheck */
     /* global cooWrapRet */
 
+    function processEach(cmd) {
+        // COLLECTION identifier (expr) EACH identifier
+        cmd.hasSubblock = true;
+        cooAssertNotValuePusher(cmd);
+
+        cooCreateScope(cmd);
+        cooPushScopeVariable(cmd, cmd.parts[4].value, false);
+
+        cmd.getCodeBefore = function() {
+            cooGetDecl(cmd);
+
+            var ret = [];
+
+            ret.push(cooValueToJS(cmd, cmd.parts[2]));
+            ret.push('.each(this, function(');
+            ret.push(cmd.parts[4].value);
+            ret.push(') {');
+
+            return ret.join('');
+        };
+
+        cmd.getCodeAfter = function() {
+            var ret = [];
+
+            ret.push('}');
+            if (cmd.parts[5]) {
+                ret.push(', function(');
+                ret.push(cmd.parts[4].value);
+                ret.push(') { return ');
+                ret.push(cooValueToJS(cmd, cmd.parts[5]));
+                ret.push('; }');
+            }
+            ret.push(');');
+
+            return ret.join('');
+        };
+    }
+
     cooObjectBase(
         {
             cmdName: 'COLLECTION',
@@ -121,30 +159,9 @@
                         },
 
                         'EACH': {
-                            '': function(cmd) {
-                                // COLLECTION identifier (expr) EACH identifier
-                                cmd.hasSubblock = true;
-                                cooAssertNotValuePusher(cmd);
-
-                                cooCreateScope(cmd);
-                                cooPushScopeVariable(cmd, cmd.parts[4].value, false);
-
-                                cmd.getCodeBefore = function() {
-                                    cooGetDecl(cmd);
-
-                                    var ret = [];
-
-                                    ret.push(cooValueToJS(cmd, cmd.parts[2]));
-                                    ret.push('.each(function(');
-                                    ret.push(cmd.parts[4].value);
-                                    ret.push(') {');
-
-                                    return ret.join('');
-                                };
-
-                                cmd.getCodeAfter = function() {
-                                    return '}, this);';
-                                };
+                            '': {
+                                '@': processEach,
+                                '(': processEach
                             }
                         },
 

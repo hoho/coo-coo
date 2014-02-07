@@ -63,7 +63,10 @@
                 }
 
                 for (i = 0; i < val.length; i++) {
-                    model = new self.model(self, val[i]);
+                    model = val[i];
+                    if (!(model instanceof CooCoo.Base)) {
+                        model = new self.model(self, model);
+                    }
                     model.__e[self.__id] = self;
                     self.__i[model.__id] = model;
                     self.length++;
@@ -87,7 +90,7 @@
             }
         },
 
-        each: function(callback, parent) {
+        each: function(parent, callback, filter) {
             var self = this,
                 i,
                 item,
@@ -96,7 +99,9 @@
 
             for (i = 0; i < ids.length; i++) {
                 if ((item = items[ids[i]])) {
-                    callback.call(parent || self, item);
+                    if (!filter || filter.call(parent, item)) {
+                        callback.call(parent, item);
+                    }
                 }
             }
         }
