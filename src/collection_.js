@@ -100,10 +100,40 @@
             for (i = 0; i < ids.length; i++) {
                 if ((item = items[ids[i]])) {
                     if (!filter || filter.call(parent, item)) {
-                        callback.call(parent, item);
+                        if (callback.call(parent, item) === false) {
+                            break;
+                        }
                     }
                 }
             }
+        },
+
+        _find: function(parent, check, limit) {
+            var items = [];
+
+            limit = limit || this.length;
+
+            this.each(parent, function(model) {
+                if (limit > 0 && check.call(parent, model)) {
+                    items.push(model);
+                    limit--;
+                } else {
+                    return false;
+                }
+            });
+
+            return items;
+        },
+
+        find: function(parent, check) {
+            return this._find(parent, check, 1)[0];
+        },
+
+        filter: function(parent, check) {
+            var items = this._find(parent, check),
+                ret = new this.constructor(parent);
+            ret.add(items);
+            return ret;
         }
     });
 
