@@ -27,9 +27,10 @@
             var ret = [];
 
             ret.push(cooValueToJS(cmd, cmd.parts[2]));
-            ret.push('.each(this, function(');
+            ret.push('.each(function(');
             ret.push(cmd.parts[4].value);
             ret.push(') {');
+            ret.push(cooGetScopeVariablesDecl(cmd));
 
             return ret.join('');
         };
@@ -38,6 +39,7 @@
             var ret = [];
 
             ret.push('}');
+            ret.push(', this');
             if (cmd.parts[5]) {
                 ret.push(', function(');
                 ret.push(cmd.parts[4].value);
@@ -187,6 +189,36 @@
 
                                 return ret.join('');
                             };
+                        },
+
+                        'FIND': {
+                            '': {
+                                '(': function processEach(cmd) {
+                                    // COLLECTION identifier (expr) FIND identifier (expr)
+                                    cooAssertValuePusher(cmd);
+
+                                    cooCreateScope(cmd);
+                                    cooPushScopeVariable(cmd, cmd.parts[4].value, false);
+
+                                    cmd.getCodeBefore = function() {
+                                        cooGetDecl(cmd);
+
+                                        var ret = [],
+                                            retWrap = cooWrapRet(cmd);
+
+                                        ret.push(retWrap[0]);
+                                        ret.push(cooValueToJS(cmd, cmd.parts[2]));
+                                        ret.push('.find(function(');
+                                        ret.push(cmd.parts[4].value);
+                                        ret.push(') { return ');
+                                        ret.push(cooValueToJS(cmd, cmd.parts[5]));
+                                        ret.push('; }, this)');
+                                        ret.push(retWrap[1]);
+
+                                        return ret.join('');
+                                    };
+                                }
+                            }
                         }
                     }
                 }

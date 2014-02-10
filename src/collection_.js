@@ -90,7 +90,7 @@
             }
         },
 
-        each: function(parent, callback, filter) {
+        each: function(callback, parent, filter) {
             var self = this,
                 i,
                 item,
@@ -113,23 +113,25 @@
 
             limit = limit || this.length;
 
-            this.each(parent, function(model) {
-                if (limit > 0 && check.call(parent, model)) {
-                    items.push(model);
-                    limit--;
+            this.each(function(model) {
+                if (limit > 0) {
+                    if (check.call(parent, model)) {
+                        items.push(model);
+                        limit--;
+                    }
                 } else {
                     return false;
                 }
-            });
+            }, parent);
 
             return items;
         },
 
-        find: function(parent, check) {
+        find: function(check, parent) {
             return this._find(parent, check, 1)[0];
         },
 
-        filter: function(parent, check) {
+        filter: function(check, parent) {
             var items = this._find(parent, check),
                 ret = new this.constructor(parent);
             ret.add(items);
