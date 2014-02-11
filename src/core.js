@@ -97,10 +97,12 @@ function cooMatchCommand(cmd, patterns, pos) {
      '(' in case of JavaScript,
      '*' in case of any number of identifiers,
      '#' in case of any number of strings or JavaScripts,
-     '<' in case of typification,
      '@' in case of callback.
 
      And `callback` is a callback to call when pattern is matched.
+
+     Adding '<' in the end of somethings above will allow this something to be
+     followed by typification.
 
      */
 
@@ -127,13 +129,31 @@ function cooMatchCommand(cmd, patterns, pos) {
                     unexpected = false;
                 }
 
+                if ((error || unexpected) && patterns['(<']) {
+                    part.typified = true;
+                    error = cooMatchCommand(cmd, patterns['(<'], pos + 1);
+                    unexpected = false;
+                }
+
                 if ((error || unexpected) && patterns['#']) {
+                    error = cooMatchCommand(cmd, patterns, pos + 1);
+                    unexpected = false;
+                }
+
+                if ((error || unexpected) && patterns['#<']) {
+                    part.typified = true;
                     error = cooMatchCommand(cmd, patterns, pos + 1);
                     unexpected = false;
                 }
 
                 if ((error || unexpected) && patterns['#']) {
                     error = cooMatchCommand(cmd, patterns['#'], pos + 1);
+                    unexpected = false;
+                }
+
+                if ((error || unexpected) && patterns['#<']) {
+                    part.typified = true;
+                    error = cooMatchCommand(cmd, patterns['#<'], pos + 1);
                     unexpected = false;
                 }
 
@@ -150,7 +170,19 @@ function cooMatchCommand(cmd, patterns, pos) {
                     unexpected = false;
                 }
 
+                if ((error || unexpected) && patterns['<']) {
+                    part.typified = true;
+                    error = cooMatchCommand(cmd, patterns['<'], pos + 1);
+                    unexpected = false;
+                }
+
                 if ((error || unexpected) && patterns['*']) {
+                    error = cooMatchCommand(cmd, patterns, pos + 1);
+                    unexpected = false;
+                }
+
+                if ((error || unexpected) && patterns['*<']) {
+                    part.typified = true;
                     error = cooMatchCommand(cmd, patterns, pos + 1);
                     unexpected = false;
                 }
@@ -158,8 +190,10 @@ function cooMatchCommand(cmd, patterns, pos) {
                 return unexpected ? part : error;
 
             case COO_COMMAND_PART_TYPIFICATION:
-                if (patterns['<']) {
-                    error = cooMatchCommand(cmd, patterns['<'], pos + 1);
+                if (parts[pos - 1].typified) {
+                    parts[pos - 1].typification = part;
+                    parts.splice(pos, 1);
+                    error = cooMatchCommand(cmd, patterns, pos);
                     unexpected = false;
                 }
 
@@ -169,20 +203,31 @@ function cooMatchCommand(cmd, patterns, pos) {
                 cmd.file.errorUnexpectedPart(part);
         }
     } else {
-        if (typeof patterns['*'] === 'function') {
-            return patterns['*'](cmd);
-        } else if (typeof patterns['#'] === 'function') {
-            return patterns['#'](cmd);
-        } else if (typeof patterns['@'] === 'function') {
-            return patterns['@'](cmd);
-        } else if (typeof patterns === 'function') {
-            return patterns(cmd);
-        } else {
-            // Incomplete command.
-            part = parts[parts.length - 1];
-            error = new CooCommandPart(null, part._lineEnd, part._charEnd);
-            error.error = 'Incomplete command';
-            return error;
+        switch ('function') {
+            case typeof patterns['*']:
+                return patterns['*'](cmd);
+
+            case typeof patterns['*<']:
+                return patterns['*<'](cmd);
+
+            case typeof patterns['#']:
+                return patterns['#'](cmd);
+
+            case typeof patterns['#<']:
+                return patterns['#<'](cmd);
+
+            case typeof patterns['@']:
+                return patterns['@'](cmd);
+
+            case typeof patterns:
+                return patterns(cmd);
+
+            default:
+                // Incomplete command.
+                part = parts[parts.length - 1];
+                error = new CooCommandPart(null, part._lineEnd, part._charEnd);
+                error.error = 'Incomplete command';
+                return error;
         }
     }
 }
@@ -455,24 +500,63 @@ function cooRunGenerators(cmd, code, level) {
 }
 
 
+/* exported cooWrapWithTypeCheck */
+function cooWrapWithTypeCheck(cmd, part, type, valString) {
+    if (!cmd.debug || !type) {
+        return valString || ['', ''];
+    }
+
+    var ret = [];
+
+    // (function cooTypeCheck(val) { if (!(type)) { throw new Error("msg"); } return val; })(val)
+
+    ret.push('(function cooTypeCheck(val, nullable) { if (!(');
+
+    if (typeof type !== 'string') {
+        type = CooCoo.cmd[type.value[0].value].type.getAssertExpression(cmd, type, 'val');
+    }
+
+    ret.push(type);
+
+    ret.push(')) { throw new Error("');
+
+    var msg = cmd.file.getErrorMessage('Type check error', part._charAt, part._lineAt);
+    msg = msg.split('\n').join('\\n').replace(/"/g, '\\"');
+    ret.push(msg);
+
+    ret.push('"); } return val; })(');
+
+    if (valString) {
+        ret.push(valString);
+        ret.push(')');
+        return ret.join('');
+    } else {
+        return [ret.join(''), ')'];
+    }
+}
+
+
 /* exported cooValueToJS */
 function cooValueToJS(cmd, part) {
     switch (part.type) {
         case COO_COMMAND_PART_JS:
         case COO_COMMAND_PART_STRING:
-            return part.value;
+            return cooWrapWithTypeCheck(cmd, part, part.typification, part.value);
 
         case COO_COMMAND_PART_VARIABLE_GETTER:
             cooCheckScopeVariable(cmd, part);
-            return part.value;
+            return cooWrapWithTypeCheck(cmd, part, part.typification, part.value);
 
         case COO_COMMAND_PART_PROPERTY_GETTER:
             cooCheckProperty(cmd, cmd.root, part);
-            return 'this.get("' + part.value + '")';
+            return cooWrapWithTypeCheck(cmd, part, part.typification, 'this.get("' + part.value + '")');
 
         case COO_COMMAND_PART_SUBCOOCOO:
-            var ret = [];
+            var ret = [],
+                wrapper = cooWrapWithTypeCheck(cmd, part, part.typification);
+            ret.push(wrapper[0]);
             cooRunGenerators(part.value, ret, 0);
+            ret.push(wrapper[1]);
             return ret.join('\n');
 
         default:
@@ -756,7 +840,7 @@ CooFile.prototype = {
             this.charAt++;
             part._lineEnd = this.lineAt;
             part._charEnd = this.charAt + 1;
-            this.skipWhitespaces();
+            this.skipWhitespaces(this.code[this.lineAt][this.charAt] === '<');
         } else {
             this.error('Unterminated string', startPos);
         }
@@ -920,6 +1004,12 @@ CooFile.prototype = {
 
         this.charAt++;
         this.skipWhitespaces(true);
+
+        if (this.code[this.lineAt][this.charAt] === '?') {
+            part.nullable = true;
+            this.charAt++;
+            this.skipWhitespaces(true);
+        }
 
         switch (this.code[this.lineAt][this.charAt]) {
             case '>':
@@ -1162,42 +1252,6 @@ function cooAssertValuePusher(cmd) {
 function cooAssertHasSubcommands(cmd) {
     if (!cmd.children.length) {
         cmd.file.errorMeaninglessCommand(cmd.parts[0]);
-    }
-}
-
-
-/* exported cooWrapWithTypeCheck */
-function cooWrapWithTypeCheck(cmd, part, type, valString) {
-    if (!cmd.debug || !type) {
-        return valString;
-    }
-
-    var ret = [];
-
-    // (function cooTypeCheck(val) { if (!(type)) { throw new Error("msg"); } return val; })(val)
-
-    ret.push('(function cooTypeCheck(val) { if (!(');
-
-    if (typeof type !== 'string') {
-        type = CooCoo.cmd[type.value[0].value].type.getAssertExpression(cmd, type, 'val');
-    }
-
-    ret.push(type);
-
-    ret.push(')) { throw new Error("');
-
-    var msg = cmd.file.getErrorMessage('Type check error', part._charAt, part._lineAt);
-    msg = msg.split('\n').join('\\n').replace(/"/g, '\\"');
-    ret.push(msg);
-
-    ret.push('"); } return val; })(');
-
-    if (valString) {
-        ret.push(valString);
-        ret.push(')');
-        return ret.join('');
-    } else {
-        return [ret.join(''), ')'];
     }
 }
 
@@ -2085,23 +2139,13 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
 
             if (declExt.properties) {
                 patterns.PROPERTY = {
-                    '': {
+                    '<': {
                         '@': function() {
-                            return processProperty({});
+                            return processProperty({type: cmd.parts[1].typification});
                         },
 
                         '(': function() {
-                            return processProperty({value: cmd.parts[2]});
-                        },
-
-                        '<': {
-                            '@': function() {
-                                return processProperty({type: cmd.parts[2]});
-                            },
-
-                            '(': function() {
-                                return processProperty({type: cmd.parts[2], value: cmd.parts[3]});
-                            }
+                            return processProperty({value: cmd.parts[2], type: cmd.parts[1].typification});
                         }
                     }
                 };

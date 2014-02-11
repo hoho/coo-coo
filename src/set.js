@@ -31,7 +31,7 @@
                         });
                     },
 
-                    '(': function() {
+                    '(<': function() {
                         // SET identifier (expr)
                         var name = cmd.parts[1].value,
                             val = cmd.parts[2];
