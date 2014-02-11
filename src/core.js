@@ -190,7 +190,7 @@ function cooMatchCommand(cmd, patterns, pos) {
                 return unexpected ? part : error;
 
             case COO_COMMAND_PART_TYPIFICATION:
-                if (parts[pos - 1].typified) {
+                if (parts[pos - 1].typified && !parts[pos - 1].typification) {
                     parts[pos - 1].typification = part;
                     parts.splice(pos, 1);
                     error = cooMatchCommand(cmd, patterns, pos);
