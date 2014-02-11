@@ -22,11 +22,11 @@
 
                         return cooProcessBlockAsValue(cmd, {
                             getCodeBeforeBefore: function() {
-                                return cmd.parts[1].value + ' = ';
+                                return cmd.parts[1].value + ' = cooUnwrap(';
                             },
 
                             getCodeAfterAfter: function() {
-                                return ';';
+                                return ');';
                             }
                         });
                     },
@@ -45,8 +45,9 @@
 
                             ret.push(retWrap[0]);
                             ret.push(name);
-                            ret.push(' = ');
+                            ret.push(' = cooUnwrap(');
                             ret.push(cooValueToJS(cmd, val));
+                            ret.push(')');
                             ret.push(retWrap[1]);
 
                             return ret.join('');

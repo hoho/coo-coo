@@ -4,28 +4,23 @@ CooCoo.ViewBase = CooCoo.Base.extend({
     _render: function() {
         var self = this,
             elems = self.__elems = [],
-            elem,
             ret = self.__render.apply(self, arguments),
-            arr = ret.toArray();
+            elem = ret.valueOf();
 
-        for (var i = 0; i < arr.length; i++) {
-            elem = arr[i];
-
-            /* jshint browser: true */
-            if (elem instanceof Node) {
-                if (elem.nodeType === 11) {
-                    // It's a document fragment.
-                    elem = elem.firstChild;
-                    while (elem) {
-                        elems.push(elem);
-                        elem = elem.nextSibling;
-                    }
-                } else {
+        /* jshint browser: true */
+        if (elem instanceof Node) {
+            if (elem.nodeType === 11) {
+                // It's a document fragment.
+                elem = elem.firstChild;
+                while (elem) {
                     elems.push(elem);
+                    elem = elem.nextSibling;
                 }
+            } else {
+                elems.push(elem);
             }
-            /* jshint browser: false */
         }
+        /* jshint browser: false */
 
         return ret;
     },

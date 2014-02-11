@@ -1,5 +1,5 @@
-/* global CooCooRet */
-(function(CooCoo, CooCooRet) {
+/* global cooUnwrap */
+(function(CooCoo) {
 
     function getKeys(items) {
         var ret = [],
@@ -55,7 +55,7 @@
                 i,
                 model;
 
-            val = CooCooRet(val).valueOf();
+            val = cooUnwrap(val);
 
             if (val !== undefined) {
                 if (!(val instanceof Array)) {
@@ -139,4 +139,4 @@
         }
     });
 
-})(CooCoo, CooCooRet);
+})(CooCoo);

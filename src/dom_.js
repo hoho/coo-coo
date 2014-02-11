@@ -1,20 +1,16 @@
-/* global CooCooRet */
+/* global cooUnwrap */
 /* global document */
-(function(CooCoo, CooCooRet) {
+(function(CooCoo) {
     var handlers = {},
         CooCooDOM,
         captureEvents = {focus: true, blur: true},
         props = {checked: true};
 
-    function unwrapArguments(args, firsts) {
-        var i,
-            first;
-
-        if (!firsts) { firsts = []; }
+    function unwrapArguments(args) {
+        var i;
 
         for (i = 0; i < args.length; i++) {
-            first = firsts[i];
-            args[i] = CooCooRet(args[i])[first === 'a' ? 'toArray' : 'valueOf'](first);
+            args[i] = cooUnwrap(args[i]);
         }
     }
 
@@ -59,7 +55,7 @@
                 h = handlers[id];
 
             self.id = id;
-            self.node = CooCooRet(node).valueOf();
+            self.node = cooUnwrap(node);
             self.parent = parent;
 
             if (h) {
@@ -139,7 +135,7 @@
     });
 
     CooCooDOM.val = function(node, val) {
-        unwrapArguments(arguments, [true, false]);
+        unwrapArguments(arguments);
 
         if (val === undefined) {
             return node.value || '';
@@ -149,36 +145,33 @@
     };
 
     CooCooDOM.append = function(parent, node) {
-        unwrapArguments(arguments, [false, 'a']);
-
-        for (var i = 0; i < node.length; i++) {
-            parent.appendChild(node[i]);
-        }
+        unwrapArguments(arguments);
+        parent.appendChild(node);
     };
 
     CooCooDOM.text = function(node, val) {
-        unwrapArguments(arguments, [true, false]);
+        unwrapArguments(arguments);
         node.innerHTML = '';
         node.appendChild(document.createTextNode(val));
     };
 
     CooCooDOM.addClass = function(node, val) {
-        unwrapArguments(arguments, [true, false]);
+        unwrapArguments(arguments);
         modifyClass(node, val, false);
     };
 
     CooCooDOM.removeClass = function(node, val) {
-        unwrapArguments(arguments, [true, false]);
+        unwrapArguments(arguments);
         modifyClass(node, val, true);
     };
 
     CooCooDOM.toggleClass = function(node, cls, on) {
-        unwrapArguments(arguments, [true, true, true]);
+        unwrapArguments(arguments);
         modifyClass(node, cls, !on);
     };
 
     CooCooDOM.attr = function(node, attr, val) {
-        unwrapArguments(arguments, [true, true, false]);
+        unwrapArguments(arguments);
 
         if (val === undefined) {
             return attr in props ? node[attr] : node.getAttribute(attr);
@@ -193,12 +186,12 @@
 
     CooCooDOM.trigger = function(node, name/*, ...*/) {
         /* global $ */
-        unwrapArguments(arguments, [true, true]);
+        unwrapArguments(arguments);
         $(node).trigger(name);
     };
 
     CooCooDOM.serialize = function(node) {
-        unwrapArguments(arguments, [true]);
+        unwrapArguments(arguments);
         return $(node).serializeArray();
     };
-})(CooCoo, CooCooRet);
+})(CooCoo);

@@ -1,5 +1,5 @@
 /* global window */
-(function(window) {
+(function(window, undefined) {
     var objConstructor = {}.constructor,
         lastId = 0,
 
@@ -9,13 +9,14 @@
 
         CooCooRet = window.CooCooRet = function(val) {
             if (this.constructor === CooCooRet) {
-                this._ = val instanceof CooCooRet ?
-                    val.toArray()
-                    :
-                    (val === undefined ? [] : [val]);
+                this.push(val);
             } else {
                 return new CooCooRet(val);
             }
+        },
+
+        cooUnwrap = window.cooUnwrap = function(val) {
+            return val instanceof CooCooRet ? val.valueOf() : val;
         },
 
         isPlainObject = function(obj) {
@@ -26,17 +27,20 @@
 
 
     CooCooRet.prototype.push = function(val) {
-        if (val instanceof CooCooRet) {
-            this._ = this._.concat(val.toArray());
-        } else if (val !== undefined) {
-            this._.push(val);
+        if (val instanceof CooCooRet) { val = val.valueOf(); }
+
+        if (val !== undefined) {
+            if (this._ !== undefined) {
+                throw new Error('Too many results');
+            }
+
+            this._ = val;
         }
     };
-    CooCooRet.prototype.valueOf = function(firstOnly) {
-        return firstOnly || this._.length < 2 ? this._[0] : this._;
+    CooCooRet.prototype.valueOf = function() {
+        return this._;
     };
-    CooCooRet.prototype.toArray = function() { return this._; };
-    CooCooRet.prototype.isEmpty = function() { return !this._.length; };
+    CooCooRet.prototype.isEmpty = function() { return this._ === undefined; };
 
 
     CooCoo.Extendable.prototype = {
@@ -145,7 +149,7 @@
         },
 
         __construct: function(attrs) {
-            attrs = CooCooRet(attrs).valueOf();
+            attrs = cooUnwrap(attrs);
             if (isPlainObject(attrs)) { this.__d = attrs; }
         },
 
@@ -239,13 +243,13 @@
                 data = self.__d,
                 prev;
 
-            name = CooCooRet(name).valueOf();
+            name = cooUnwrap(name);
 
             if (isPlainObject(name)) {
                 vals = name;
             } else {
                 vals = {};
-                vals[name] = CooCooRet(val).valueOf();
+                vals[name] = cooUnwrap(val);
             }
 
             for (n in vals) {

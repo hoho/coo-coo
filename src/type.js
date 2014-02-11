@@ -10,7 +10,7 @@ CooCoo.cmd.String = {
             }
         },
         getAssertExpression: function(cmd, part, val) {
-            return 'typeof CooCooRet(' + val + ').valueOf() === "string"';
+            return 'typeof ' + val + ' === "string"';
         }
     }
 };
@@ -25,7 +25,7 @@ CooCoo.cmd.Number = {
             }
         },
         getAssertExpression: function(cmd, part, val) {
-            return 'typeof CooCooRet(' + val + ').valueOf() === "number"';
+            return 'typeof ' + val + ' === "number"';
         }
     }
 };
@@ -40,7 +40,7 @@ CooCoo.cmd.Node = {
             }
         },
         getAssertExpression: function(cmd, part, val) {
-            return 'CooCooRet(' + val + ').valueOf() instanceof Node';
+            return val + ' instanceof Node';
         }
     }
 };
@@ -74,9 +74,9 @@ CooCoo.cmd.JS = {
             ret.push(part.value[1].value);
             ret.push(') { return ');
             ret.push(part.value[2].value);
-            ret.push('; })(CooCooRet(');
+            ret.push('; })(');
             ret.push(val);
-            ret.push(').valueOf())');
+            ret.push(')');
 
             return ret.join('');
         }

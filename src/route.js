@@ -113,7 +113,7 @@
                     var ret;
 
                     if (cmd.hasRet) {
-                        ret = INDENT + 'return CooCooRet(' + COO_INTERNAL_VARIABLE_RET + ').valueOf();\n';
+                        ret = INDENT + 'return cooUnwrap(' + COO_INTERNAL_VARIABLE_RET + ');\n';
                     } else {
                         ret = '';
                     }
