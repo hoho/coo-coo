@@ -2190,7 +2190,134 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
 
 
     function cmdProcessCommand(cmd) {
-        var pattern = {};
+        var pattern = {},
+            setPatterns,
+            thisSetPatterns;
+
+        setPatterns = {
+            '': {
+                '@': function() {
+                    // `NAME` identifier (something) SET identifier
+
+                    cmd.hasSubblock = true;
+                    cmd.valueRequired = true;
+
+                    cmd.file.errorNotImplemented(cmd.parts[0]);
+                },
+
+                '(': function() {
+                    // `NAME` identifier (something) SET identifier (expr)
+                    cooAssertNotValuePusher(cmd);
+
+                    cmd.getCodeBefore = function() {
+                        var decl = cooGetDecl(cmd),
+                            ret = [],
+                            type = cooCheckProperty(cmd, decl, cmd.parts[4]);
+
+                        ret.push(cooValueToJS(cmd, cmd.parts[2]));
+                        ret.push('.set("');
+                        ret.push(cmd.parts[4].value);
+                        ret.push('", ');
+
+                        ret.push(cooWrapWithTypeCheck(
+                            cmd,
+                            cmd.parts[5],
+                            type,
+                            cooValueToJS(cmd, cmd.parts[5])
+                        ));
+
+                        if (cmd.parts[3].value === 'RESET') {
+                            ret.push(', true');
+                        }
+
+                        ret.push(');');
+
+                        return ret.join('');
+                    };
+                }
+            }
+        };
+
+        thisSetPatterns = {
+            '': {
+                '@': function() {
+                    // THIS SET identifier
+                    //     ...
+                    cooAssertNotValuePusher(cmd);
+
+                    return cooProcessBlockAsValue(cmd, {
+                        getCodeBeforeBefore: function() {
+                            cooAssertHasSubcommands(cmd);
+
+                            var type = cooCheckProperty(cmd, cmd.root, cmd.parts[2]),
+                                ret = [],
+                                wrapper;
+
+                            ret.push('this.set("');
+                            ret.push(cmd.parts[2].value);
+                            ret.push('", ');
+
+
+                            wrapper = cooWrapWithTypeCheck(
+                                cmd,
+                                cmd.children[0].parts[0],
+                                type
+                            );
+
+                            if (wrapper) {
+                                ret.push(wrapper[0]);
+                                cmd.wrapperEnd = wrapper[1];
+                            }
+
+                            return ret.join('');
+                        },
+
+                        getCodeAfterAfter: function() {
+                            var ret = [];
+
+                            if (cmd.wrapperEnd) { ret.push(cmd.wrapperEnd); }
+
+                            if (cmd.parts[1].value === 'RESET') {
+                                ret.push(', true');
+                            }
+
+                            ret.push(');');
+
+                            return ret.join('');
+                        }
+                    });
+                },
+
+                '(': function() {
+                    // THIS SET identifier (expr)
+                    cooAssertNotValuePusher(cmd);
+
+                    cmd.getCodeBefore = function() {
+                        var type = cooCheckProperty(cmd, cmd.root, cmd.parts[2]),
+                            ret = [];
+
+                        ret.push('this.set("');
+                        ret.push(cmd.parts[2].value);
+                        ret.push('", ');
+
+                        ret.push(cooWrapWithTypeCheck(
+                            cmd,
+                            cmd.parts[3],
+                            type,
+                            cooValueToJS(cmd, cmd.parts[3])
+                        ));
+
+                        if (cmd.parts[1].value === 'RESET') {
+                            ret.push(', true');
+                        }
+
+                        ret.push(');');
+
+                        return ret.join('');
+                    };
+                }
+            }
+        };
 
         pattern[cmdDesc.cmdName] = {
             '': {
@@ -2209,56 +2336,8 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                         cooProcessInstance(cmd, undefined, 4, cooGetProcessParamsAndEvents(false, instanceEvents));
                     },
 
-                    'SET': {
-                        '@': function() {
-                            // `NAME` identifier (something) SET
-                            //     ...
-                            cmd.file.errorNotImplemented(cmd.parts[0]);
-                        },
-
-                        '(': function() {
-                            // `NAME` identifier (something) SET (expr)
-                            cmd.file.errorNotImplemented(cmd.parts[0]);
-                        },
-
-                        '': {
-                            '@': function() {
-                                // `NAME` identifier (something) SET identifier
-
-                                cmd.hasSubblock = true;
-                                cmd.valueRequired = true;
-
-                                cmd.file.errorNotImplemented(cmd.parts[0]);
-                            },
-
-                            '(': function() {
-                                // `NAME` identifier (something) SET identifier (expr)
-                                cooAssertNotValuePusher(cmd);
-
-                                cmd.getCodeBefore = function() {
-                                    var decl = cooGetDecl(cmd),
-                                        ret = [],
-                                        type = cooCheckProperty(cmd, decl, cmd.parts[4]);
-
-                                    ret.push(cooValueToJS(cmd, cmd.parts[2]));
-                                    ret.push('.set("');
-                                    ret.push(cmd.parts[4].value);
-                                    ret.push('", ');
-
-                                    ret.push(cooWrapWithTypeCheck(
-                                        cmd,
-                                        cmd.parts[5],
-                                        type,
-                                        cooValueToJS(cmd, cmd.parts[5])
-                                    ));
-
-                                    ret.push(');');
-
-                                    return ret.join('');
-                                };
-                            }
-                        }
-                    },
+                    'SET': setPatterns,
+                    'RESET': setPatterns,
 
                     'GET': {
                         '@': function() {
@@ -2396,101 +2475,8 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                 };
             },
 
-            'SET': {
-                '@': function() {
-                    // THIS SET
-                    //     ...
-                    cooAssertNotValuePusher(cmd);
-
-                    return cooProcessBlockAsValue(cmd, {
-                        getCodeBeforeBefore: function() {
-                            return 'this.set(';
-                        },
-
-                        getCodeAfterAfter: function() {
-                            return ');';
-                        }
-                    });
-                },
-
-                '(': function() {
-                    // THIS SET (expr)
-                    cooAssertNotValuePusher(cmd);
-
-                    cmd.file.errorNotImplemented(cmd.parts[0]);
-                },
-
-                '': {
-                    '@': function() {
-                        // THIS SET identifier
-                        //     ...
-                        cooAssertNotValuePusher(cmd);
-
-                        return cooProcessBlockAsValue(cmd, {
-                            getCodeBeforeBefore: function() {
-                                cooAssertHasSubcommands(cmd);
-
-                                var type = cooCheckProperty(cmd, cmd.root, cmd.parts[2]),
-                                    ret = [],
-                                    wrapper;
-
-                                ret.push('this.set("');
-                                ret.push(cmd.parts[2].value);
-                                ret.push('", ');
-
-
-                                wrapper = cooWrapWithTypeCheck(
-                                    cmd,
-                                    cmd.children[0].parts[0],
-                                    type
-                                );
-
-                                if (wrapper) {
-                                    ret.push(wrapper[0]);
-                                    cmd.wrapperEnd = wrapper[1];
-                                }
-
-                                return ret.join('');
-                            },
-
-                            getCodeAfterAfter: function() {
-                                var ret = [];
-
-                                if (cmd.wrapperEnd) { ret.push(cmd.wrapperEnd); }
-
-                                ret.push(');');
-
-                                return ret.join('');
-                            }
-                        });
-                    },
-
-                    '(': function() {
-                        // THIS SET identifier (expr)
-                        cooAssertNotValuePusher(cmd);
-
-                        cmd.getCodeBefore = function() {
-                            var type = cooCheckProperty(cmd, cmd.root, cmd.parts[2]),
-                                ret = [];
-
-                            ret.push('this.set("');
-                            ret.push(cmd.parts[2].value);
-                            ret.push('", ');
-
-                            ret.push(cooWrapWithTypeCheck(
-                                cmd,
-                                cmd.parts[3],
-                                type,
-                                cooValueToJS(cmd, cmd.parts[3])
-                            ));
-
-                            ret.push(');');
-
-                            return ret.join('');
-                        };
-                    }
-                }
-            },
+            'SET': thisSetPatterns,
+            'RESET': thisSetPatterns,
 
             'GET': {
                 '@': function() {

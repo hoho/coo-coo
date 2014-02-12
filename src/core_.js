@@ -26,6 +26,12 @@
         };
 
 
+    CooCoo.reset = function(val, prev) {
+        if (prev instanceof CooCoo.Extendable) { prev.destroy(); }
+        return cooUnwrap(val);
+    };
+
+
     CooCooRet.prototype.push = function(val) {
         if (val instanceof CooCooRet) { val = val.valueOf(); }
 
@@ -236,7 +242,7 @@
             return self;
         },
 
-        set: function(name, val) {
+        set: function(name, val, reset) {
             var self = this,
                 vals,
                 n,
@@ -257,6 +263,10 @@
                 val = data[n] = vals[n];
 
                 if (val !== prev) {
+                    if (reset) {
+                        prev = CooCoo.reset(undefined, prev);
+                    }
+
                     self.trigger('change:' + n, val, n, prev);
                 }
             }
