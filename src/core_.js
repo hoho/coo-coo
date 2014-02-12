@@ -143,7 +143,11 @@
             var self = this,
                 i;
 
+            if (self.__destroyed) { return; }
+
             self.trigger('destroy', self);
+
+            if (self.__destroyed) { return; }
 
             for (i = 0; i < self.__dh.length; i++) {
                 self.__dh[i]();
