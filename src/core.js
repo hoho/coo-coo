@@ -501,24 +501,23 @@ function cooRunGenerators(cmd, code, level) {
 
 
 /* exported cooWrapWithTypeCheck */
-function cooWrapWithTypeCheck(cmd, part, type, valString) {
+function cooWrapWithTypeCheck(cmd, part, type, valString, nullable) {
     if (!cmd.debug || !type) {
         return valString || ['', ''];
     }
 
     var ret = [];
 
-    // (function cooTypeCheck(val) { if (!(type)) { throw new Error("msg"); } return val; })(val)
-
-    ret.push('(function cooTypeCheck(val, nullable) { if (!(');
+    ret.push('(function cooTypeCheck(val, nullable) { if ((!val && !nullable) || (val && !(');
 
     if (typeof type !== 'string') {
+        nullable = type.nullable;
         type = CooCoo.cmd[type.value[0].value].type.getAssertExpression(cmd, type, 'val');
     }
 
     ret.push(type);
 
-    ret.push(')) { throw new Error("');
+    ret.push('))) { throw new Error("');
 
     var msg = cmd.file.getErrorMessage('Type check error', part._charAt, part._lineAt);
     msg = msg.split('\n').join('\\n').replace(/"/g, '\\"');
@@ -528,10 +527,13 @@ function cooWrapWithTypeCheck(cmd, part, type, valString) {
 
     if (valString) {
         ret.push(valString);
+        if (nullable) {
+            ret.push(', true');
+        }
         ret.push(')');
         return ret.join('');
     } else {
-        return [ret.join(''), ')'];
+        return [ret.join(''), nullable ? ', true)' : ')'];
     }
 }
 
