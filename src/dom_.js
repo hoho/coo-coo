@@ -1,4 +1,3 @@
-/* global cooUnwrap */
 /* global document */
 (function(CooCoo) {
     var handlers = {},
@@ -10,7 +9,7 @@
         var i;
 
         for (i = 0; i < args.length; i++) {
-            args[i] = cooUnwrap(args[i]);
+            args[i] = CooCoo.unwrap(args[i]);
         }
     }
 
@@ -55,7 +54,7 @@
                 h = handlers[id];
 
             self.id = id;
-            self.node = cooUnwrap(node);
+            self.node = CooCoo.unwrap(node);
             self.parent = parent;
 
             if (h) {

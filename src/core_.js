@@ -7,7 +7,7 @@
             Extendable: function() {}
         },
 
-        CooCooRet = window.CooCooRet = function(val) {
+        CooCooRet = CooCoo.Ret = function(val) {
             if (this.constructor === CooCooRet) {
                 this.push(val);
             } else {
@@ -15,7 +15,7 @@
             }
         },
 
-        cooUnwrap = window.cooUnwrap = function(val) {
+        cooUnwrap = CooCoo.unwrap = function(val) {
             return val instanceof CooCooRet ? val.valueOf() : val;
         },
 

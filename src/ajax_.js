@@ -1,5 +1,4 @@
 /* global $ */
-/* global cooUnwrap */
 CooCoo.Ajax = CooCoo.Extendable.extend({
     init: function(parent, settings) {
         var self = this,
@@ -8,7 +7,7 @@ CooCoo.Ajax = CooCoo.Extendable.extend({
         CooCoo.Ajax.__super__.init.call(self, parent);
 
         for (prop in settings) {
-            settings[prop] = cooUnwrap(settings[prop]);
+            settings[prop] = CooCoo.unwrap(settings[prop]);
         }
 
         self._req = $.ajax({

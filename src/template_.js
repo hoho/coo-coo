@@ -1,6 +1,5 @@
 (function() {
     /* global $C */
-    /* global cooUnwrap */
 
     var currentBindings,
         currentParent,
@@ -91,7 +90,7 @@
             currentParent = self.parent;
 
             for (i = 0; i < arguments.length; i++) {
-                args.push(cooUnwrap(arguments[i]));
+                args.push(CooCoo.unwrap(arguments[i]));
             }
 
             // Reuse i variable for return value.

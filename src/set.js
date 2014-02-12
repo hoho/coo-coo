@@ -22,7 +22,7 @@
 
                         return cooProcessBlockAsValue(cmd, {
                             getCodeBeforeBefore: function() {
-                                return cmd.parts[1].value + ' = cooUnwrap(';
+                                return cmd.parts[1].value + ' = CooCoo.unwrap(';
                             },
 
                             getCodeAfterAfter: function() {
@@ -45,7 +45,7 @@
 
                             ret.push(retWrap[0]);
                             ret.push(name);
-                            ret.push(' = cooUnwrap(');
+                            ret.push(' = CooCoo.unwrap(');
                             ret.push(cooValueToJS(cmd, val));
                             ret.push(')');
                             ret.push(retWrap[1]);

@@ -1,4 +1,3 @@
-/* global cooUnwrap */
 (function(CooCoo) {
 
     function getKeys(items) {
@@ -55,7 +54,7 @@
                 i,
                 model;
 
-            val = cooUnwrap(val);
+            val = CooCoo.unwrap(val);
 
             if (val !== undefined) {
                 if (!(val instanceof Array)) {
