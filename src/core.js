@@ -966,11 +966,13 @@ CooFile.prototype = {
         part = new CooCommandPart(type, this.lineAt, this.charAt);
         this.charAt += nextChar;
 
-        if (line[this.charAt].match(/[a-zA-Z_]/)) {
-            val.push(line[this.charAt]);
-            this.charAt++;
-        } else {
-            this.errorUnexpectedSymbol();
+        if (this.charAt < line.length) {
+            if (line[this.charAt].match(/[a-zA-Z_]/)) {
+                val.push(line[this.charAt]);
+                this.charAt++;
+            } else {
+                this.errorUnexpectedSymbol();
+            }
         }
 
         while (this.charAt < line.length && line[this.charAt].match(/[a-zA-Z0-9_]/)) {
