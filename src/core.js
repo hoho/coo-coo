@@ -245,6 +245,16 @@ function cooWrapRet(cmd) {
 }
 
 
+function CooCooScope(breaking) {
+    this.vars = {};
+    this.breaking = breaking;
+}
+
+CooCooScope.prototype.add = function add(name, value) {
+    this.vars[name] = value === undefined ? null : value;
+};
+
+
 /* exported cooPushScopeVariable */
 function cooPushScopeVariable(cmd, name, value) {
     var tmp = cmd,
@@ -260,7 +270,7 @@ function cooPushScopeVariable(cmd, name, value) {
         cmd.file.errorUnexpectedPart(cmd.parts[0]);
     }
 
-    scope[name] = value === undefined ? null : value;
+    scope.add(name, value);
 
     return tmp;
 }
@@ -272,22 +282,27 @@ function cooCheckScopeVariable(cmd, part) {
 
     while (tmp && ok === undefined) {
         if (tmp.data.scope) {
-            ok = tmp.data.scope[part.value];
+            ok = tmp.data.scope.vars[part.value];
         }
-        tmp = tmp.parent;
+
+        if (!tmp.data.scope || !tmp.data.scope.breaking) {
+            tmp = tmp.parent;
+        } else {
+            break;
+        }
     }
 
     if (ok === undefined) {
-        part.error = 'Variable is not set yet';
+        part.error = 'Variable is not set in this scope';
         cmd.file.errorUnexpectedPart(part);
     }
 }
 
 
 /* exported cooCreateScope */
-function cooCreateScope(cmd) {
+function cooCreateScope(cmd, breaking) {
     if (!cmd.data.scope) {
-        cmd.data.scope = {};
+        cmd.data.scope = new CooCooScope(breaking);
     }
 }
 
@@ -300,7 +315,7 @@ function cooSetScopeRet(cmd) {
 
 /* exported cooGetScopeVariablesDecl */
 function cooGetScopeVariablesDecl(cmd) {
-    var scope = cmd.data.scope,
+    var scope = (cmd.data.scope || {}).vars,
         scopeVars = [],
         key;
 
@@ -314,7 +329,7 @@ function cooGetScopeVariablesDecl(cmd) {
         key = scopeVars[0];
 
         var ret = [],
-            val = cmd.data.scope[key];
+            val = scope[key];
 
         ret.push('\n' + INDENT + 'var ' + key);
 
@@ -326,7 +341,7 @@ function cooGetScopeVariablesDecl(cmd) {
         for (var i = 1; i < scopeVars.length; i++) {
             ret.push(', ' + scopeVars[i]);
 
-            val = cmd.data.scope[scopeVars[i]];
+            val = scope[scopeVars[i]];
             if (val) {
                 ret.push(' = ');
                 ret.push(val);

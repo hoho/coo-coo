@@ -274,7 +274,7 @@
             // EVENT identifier
             cmd.hasSubblock = true;
 
-            cooCreateScope(cmd);
+            cooCreateScope(cmd, true);
 
             if (hasParam) {
                 cooPushScopeVariable(cmd, cmd.parts[1].value, false);
