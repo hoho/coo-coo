@@ -85,12 +85,7 @@ VIEW App
                 THIS SET filter "completed"
 
     METHOD setStats
-        // v = cooSet(v, nv);
-
-        TEST @stats
-            VIEW @stats DESTROY
-
-        THIS SET stats
+        THIS RESET stats
             +VIEW Stats CREATE
                 "clear-completed"
                     COLLECTION Todos @todos EACH model

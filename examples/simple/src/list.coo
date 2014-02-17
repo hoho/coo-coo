@@ -1,10 +1,6 @@
 APPLICATION
     CONSTRUCT parentNode
-        SET p
-            +VIEW Page CREATE
-
-        DOM $parentNode APPEND
-            +VIEW Page $p RENDER
+        DOM $parentNode APPEND [+VIEW Page [+VIEW Page CREATE] RENDER]
 
 
 MODEL Item
@@ -20,7 +16,7 @@ COLLECTION List
 
 VIEW Item
     PROPERTY model<MODEL Item>
-    PROPERTY textNode<JS val (val instanceof Node)>
+    PROPERTY textNode<Node>
 
     CONSTRUCT m
         THIS SET model $m
