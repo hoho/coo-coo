@@ -523,7 +523,7 @@ function cooWrapWithTypeCheck(cmd, part, type, valString, nullable) {
 
     var ret = [];
 
-    ret.push('(function cooTypeCheck(val, nullable) { if ((!val && !nullable) || (val && !(');
+    ret.push('(function cooTypeCheck(val, nullable) { if ((val === null && !nullable) || (val && !(');
 
     if (typeof type !== 'string') {
         nullable = type.nullable;
