@@ -7,7 +7,7 @@
     /* global cooProcessBlockAsValue */
 
     function setFromBody(cmd) {
-        // SET identifier
+        // set identifier
         //     ...
         cooAssertNotValuePusher(cmd);
         cooPushScopeVariable(cmd.parent, cmd.parts[1].value);
@@ -17,7 +17,7 @@
                 var ret = [];
                 ret.push(cmd.parts[1].value);
                 ret.push(' = CooCoo.');
-                if (cmd.parts[0].value === 'RESET') {
+                if (cmd.parts[0].value === 'reset') {
                     ret.push('reset');
                 } else {
                     ret.push('unwrap');
@@ -28,7 +28,7 @@
 
             getCodeAfterAfter: function() {
                 var ret = [];
-                if (cmd.parts[0].value === 'RESET') {
+                if (cmd.parts[0].value === 'reset') {
                     ret.push(', ');
                     ret.push(cmd.parts[1].value);
                 }
@@ -40,7 +40,7 @@
 
 
     function setFromExpr(cmd) {
-        // SET identifier (expr)
+        // set identifier (expr)
         var name = cmd.parts[1].value,
             val = cmd.parts[2];
 
@@ -54,14 +54,14 @@
             ret.push(retWrap[0]);
             ret.push(name);
             ret.push(' = CooCoo.');
-            if (cmd.parts[0].value === 'RESET') {
+            if (cmd.parts[0].value === 'reset') {
                 ret.push('reset');
             } else {
                 ret.push('unwrap');
             }
             ret.push('(');
             ret.push(cooValueToJS(cmd, val));
-            if (cmd.parts[0].value === 'RESET') {
+            if (cmd.parts[0].value === 'reset') {
                 ret.push(', ');
                 ret.push(name);
             }
@@ -79,14 +79,14 @@
         }
 
         return cooMatchCommand(cmd, {
-            'SET': {
+            'set': {
                 '': {
                     '@': setFromBody,
                     '(<': setFromExpr
                 }
             },
 
-            'RESET': {
+            'reset': {
                 '': {
                     '@': setFromBody,
                     '(<': setFromExpr
@@ -96,7 +96,7 @@
     }
 
 
-    CooCoo.cmd.SET = CooCoo.cmd.RESET = {
+    CooCoo.cmd.set = CooCoo.cmd.reset = {
         process: setProcess,
         arrange: null
     };

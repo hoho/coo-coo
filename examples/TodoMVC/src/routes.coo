@@ -1,10 +1,10 @@
-ROUTE All
-    HASH "^(?:/)?$"
+route All
+    hash "^(?:/)?$"
 
 
-ROUTE Active
-    HASH "^/active$"
+route Active
+    hash "^/active$"
 
 
-ROUTE Completed
-    HASH "^/completed$"
+route Completed
+    hash "^/completed$"

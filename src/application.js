@@ -3,7 +3,7 @@
 
     cooObjectBase(
         {
-            cmdName: 'APPLICATION',
+            cmdName: 'application',
             cmdStorage: 'CooCoo',
             baseClass: {name: 'CooCoo.AppBase'}
         },

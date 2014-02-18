@@ -11,7 +11,7 @@
 
     cooObjectBase(
         {
-            cmdName: 'VIEW',
+            cmdName: 'view',
             cmdStorage: 'CooCoo.View',
             baseClass: {name: 'CooCoo.ViewBase'}
         },
@@ -20,19 +20,19 @@
             properties: true,
             methods: true,
             specialMethods: {
-                RENDER: {
+                'render': {
                     actualName: '__render',
                     required: true
                 }
             }
         },
         {
-            'VIEW': {
+            'view': {
                 '': {
                     '(': {
-                        'RENDER': {
+                        'render': {
                             '#': function(cmd) {
-                                // VIEW identifier (expr) RENDER (expr2) (expr3) ...
+                                // view identifier (expr) render (expr2) (expr3) ...
                                 cooAssertValuePusher(cmd);
 
                                 cmd.hasSubblock = true;

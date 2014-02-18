@@ -13,45 +13,45 @@
     var DOM_FUNC = 'CooCoo.DOM',
         DOM_OBJ = 'new ' + DOM_FUNC,
         eventList = {
-            CLICK: 'click',
-            DBLCLICK: 'dblclick',
-            MOUSEDOWN: 'mousedown',
-            MOUSEUP: 'mouseup',
-            MOUSEOVER: 'mouseover',
-            MOUSEMOVE: 'mousemove',
-            MOUSEOUT: 'mouseout',
-            DRAGSTART: 'dragstart',
-            DRAG: 'drag',
-            DRAGENTER: 'dragenter',
-            DRAGLEAVE: 'dragleave',
-            DRAGOVER: 'dragover',
-            DROP: 'drop',
-            DRAGEND: 'dragend',
-            KEYDOWN: 'keydown',
-            KEYPRESS: 'keypress',
-            KEYUP: 'keyup',
-            LOAD: 'load',
-            UNLOAD: 'unload',
-            ABORT: 'abort',
-            ERROR: 'error',
-            RESIZE: 'resize',
-            SCROLL: 'scroll',
-            SELECT: 'select',
-            CHANGE: 'change',
-            INPUT: 'input',
-            SUBMIT: 'submit',
-            RESET: 'reset',
-            FOCUS: 'focus',
-            BLUR: 'blur',
-            FOCUSIN: 'focusin',
-            FOCUSOUT: 'focusout'
+            click: 'click',
+            dblclick: 'dblclick',
+            mousedown: 'mousedown',
+            mouseup: 'mouseup',
+            mouseover: 'mouseover',
+            mousemove: 'mousemove',
+            mouseout: 'mouseout',
+            dragstart: 'dragstart',
+            drag: 'drag',
+            dragenter: 'dragenter',
+            dragleave: 'dragleave',
+            dragover: 'dragover',
+            drop: 'drop',
+            dragend: 'dragend',
+            keydown: 'keydown',
+            keypress: 'keypress',
+            keyup: 'keyup',
+            load: 'load',
+            unload: 'unload',
+            abort: 'abort',
+            error: 'error',
+            resize: 'resize',
+            scroll: 'scroll',
+            select: 'select',
+            change: 'change',
+            input: 'input',
+            submit: 'submit',
+            reset: 'reset',
+            focus: 'focus',
+            blur: 'blur',
+            focusin: 'focusin',
+            focusout: 'focusout'
         };
 
 
     function getSetter(method, params) {
         return {
             '#': function(cmd) {
-                // DOM (expr) CLASS ADD (expr2) ...
+                // dom (expr) class add (expr2) ...
                 cooAssertNotValuePusher(cmd);
 
                 cmd.getCodeBefore = function() {
@@ -83,7 +83,7 @@
 
     function getGetter(method, params) {
         return function(cmd) {
-            // DOM (expr) VALUE GET
+            // dom (expr) value get
             cooAssertValuePusher(cmd);
 
             cmd.getCodeBefore = function() {
@@ -117,10 +117,10 @@
         }
 
         return cooMatchCommand(cmd, {
-            'DOM': {
+            'dom': {
                 '(': {
                     '@': function() {
-                        // DOM (expr)
+                        // dom (expr)
                         cmd.hasSubblock = true;
                         cmd.valueRequired = false;
 
@@ -156,16 +156,16 @@
                         };
                     },
 
-                    'ATTR': {
+                    'attribute': {
                         '(': {
-                            'SET': getSetter('attr', [3, 5]),
-                            'GET': getGetter('attr', [3])
+                            'set': getSetter('attr', [3, 5]),
+                            'get': getGetter('attr', [3])
                         }
                     },
 
-                    'APPEND': {
+                    'append': {
                         '@': function() {
-                            // DOM (expr) APPEND
+                            // dom (expr) append
                             //     ...
                             cooAssertNotValuePusher(cmd);
 
@@ -188,7 +188,7 @@
                         },
 
                         '(': function() {
-                            // DOM (expr) APPEND (expr2)
+                            // dom (expr) append (expr2)
                             cooAssertNotValuePusher(cmd);
 
                             cmd.getCodeBefore = function() {
@@ -206,16 +206,16 @@
                         }
                     },
 
-                    'CLASS': {
-                        'ADD': getSetter('addClass', [4]),
-                        'REMOVE': getSetter('removeClass', [4]),
-                        'TOGGLE': getSetter('toggleClass', [4, 5])
+                    'class': {
+                        'add': getSetter('addClass', [4]),
+                        'remove': getSetter('removeClass', [4]),
+                        'toggle': getSetter('toggleClass', [4, 5])
                     },
 
-                    'TRIGGER': {
+                    'trigger': {
                         '': {
                             '#': function() {
-                                // DOM (expr) TRIGGER identifier (expr) (expr2) ...
+                                // dom (expr) trigger identifier (expr) (expr2) ...
                                 cooAssertNotValuePusher(cmd);
 
                                 if (!(cmd.parts[3].value in eventList)) {
@@ -245,18 +245,18 @@
                         }
                     },
 
-                    'VALUE': {
-                        'SET': getSetter('val', [4]),
-                        'GET': getGetter('val', [])
+                    'value': {
+                        'set': getSetter('val', [4]),
+                        'get': getGetter('val', [])
                     },
 
-                    'TEXT': {
-                        'SET': getSetter('text', [4]),
-                        'GET': getGetter('text', [])
+                    'text': {
+                        'set': getSetter('text', [4]),
+                        'get': getGetter('text', [])
                     },
 
-                    'FORM': {
-                        'SERIALIZE': getGetter('serialize', [])
+                    'form': {
+                        'serialize': getGetter('serialize', [])
                     }
                 }
             }
@@ -269,9 +269,9 @@
 
     function getProcessEventFunc(name, hasParam) {
         return function(cmd) {
-            // EVENT
+            // event
             // or
-            // EVENT identifier
+            // event identifier
             cmd.hasSubblock = true;
 
             cooCreateScope(cmd, true);
@@ -315,7 +315,7 @@
     }
 
 
-    CooCoo.cmd.DOM = {
+    CooCoo.cmd.dom = {
         process: domProcess,
         arrange: null,
         base: 'dom'

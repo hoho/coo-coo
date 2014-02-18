@@ -14,7 +14,7 @@
     /* global cooWrapRet */
 
     function processEach(cmd) {
-        // COLLECTION identifier (expr) EACH identifier
+        // collection identifier (expr) each identifier
         cmd.hasSubblock = true;
         cooAssertNotValuePusher(cmd);
 
@@ -55,7 +55,7 @@
 
     cooObjectBase(
         {
-            cmdName: 'COLLECTION',
+            cmdName: 'collection',
             cmdStorage: 'CooCoo.Collection',
             baseClass: {name: 'CooCoo.CollectionBase'}
         },
@@ -64,13 +64,13 @@
             properties: true,
             methods: true,
             specialMethods: {
-                MODEL: {
+                'model': {
                     actualName: 'model',
                     required: true,
 
                     tuneCommand: function(cmd) {
                         return cooMatchCommand(cmd, {
-                            'MODEL': {
+                            'model': {
                                 '@': function() {
                                     cmd.hasSubblock = true;
                                     cmd.valueRequired = true;
@@ -98,7 +98,7 @@
                         } else {
                             tmp = cmd.parts[1].value;
 
-                            if (!cmd.decls.MODEL || !cmd.decls.MODEL[tmp]) {
+                            if (!cmd.decls.model || !cmd.decls.model[tmp]) {
                                 cmd.parts[1].error = 'Undeclared model';
                                 cmd.file.errorUnexpectedPart(cmd.parts[1]);
                             }
@@ -116,12 +116,12 @@
             }
         },
         {
-            'COLLECTION': {
+            'collection': {
                 '': {
                     '(': {
-                        'ADD': {
+                        'add': {
                             '@': function(cmd) {
-                                // COLLECTION identifier (expr) ADD
+                                // collection identifier (expr) add
                                 //     ...
                                 cmd.hasSubblock = true;
                                 cmd.valueRequired = true;
@@ -142,7 +142,7 @@
                             },
 
                             '(': function(cmd) {
-                                // COLLECTION identifier (expr) ADD (expr2)
+                                // collection identifier (expr) add (expr2)
                                 cooAssertNotValuePusher(cmd);
 
                                 cmd.getCodeBefore = function() {
@@ -160,15 +160,15 @@
                             }
                         },
 
-                        'EACH': {
+                        'each': {
                             '': {
                                 '@': processEach,
                                 '(': processEach
                             }
                         },
 
-                        'LENGTH': function(cmd) {
-                            // COLLECTION identifier (expr) LENGTH
+                        'length': function(cmd) {
+                            // collection identifier (expr) length
                             cooAssertValuePusher(cmd);
 
                             cmd.getCodeBefore = function() {
@@ -191,10 +191,10 @@
                             };
                         },
 
-                        'FIND': {
+                        'find': {
                             '': {
                                 '(': function processEach(cmd) {
-                                    // COLLECTION identifier (expr) FIND identifier (expr)
+                                    // collection identifier (expr) find identifier (expr)
                                     cooAssertValuePusher(cmd);
 
                                     cooCreateScope(cmd);

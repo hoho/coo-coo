@@ -46,8 +46,8 @@ CooCoo.cmd.Node = {
 };
 
 
-CooCoo.cmd.JS = {
-    // JS command is processed from core.js, only typification part is here.
+CooCoo.cmd.js = {
+    // js command is processed from core.js, only typification part is here.
     type: {
         validate: function(file, part) {
             if (part.value.length < 3) {

@@ -57,7 +57,7 @@
             cmd.processChild = ajaxProcessSettings;
 
             return cooMatchCommand(cmd, {
-                'AJAX': function() {
+                'ajax': function() {
                     if (cmd.valuePusher) {
                         cmd.file.errorNoValue(cmd.parts[0]);
                     }
@@ -79,9 +79,9 @@
 
     function ajaxProcessSettings(cmd) {
         return cooMatchCommand(cmd, {
-            URL: getValueGetter(cmd, 'url', 'Duplicate URL'),
+            'url': getValueGetter(cmd, 'url', 'Duplicate URL'),
 
-            GET: function() {
+            'get': function() {
                 checkForDuplicate(cmd, 'method', 'Duplicate request method');
 
                 cmd.getCodeBefore = function() {
@@ -89,7 +89,7 @@
                 };
             },
 
-            POST: function() {
+            'post': function() {
                 checkForDuplicate(cmd, 'method', 'Duplicate request method');
 
                 cmd.getCodeBefore = function() {
@@ -97,11 +97,11 @@
                 };
             },
 
-            TYPE: getValueGetter(cmd, 'type', 'Duplicate request type'),
+            'type': getValueGetter(cmd, 'type', 'Duplicate request type'),
 
-            DATA: getValueGetter(cmd, 'data', 'Duplicate data'),
+            'data': getValueGetter(cmd, 'data', 'Duplicate data'),
 
-            SUCCESS: {
+            'success': {
                 '*': function(cmd) {
                     checkForDuplicate(cmd, 'success', 'Duplicate SUCCESS');
 
@@ -124,7 +124,7 @@
                 }
             },
 
-            ERROR: {
+            'error': {
                 '@': function() {
                     checkForDuplicate(cmd, 'error', 'Duplicate ERROR');
 
@@ -142,7 +142,7 @@
                 }
             },
 
-            COMPLETE: {
+            'complete': {
                 '@': function() {
                     checkForDuplicate(cmd, 'complete', 'Duplicate COMPLETE');
 
@@ -163,7 +163,7 @@
     }
 
 
-    CooCoo.cmd.AJAX = {
+    CooCoo.cmd.ajax = {
         process: ajaxProcess,
         arrange: null,
         base: 'ajax'

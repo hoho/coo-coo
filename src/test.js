@@ -8,9 +8,9 @@
         }
 
         return cooMatchCommand(cmd, {
-            'TEST': {
+            'test': {
                 '(': function() {
-                    // TEST (expr)
+                    // test (expr)
                     //     ...
                     cmd.hasSubblock = true;
                     cmd.valueRequired = cmd.parent.valueRequired;
@@ -35,7 +35,7 @@
     }
 
 
-    CooCoo.cmd.TEST = {
+    CooCoo.cmd.test = {
         process: testProcess,
         arrange: null
     };

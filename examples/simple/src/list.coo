@@ -1,72 +1,72 @@
-APPLICATION
-    CONSTRUCT parentNode
-        DOM $parentNode APPEND [+VIEW Page [+VIEW Page CREATE] RENDER]
+application
+    construct parentNode
+        dom $parentNode append [+view Page [+view Page create] render]
 
 
-MODEL Item
-    PROPERTY title<String>
+model Item
+    property title<String>
 
-    CONSTRUCT title
-        THIS SET title $title
-
-
-COLLECTION List
-    MODEL Item
+    construct title
+        this set title $title
 
 
-VIEW Item
-    PROPERTY model<MODEL Item>
-    PROPERTY textNode<Node>
+collection List
+    model Item
 
-    CONSTRUCT m
-        THIS SET model $m
 
-        MODEL Item $m
-            CHANGE "title" val
-                DOM @textNode TEXT SET $val
+view Item
+    property model<model Item>
+    property textNode<Node>
 
-            DESTROY
-                THIS DESTROY
+    construct m
+        this set model $m
 
-    RENDER
-        +TEMPLATE "conkitty:item" APPLY
-            PARAM
-                +MODEL Item @model GET title
+        model Item $m
+            change "title" val
+                dom @textNode text set $val
+
+            destroy
+                this destroy
+
+    render
+        +template "conkitty:item" apply
+            param
+                +model Item @model get title
 
             "text" node
-                THIS SET textNode $node
+                this set textNode $node
 
             "remove" node
-                DOM $node
-                    CLICK
-                        MODEL Item @model DESTROY
+                dom $node
+                    click
+                        model Item @model destroy
 
 
-VIEW Page
-    PROPERTY container<Node>
-    PROPERTY input<Node>
-    PROPERTY list<COLLECTION List>
+view Page
+    property container<Node>
+    property input<Node>
+    property list<collection List>
 
-    CONSTRUCT
-        THIS SET list
-            +COLLECTION List CREATE
-                ADD m
-                    THIS CALL addItem $m
+    construct
+        this set list
+            +collection List create
+                add m
+                    this call addItem $m
 
-    RENDER
-        +TEMPLATE "conkitty:page" APPLY
+    render
+        +template "conkitty:page" apply
             "container" node
-                THIS SET container $node
+                this set container $node
 
             "input" node
-                THIS SET input $node
+                this set input $node
 
             "add" node
-                DOM $node
-                    CLICK
-                        COLLECTION List @list ADD [+DOM @input VALUE GET]
-                        DOM @input VALUE SET ""
+                dom $node
+                    click
+                        collection List @list add [+dom @input value get]
+                        dom @input value set ""
 
-    METHOD addItem m
-        DOM @container APPEND
-            +VIEW Item [+VIEW Item CREATE $m] RENDER
+    method addItem m
+        dom @container append
+            +view Item [+view Item create $m] render

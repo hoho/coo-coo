@@ -1,2 +1,2 @@
-COLLECTION Todos
-    MODEL Todo
+collection Todos
+    model Todo

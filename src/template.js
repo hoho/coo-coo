@@ -22,9 +22,9 @@
             cmd.processChild = templateProcessParamsAndElements;
 
             return cooMatchCommand(cmd, {
-                'TEMPLATE': {
+                'template': {
                     '(': {
-                        'APPLY': {
+                        'apply': {
                             '#': function() {
                                 cooAssertValuePusher(cmd);
 
@@ -86,7 +86,7 @@
 
     function templateProcessParamsAndElements(cmd) {
         return cooMatchCommand(cmd, {
-            PARAM: {
+            'param': {
                 '@': function() {
                     return cooProcessParam(cmd, false);
                 },
@@ -125,7 +125,7 @@
     }
 
 
-    CooCoo.cmd.TEMPLATE = {
+    CooCoo.cmd.template = {
         process: templateProcess,
         arrange: null,
         base: 'template'

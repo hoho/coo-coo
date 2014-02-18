@@ -701,11 +701,11 @@ CooFile.prototype = {
 
                 if (parent && parent.processChild) {
                     errorPart = parent.processChild(cmd);
-                } else if (cmd.name === 'JS') {
+                } else if (cmd.name === 'js') {
                     var self = this;
 
                     errorPart = cooMatchCommand(cmd, {
-                        'JS': function() {
+                        'js': function() {
                             var val = self.readJS(self.blockIndent);
 
                             cmd.getCodeBefore = function() {
@@ -732,7 +732,7 @@ CooFile.prototype = {
                         }
                     });
                 } else {
-                    var cmdName = cmd.name === 'THIS' && cmd.root ? cmd.root.name : cmd.name,
+                    var cmdName = cmd.name === 'this' && cmd.root ? cmd.root.name : cmd.name,
                         commandHandlers = CooCoo.cmd[cmdName];
 
                     if (commandHandlers) {
@@ -1304,10 +1304,10 @@ function CooCoo(filenames, common, app, debug) {
 
     // Super dumb way to put collections at the bottom (they depend on models).
     // XXX: Implement this thing in arrange function.
-    tmp = ret.cmd.filter(function(item) { return item.name !== 'COLLECTION'; });
+    tmp = ret.cmd.filter(function(item) { return item.name !== 'collection'; });
     cooRunGenerators({children: tmp}, code, 0);
 
-    tmp = ret.cmd.filter(function(item) { return item.name === 'COLLECTION'; });
+    tmp = ret.cmd.filter(function(item) { return item.name === 'collection'; });
     cooRunGenerators({children: tmp}, code, 0);
 
     tmp = [];
@@ -1416,7 +1416,7 @@ function cooGetParamValues(cmd, inlineParams, elemParams) {
 
     if (inlineParams.length && elemParams.length) {
         param = elemParams[0];
-        param.parts[0].error = 'Can\'t mix PARAM commands with inline params';
+        param.parts[0].error = 'Can\'t mix param commands with inline params';
         param.file.errorUnexpectedPart(param.parts[0]);
     }
 
@@ -1567,7 +1567,7 @@ function cooGetProcessParamsAndEvents(hasParams, events) {
             patterns = {};
 
         if (hasParams) {
-            patterns.PARAM = {
+            patterns.param = {
                 '@': function() {
                     return cooProcessParam(cmd, false);
                 },
@@ -1589,14 +1589,14 @@ function cooGetProcessParamsAndEvents(hasParams, events) {
                         patterns[name] = {
                             '(': {
                                 '*': function() {
-                                    // EVENT (expr) identifier identifier2 ...
+                                    // event (expr) identifier identifier2 ...
                                     return cooProcessEvent(cmd, true, 2, event.actualName);
                                 }
                             },
 
                             '': {
                                 '*': function() {
-                                    // EVENT identifier identifier2 ...
+                                    // event identifier identifier2 ...
                                     return cooProcessEvent(cmd, false, 1, event.actualName);
                                 }
                             }
@@ -1604,7 +1604,7 @@ function cooGetProcessParamsAndEvents(hasParams, events) {
                     } else {
                         patterns[name] = {
                             '*': function() {
-                                // ADD identifier identifier2 ...
+                                // add identifier identifier2 ...
                                 return cooProcessEvent(cmd, false, 1, event.actualName);
                             }
                         };
@@ -1628,7 +1628,7 @@ function cooGetProcessParamsAndEvents(hasParams, events) {
 /* exported cooProcessParams */
 function cooProcessParams(cmd) {
     return cooMatchCommand(cmd, {
-        PARAM: {
+        'param': {
             '@': function() {
                 return cooProcessParam(cmd, false);
             },
@@ -1745,7 +1745,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
     /*
     `cmdDesc is an object like:
         {
-            cmdName: 'VIEW',
+            cmdName: 'view',
             cmdStorage: 'CooCoo.View, // is a place for this class to be
                                       // stored: CooCoo[cmdStorage][name].
             baseClass: {
@@ -1807,16 +1807,16 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                 exts,
                 name;
 
-            if (cmdDesc.cmdName !== 'APPLICATION') {
+            if (cmdDesc.cmdName !== 'application') {
                 patterns[cmdDesc.cmdName] = {
                     '': {
                         '@': function() {
-                            // `NAME` identifier
+                            // `name` identifier
                         },
 
-                        'EXTENDS': {
+                        'extends': {
                             '': function() {
-                                // `NAME` identifier EXTENDS identifier2
+                                // `name` identifier extends identifier2
                                 exts = cmd.parts[3].value;
                             }
                         }
@@ -2101,9 +2101,9 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
 
         if (declExt) {
             if (declExt.init) {
-                patterns.CONSTRUCT = {
+                patterns.construct = {
                     '*': function() {
-                        return processMethod('CONSTRUCT', {
+                        return processMethod('construct', {
                             actualName: '__construct',
                             required: false,
                             noValue: true
@@ -2113,8 +2113,8 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
             }
 
             if (declExt.destroy) {
-                patterns.DESTRUCT = function() {
-                    return processMethod('DESTRUCT', {
+                patterns.destruct = function() {
+                    return processMethod('destruct', {
                         actualName: '__destruct',
                         required: false,
                         noValue: true
@@ -2157,7 +2157,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
             }
 
             if (declExt.properties) {
-                patterns.PROPERTY = {
+                patterns.property = {
                     '<': {
                         '@': function() {
                             return processProperty({type: cmd.parts[1].typification});
@@ -2171,7 +2171,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
             }
 
             if (declExt.methods) {
-                patterns.METHOD = {
+                patterns.method = {
                     '*': function() {
                         return processMethod();
                     }
@@ -2184,24 +2184,24 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
 
 
     var instanceEvents = {
-        ADD: {
+        'add': {
             hasName: false,
             hasParams: true
         },
 
-        REMOVE: {
+        'remove': {
             hasName: false,
-            hasParams: cmdDesc.cmdName === 'COLLECTION'
+            hasParams: cmdDesc.cmdName === 'collection'
         },
 
-        CHANGE: {
+        'change': {
             hasName: true,
             hasParams: true
         },
 
-        DESTROY: {
+        'destroy': {
             hasName: false,
-            hasParams: cmdDesc.cmdName === 'COLLECTION'
+            hasParams: cmdDesc.cmdName === 'collection'
         }
     };
 
@@ -2214,7 +2214,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
         setPatterns = {
             '': {
                 '@': function() {
-                    // `NAME` identifier (something) SET identifier
+                    // `name` identifier (something) set identifier
 
                     cmd.hasSubblock = true;
                     cmd.valueRequired = true;
@@ -2223,7 +2223,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                 },
 
                 '(': function() {
-                    // `NAME` identifier (something) SET identifier (expr)
+                    // `name` identifier (something) set identifier (expr)
                     cooAssertNotValuePusher(cmd);
 
                     cmd.getCodeBefore = function() {
@@ -2243,7 +2243,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                             cooValueToJS(cmd, cmd.parts[5])
                         ));
 
-                        if (cmd.parts[3].value === 'RESET') {
+                        if (cmd.parts[3].value === 'reset') {
                             ret.push(', true');
                         }
 
@@ -2258,7 +2258,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
         thisSetPatterns = {
             '': {
                 '@': function() {
-                    // THIS SET identifier
+                    // this set identifier
                     //     ...
                     cooAssertNotValuePusher(cmd);
 
@@ -2294,7 +2294,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
 
                             if (cmd.wrapperEnd) { ret.push(cmd.wrapperEnd); }
 
-                            if (cmd.parts[1].value === 'RESET') {
+                            if (cmd.parts[1].value === 'reset') {
                                 ret.push(', true');
                             }
 
@@ -2306,7 +2306,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                 },
 
                 '(': function() {
-                    // THIS SET identifier (expr)
+                    // this set identifier (expr)
                     cooAssertNotValuePusher(cmd);
 
                     cmd.getCodeBefore = function() {
@@ -2324,7 +2324,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                             cooValueToJS(cmd, cmd.parts[3])
                         ));
 
-                        if (cmd.parts[1].value === 'RESET') {
+                        if (cmd.parts[1].value === 'reset') {
                             ret.push(', true');
                         }
 
@@ -2338,9 +2338,9 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
 
         pattern[cmdDesc.cmdName] = {
             '': {
-                'CREATE': {
+                'create': {
                     '#': function() {
-                        // `NAME` identifier CREATE (expr1) (expr2) ...
+                        // `name` identifier create (expr1) (expr2) ...
                         //     ...
                         cooProcessCreateCommand(cmd, 3, undefined, instanceEvents);
                     }
@@ -2348,17 +2348,17 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
 
                 '(': {
                     '@': function() {
-                        // `NAME` identifier (expr)
+                        // `name` identifier (expr)
                         //     ...
                         cooProcessInstance(cmd, undefined, 4, cooGetProcessParamsAndEvents(false, instanceEvents));
                     },
 
-                    'SET': setPatterns,
-                    'RESET': setPatterns,
+                    'set': setPatterns,
+                    'reset': setPatterns,
 
-                    'GET': {
+                    'get': {
                         '@': function() {
-                            // `NAME` identifier (something) GET
+                            // `name` identifier (something) get
                             cooAssertValuePusher(cmd);
 
                             cmd.getCodeBefore = function() {
@@ -2377,7 +2377,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                         },
 
                         '': function() {
-                            // `NAME` identifier (something) GET identifier
+                            // `name` identifier (something) get identifier
                             cooAssertValuePusher(cmd);
 
                             cmd.getCodeBefore = function() {
@@ -2399,10 +2399,10 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                         }
                     },
 
-                    'CALL': {
+                    'call': {
                         '': {
                             '#': function() {
-                                // `NAME` identifier (something) CALL identifier (expr) (expr) ...
+                                // `name` identifier (something) call identifier (expr) (expr) ...
                                 cmd.hasSubblock = true;
                                 cmd.processChild = cooProcessParams;
 
@@ -2433,8 +2433,8 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                         }
                     },
 
-                    'DESTROY': function() {
-                        // `NAME` identifier (something) DESTROY
+                    'destroy': function() {
+                        // `name` identifier (something) destroy
                         cooAssertNotValuePusher(cmd);
 
                         cmd.getCodeBefore = function() {
@@ -2452,8 +2452,8 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
             },
 
             '(': {
-                'DESTROY': function() {
-                    // `NAME` (something) DESTROY
+                'destroy': function() {
+                    // `name` (something) destroy
                     cooAssertNotValuePusher(cmd);
 
                     cmd.getCodeBefore = function() {
@@ -2474,7 +2474,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
             }
         };
 
-        pattern.THIS = {
+        pattern['this'] = {
             '@': function(cmd) {
                 cmd.hasSubblock = true;
                 cooAssertNotValuePusher(cmd);
@@ -2492,12 +2492,12 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                 };
             },
 
-            'SET': thisSetPatterns,
-            'RESET': thisSetPatterns,
+            'set': thisSetPatterns,
+            'reset': thisSetPatterns,
 
-            'GET': {
+            'get': {
                 '@': function() {
-                    // THIS GET
+                    // this get
                     cooAssertValuePusher(cmd);
 
                     cmd.getCodeBefore = function() {
@@ -2513,7 +2513,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                 },
 
                 '': function() {
-                    // THIS GET identifier
+                    // this get identifier
                     cooAssertValuePusher(cmd);
 
                     cmd.getCodeBefore = function() {
@@ -2533,10 +2533,10 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                 }
             },
 
-            'CALL': {
+            'call': {
                 '': {
                     '#': function() {
-                        // THIS CALL identifier (expr) (expr) ...
+                        // this call identifier (expr) (expr) ...
                         cmd.hasSubblock = true;
                         cmd.processChild = cooProcessParams;
 
@@ -2564,10 +2564,10 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                 }
             },
 
-            'TRIGGER': {
+            'trigger': {
                 '': {
                     '#': function() {
-                        // THIS TRIGGER identifier (expr) (expr) ...
+                        // this trigger identifier (expr) (expr) ...
                         cooAssertNotValuePusher(cmd);
 
                         var events = CooCoo.cmd[cmd.root.name].triggers || {},
@@ -2601,7 +2601,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
 
                 '(': {
                     '#': function() {
-                        // THIS TRIGGER "custom-event" (expr) (expr) ...
+                        // this trigger "custom-event" (expr) (expr) ...
                         cooAssertNotValuePusher(cmd);
 
                         cmd.getCodeBefore = function() {
@@ -2625,8 +2625,8 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                 }
             },
 
-            'DESTROY': function() {
-                // THIS DESTROY
+            'destroy': function() {
+                // this destroy
                 cooAssertNotValuePusher(cmd);
 
                 cmd.getCodeBefore = function() {
@@ -2639,14 +2639,14 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
     }
 
 
-    CooCoo.cmd.SUPER = {
+    CooCoo.cmd['super'] = {
         process: function(cmd) {
             if (!cmd.root) {
                 return cmd.parts[0];
             }
 
             return cooMatchCommand(cmd, {
-                'SUPER': {
+                'super': {
                     '#': function() {
                         cmd.hasSubblock = true;
 

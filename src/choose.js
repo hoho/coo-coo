@@ -8,8 +8,8 @@
         }
 
         return cooMatchCommand(cmd, {
-            'CHOOSE': function() {
-                // CHOOSE
+            'choose': function() {
+                // choose
                 //     ...
                 cmd.hasSubblock = true;
                 cmd.processChild = chooseProcessChoices;
@@ -21,9 +21,9 @@
 
     function chooseProcessChoices(cmd) {
         return cooMatchCommand(cmd, {
-            'WHEN': {
+            'when': {
                 '(': function() {
-                    // WHEN (expr)
+                    // when (expr)
                     //     ...
                     if (cmd.parent.hadOtherwise) {
                         return cmd.parts[0];
@@ -55,8 +55,8 @@
                 }
             },
 
-            'OTHERWISE': function() {
-                // OTHERWISE
+            'otherwise': function() {
+                // otherwise
                 //     ...
                 if (cmd.parent.hadOtherwise) {
                     return cmd.parts[0];
@@ -86,7 +86,7 @@
     }
 
 
-    CooCoo.cmd.CHOOSE = {
+    CooCoo.cmd.choose = {
         process: chooseProcess,
         arrange: null
     };

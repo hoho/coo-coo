@@ -21,18 +21,18 @@
             extractParams: function(cmd) {
                 var params;
 
-                if (cmd.name === 'NOMATCH') {
+                if (cmd.name === 'nomatch') {
                     if (cmd.parts.length > 1) {
                         cmd.file.errorUnexpectedPart(cmd.parts[1]);
                     }
 
                     if (Object.keys(cmd.root.data.methods).length) {
-                        cmd.parts[0].error = 'Either combination of PATHNAME, SEARCH and HASH or NOMATCH is possible';
+                        cmd.parts[0].error = 'Either combination of pathname, search and hash or nomatch is possible';
                         cmd.file.errorUnexpectedPart(cmd.parts[0]);
                     }
                 } else {
                     if ('nomatch' in cmd.root.data.methods) {
-                        cmd.parts[0].error = 'Either NOMATCH or combination of PATHNAME, SEARCH and HASH is possible';
+                        cmd.parts[0].error = 'Either nomatch or combination of pathname, search and hash is possible';
                         cmd.file.errorUnexpectedPart(cmd.parts[0]);
                     }
                 }
@@ -65,7 +65,7 @@
                     cmd.hasSubblock = false;
                 }
 
-                if (cmd.name === 'NOMATCH') {
+                if (cmd.name === 'nomatch') {
                     cmd.hasSubblock = false;
                 }
             },
@@ -73,7 +73,7 @@
             getCodeBefore: function(cmd) {
                 var tmp;
 
-                if (cmd.name === 'NOMATCH') {
+                if (cmd.name === 'nomatch') {
                     return actualName + ': true' + (cmd.last ? '' : ',');
                 } else if (cmd.hasSubblock) {
                     tmp = cooGetScopeVariablesDecl(cmd);
@@ -126,7 +126,7 @@
 
     cooObjectBase(
         {
-            cmdName: 'ROUTE',
+            cmdName: 'route',
             cmdStorage: 'CooCoo.Route',
             baseClass: {name: 'CooCoo.RouteBase'},
             getCodeBeforeAfter: function(cmd) {
@@ -152,7 +152,7 @@
                 var ret = [];
 
                 if (!Object.keys(cmd.data.methods).length) {
-                    cmd.parts[0].error = 'Route should have at least one of PATHNAME, SEARCH, HASH or NOMATCH';
+                    cmd.parts[0].error = 'Route should have at least one of pathname, search, hash or nomatch';
                     cmd.file.errorUnexpectedPart(cmd.parts[0]);
                 }
 
@@ -165,14 +165,14 @@
         },
         {
             specialMethods: {
-                PATHNAME: createRouteMethod('pathname'),
-                SEARCH: createRouteMethod('search'),
-                HASH: createRouteMethod('hash'),
-                NOMATCH: createRouteMethod('nomatch')
+                pathname: createRouteMethod('pathname'),
+                search: createRouteMethod('search'),
+                hash: createRouteMethod('hash'),
+                nomatch: createRouteMethod('nomatch')
             }
         },
         {
-            'ROUTE': {
+            'route': {
                 '': function(cmd) {
                     cmd.hasSubblock = true;
 
@@ -251,10 +251,10 @@
 
     function matchOnOff(cmd) {
         return cooMatchCommand(cmd, {
-            'ON': {
+            'on': {
                 '*': function() {
                     if (cmd.parent.data.on) {
-                        cmd.parts[0].error = 'Duplicate ON declaration';
+                        cmd.parts[0].error = 'Duplicate on declaration';
                         cmd.file.errorUnexpectedPart(cmd.parts[0]);
                     }
 
@@ -264,10 +264,10 @@
                 }
             },
 
-            'OFF': {
+            'off': {
                 '*': function() {
                     if (cmd.parent.data.off) {
-                        cmd.parts[0].error = 'Duplicate OFF declaration';
+                        cmd.parts[0].error = 'Duplicate off declaration';
                         cmd.file.errorUnexpectedPart(cmd.parts[0]);
                     }
 
