@@ -1,6 +1,7 @@
 (function() {
     /* global cooMatchCommand */
     /* global cooValueToJS */
+    /* global cooAssertNotValuePusher */
 
     function chooseProcess(cmd) {
         if (!cmd.parent) {
@@ -11,6 +12,7 @@
             'choose': function() {
                 // choose
                 //     ...
+                cooAssertNotValuePusher(cmd);
                 cmd.hasSubblock = true;
                 cmd.processChild = chooseProcessChoices;
                 cmd.indent = 0;
@@ -25,7 +27,9 @@
                 '(': function() {
                     // when (expr)
                     //     ...
-                    if (cmd.parent.hadOtherwise) {
+                    cooAssertNotValuePusher(cmd);
+
+                    if (cmd.parent.hasOtherwise) {
                         return cmd.parts[0];
                     }
 
@@ -58,11 +62,13 @@
             'otherwise': function() {
                 // otherwise
                 //     ...
-                if (cmd.parent.hadOtherwise) {
+                cooAssertNotValuePusher(cmd);
+
+                if (cmd.parent.hasOtherwise) {
                     return cmd.parts[0];
                 }
 
-                cmd.parent.hadOtherwise = true;
+                cmd.parent.hasOtherwise = true;
 
                 cmd.hasSubblock = true;
                 cmd.valueRequired = cmd.parent.parent.valueRequired;
