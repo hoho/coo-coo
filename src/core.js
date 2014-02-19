@@ -1748,6 +1748,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
             cmdName: 'view',
             cmdStorage: 'CooCoo.View, // is a place for this class to be
                                       // stored: CooCoo[cmdStorage][name].
+            instance: false, // Do not create class, create single instance.
             baseClass: {
                 name: 'CooCoo.ViewBase',
                 methods: {init: true, destroy: true, render: true}
@@ -1865,6 +1866,10 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
 
                 ret.push(cmdDesc.cmdStorage + '.' + name + ' = ');
 
+                if (cmdDesc.instance) {
+                    ret.push('new (');
+                }
+
                 if (exts) {
                     ret.push(cmdDesc.cmdStorage + '.' + exts);
                 } else {
@@ -1897,7 +1902,14 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                     ret.push(cmdDesc.getCodeAfterBefore(cmd));
                 }
 
-                ret.push('});');
+                ret.push('}');
+
+                if (cmdDesc.instance) {
+                    ret.push(')');
+                }
+
+                ret.push(');');
+
                 if (!cmd.last) { ret.push('\n'); }
 
                 if (cmdDesc.getCodeAfterAfter) {

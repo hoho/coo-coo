@@ -12,6 +12,8 @@
     /* global cooCreateScope */
     /* global cooMatchCommand */
     /* global cooGetParamsDecl */
+    /* global cooAssertNotValuePusher */
+    /* global cooGetDecl */
 
     function createRouteMethod(actualName) {
         return {
@@ -128,39 +130,13 @@
         {
             cmdName: 'route',
             cmdStorage: 'CooCoo.Route',
+            instance: true,
             baseClass: {name: 'CooCoo.RouteBase'},
-            getCodeBeforeAfter: function(cmd) {
-                var ret = [];
-
-                if (!cmd.file.ret.data.routeId) {
-                    cmd.file.ret.data.routeId = 0;
-                }
-
-                if (cmd.debug) {
-                    ret.push('\n');
-                }
-
-                ret.push(INDENT);
-                ret.push('id: ');
-                ret.push(++cmd.file.ret.data.routeId);
-                ret.push(',');
-
-                return ret.join('');
-            },
-
             getCodeAfterAfter: function(cmd) {
-                var ret = [];
-
                 if (!Object.keys(cmd.data.methods).length) {
                     cmd.parts[0].error = 'Route should have at least one of pathname, search, hash or nomatch';
                     cmd.file.errorUnexpectedPart(cmd.parts[0]);
                 }
-
-                ret.push('new CooCoo.Route.');
-                ret.push(cmd.parts[1].value);
-                ret.push('();\n');
-
-                return ret.join('');
             }
         },
         {
@@ -172,110 +148,137 @@
             }
         },
         {
-            'route': {
-                '': function(cmd) {
-                    cmd.hasSubblock = true;
+            'route': null
+        }
+    );
 
-                    cmd.processChild = matchOnOff;
+
+    function routeProcessChoices(cmd) {
+        return cooMatchCommand(cmd, {
+            'route': {
+                '': {
+                    '*': function() {
+                        // route identifier ...
+                        //     ...
+                        cooAssertNotValuePusher(cmd);
+
+                        if (cmd.parent.hasOtherwise) {
+                            return cmd.parts[0];
+                        }
+
+                        cmd.hasSubblock = true;
+                        cmd.ignore = true;
+
+                        cmd.parent.data.routes.push(cmd);
+
+                        cooCreateScope(cmd);
+
+                        cmd.getCodeBefore = function() {
+                            var ret = [],
+                                params = cooExtractParamNames(cmd, cmd.parts, 2);
+
+                            cooGetDecl(cmd);
+
+
+                            ret.push('{r: CooCoo.Route.' + cmd.parts[1].value + ', c: function(');
+                            ret.push(cooGetParamsDecl(params));
+                            ret.push(') {');
+
+                            return ret.join('');
+                        };
+
+                        cmd.getCodeAfter = function() {
+                            var ret = [];
+                            ret.push('}}');
+                            return ret.join('');
+                        };
+                    }
+                }
+            },
+
+            'otherwise': function() {
+                // otherwise
+                //     ...
+                cooAssertNotValuePusher(cmd);
+
+                if (cmd.parent.hasOtherwise) {
+                    return cmd.parts[0];
+                }
+
+                cmd.parent.hasOtherwise = true;
+                cmd.hasSubblock = true;
+
+                cooCreateScope(cmd);
+
+                cmd.getCodeBefore = function() {
+                    return 'function() {';
+                };
+
+                cmd.getCodeAfter = function() {
+                    return '},';
+                };
+            }
+        });
+    }
+
+
+    CooCoo.cmd.routes = {
+        process: function(cmd) {
+            if (!cmd.parent) {
+                return cmd.parts[0];
+            }
+
+            return cooMatchCommand(cmd, {
+                'routes': function() {
+                    // routes
+                    //     ...
+                    cooAssertNotValuePusher(cmd);
+                    cmd.hasSubblock = true;
+                    cmd.processChild = routeProcessChoices;
+
+                    cmd.data.routes = [];
 
                     cmd.getCodeBefore = function() {
-                        if (!cmd.data.on && !cmd.data.off) {
-                            cmd.parts[0].error = 'Missing ON or OFF declaration';
+                        var ret = [],
+                            routes = cmd.data.routes;
+
+                        if (!routes.length) {
+                            cmd.parts[0].error = 'No routes';
                             cmd.file.errorUnexpectedPart(cmd.parts[0]);
                         }
 
-                        var ret = [];
+                        ret.push('new CooCoo.Routes(this, ');
 
-                        ret.push('new CooCoo.Route.' + cmd.parts[1].value + '(this, ');
-
-                        if (cmd.data.on) {
-                            cmd.data.on.ignore = false;
-                            cooRunGenerators(cmd.data.on, ret, 1);
-                            cmd.data.on.ignore = true;
-                        } else {
-                            ret[ret.length - 1] += 'undefined';
+                        if (!cmd.hasOtherwise) {
+                            ret.push('null');
                         }
 
-                        if (cmd.data.off) {
-                            ret[ret.length - 1] += ', ';
+                        return ret.join('');
+                    };
 
-                            cmd.data.off.ignore = false;
-                            cooRunGenerators(cmd.data.off, ret, 1);
-                            cmd.data.off.ignore = true;
+                    cmd.getCodeAfter = function() {
+                        var ret = [],
+                            routes = cmd.data.routes,
+                            route,
+                            i;
+
+                        for (i = 0; i < routes.length; i++) {
+                            route = routes[i];
+                            route.ignore = false;
+                            cooRunGenerators(route, ret, 1);
+                            route.ignore = true;
+                            if (i < routes.length - 1) {
+                                ret[ret.length - 1] += ',';
+                            }
                         }
 
                         ret.push(');');
 
                         return ret.join('\n');
                     };
-
-                    cmd.getCodeAfter = function() {
-
-                    };
                 }
-            }
-        }
-    );
-
-
-    function processOnOff(cmd) {
-        cmd.ignore = true;
-        cmd.hasSubblock = true;
-        cmd.valueRequired = false;
-
-        cooCreateScope(cmd);
-
-        var params = cooExtractParamNames(cmd, cmd.parts, 1),
-            p;
-
-        for (p in params) {
-            cooPushScopeVariable(cmd, p, false);
-        }
-
-        cmd.getCodeBefore = function() {
-            var ret = [];
-
-            ret.push('function(');
-            ret.push(cooGetParamsDecl(params));
-            ret.push(') {');
-            ret.push(cooGetScopeVariablesDecl(cmd));
-
-            return ret.join('');
-        };
-
-        cmd.getCodeAfter = function() {
-            return '}';
-        };
-    }
-
-
-    function matchOnOff(cmd) {
-        return cooMatchCommand(cmd, {
-            'on': {
-                '*': function() {
-                    if (cmd.parent.data.on) {
-                        cmd.parts[0].error = 'Duplicate on declaration';
-                        cmd.file.errorUnexpectedPart(cmd.parts[0]);
-                    }
-
-                    cmd.parent.data.on = cmd;
-
-                    processOnOff(cmd);
-                }
-            },
-
-            'off': {
-                '*': function() {
-                    if (cmd.parent.data.off) {
-                        cmd.parts[0].error = 'Duplicate off declaration';
-                        cmd.file.errorUnexpectedPart(cmd.parts[0]);
-                    }
-
-                    cmd.parent.data.off = cmd;
-
-                    processOnOff(cmd);
-                }
-            }
-        });
-    }
+            });
+        },
+        arrange: null
+    };
 })();
