@@ -72,17 +72,16 @@ view App
             "footer" node
                 this set footer $node
 
-        route All
-            on
-                this set filter ""
-
-        route Active
-            on
+        routes
+            route Active
                 this set filter "active"
 
-        route Completed
-            on
+            route Completed
                 this set filter "completed"
+
+            otherwise
+                this set filter ""
+
 
     method setStats
         this reset stats

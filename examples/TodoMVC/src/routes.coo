@@ -1,7 +1,3 @@
-route All
-    hash "^(?:/)?$"
-
-
 route Active
     hash "^/active$"
 
