@@ -12,40 +12,15 @@
                 val,
                 i,
                 bindings = self.bindings = {},
-                getCaller = function(part, setCurrent) {
+                getCaller = function(go) {
                     return function(same) {
-                        var args,
-                            old,
-                            i;
-
-                        if (setCurrent === 2) {
-                            args = Array.prototype.slice.call(arguments, 1);
-
-                            if (same) {
-                                old = self.current;
-
-                                if (!old || (old.length !== args.length)) {
-                                    same = false;
-                                } else {
-                                    // XXX: This is ugly, think of a better
-                                    //      way to find change.
-                                    for (i = 0; i < args.length; i++) {
-                                        if (old[i] !== args[i]) {
-                                            same = false;
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        if (!same || !setCurrent) {
-                            if (setCurrent > 0) {
-                                self.current = args;
+                        if (!same) {
+                            if (go) {
+                                self.current = Array.prototype.slice.call(arguments, 1);
                             }
 
                             for (var b in bindings) {
-                                bindings[b][part].apply(self, self.current || []);
+                                bindings[b][go ? 0 : 1].apply(self, self.current || []);
                             }
                         }
                     };
@@ -66,16 +41,15 @@
             }
 
             $H.on((self.uri = uri), (self.cb = {
-                go: getCaller(0, 2),
-                leave: getCaller(1, 1),
-                complete: getCaller(2, 0)
+                go: getCaller(true),
+                leave: getCaller(false)
             }));
 
             CooCoo.RouteBase.__super__.init.call(self, parent);
         },
 
-        bind: function(id, go, leave, complete) {
-            this.bindings[id] = [go, leave, complete];
+        bind: function(id, go, leave) {
+            this.bindings[id] = [go, leave];
         },
 
         unbind: function(id) {
@@ -98,7 +72,7 @@
             var self = this,
                 routes = self.routes = arguments,
                 i,
-                complete = function() {
+                done = self._done = function() {
                     if (self.changed) {
                         if (self.matches) {
                             var i,
@@ -140,10 +114,9 @@
 
                         leave = function() {
                             self.changed = true;
-                            complete();
                         };
 
-                    r.bind(self.__id, go, leave, complete);
+                    r.bind(self.__id, go, leave);
 
                     if (r.current) {
                         go.apply(parent, r.current);
@@ -152,7 +125,9 @@
             }
 
             self.changed = true;
-            complete();
+            done();
+
+            $H.on(undefined, done);
         },
 
         destroy: function() {
@@ -163,7 +138,9 @@
             for (i = 2; i < routes.length; i++) {
                 routes[i].r.unbind(self.__id);
             }
-            
+
+            $H.on(undefined, self._done);
+
             CooCoo.Routes.__super__.destroy.call(self);
         }
     });
