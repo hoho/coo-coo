@@ -1290,7 +1290,8 @@ function CooCoo(filenames, common, app, debug) {
     var i,
         file,
         tmp,
-        code = [];
+        code = [],
+        hasHistery;
 
     for (i = 0; i < filenames.length; i++) {
         file = new CooFile(filenames[i]);
@@ -1312,6 +1313,15 @@ function CooCoo(filenames, common, app, debug) {
 
     tmp = [];
     for (i in ret.base) {
+        if (i === 'route') {
+            file = __dirname + '/histery.js';
+            tmp.push('// ' + file);
+            tmp.push(fs.readFileSync(file, {encoding: 'utf8'}));
+            tmp.push('');
+            tmp.push('');
+            hasHistery = true;
+        }
+
         file = __dirname + '/' + i + '_.js';
         tmp.push('// ' + file);
         tmp.push(fs.readFileSync(file, {encoding: 'utf8'}));
@@ -1321,6 +1331,10 @@ function CooCoo(filenames, common, app, debug) {
 
     if (common) {
         fs.writeFileSync(common, tmp.join('\n'));
+    }
+
+    if (hasHistery) {
+        code.unshift(INDENT + '$H.run();\n');
     }
 
     code.unshift('(function(CooCoo) {');

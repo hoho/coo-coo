@@ -27,7 +27,11 @@ module.exports = function(grunt) {
             main: {
                 expand: true,
                 flatten: true,
-                src: ['src/**/*_.js', 'src/util.js'],
+                src: [
+                    'node_modules/histery/histery.js',
+                    'src/**/*_.js',
+                    'src/util.js'
+                ],
                 dest: 'lib/'
             }
         },
