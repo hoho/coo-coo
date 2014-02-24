@@ -1333,11 +1333,12 @@ function CooCoo(filenames, common, app, debug) {
         fs.writeFileSync(common, tmp.join('\n'));
     }
 
+    code.unshift('(function(CooCoo) {');
+
     if (hasHistery) {
-        code.unshift(INDENT + '$H.run();\n');
+        code.push(INDENT + '$H.run();\n');
     }
 
-    code.unshift('(function(CooCoo) {');
     code.push('})(CooCoo);\n');
 
     if (app) {
