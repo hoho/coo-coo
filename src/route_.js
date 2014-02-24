@@ -73,7 +73,7 @@
                 routes = self.routes = arguments,
                 i,
                 done = self._done = function() {
-                    if (self.changed) {
+                    if (self.changed && !self.__destroyed) {
                         if (self.matches) {
                             var i,
                                 cb,
