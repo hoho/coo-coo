@@ -251,6 +251,7 @@
 
                         if (!cmd.hasOtherwise) {
                             ret.push('null');
+                            if (routes.length) { ret.push(','); }
                         }
 
                         return ret.join('');
