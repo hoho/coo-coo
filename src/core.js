@@ -1660,9 +1660,9 @@ function cooProcessParams(cmd) {
 function cooProcessCreateCommand(cmd, firstParam, paramCount, events) {
     cmd.hasSubblock = true;
 
-    cmd.data.params = cooExtractParamValues(cmd, firstParam, paramCount);
-
     cmd.getCodeBefore = function() {
+        cmd.data.params = cooExtractParamValues(cmd, firstParam, paramCount);
+
         var cls = cmd.parts[1],
             decl = cooGetDecl(cmd),
             ret = [];
@@ -1706,11 +1706,11 @@ function cooProcessCreateCommand(cmd, firstParam, paramCount, events) {
 function cooProcessInstance(cmd, name, firstParam, processChild) {
     cmd.hasSubblock = true;
 
-    if (name) {
-        cmd.data.params = cooExtractParamValues(cmd, firstParam);
-    }
-
     cmd.getCodeBefore = function() {
+        if (name) {
+            cmd.data.params = cooExtractParamValues(cmd, firstParam);
+        }
+
         var cls = cmd.parts[1],
             decl = cooGetDecl(cmd),
             ret = [];
@@ -2433,10 +2433,9 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                                 cmd.hasSubblock = true;
                                 cmd.processChild = cooProcessParams;
 
-                                var params = cooExtractParamValues(cmd, 5);
-
                                 cmd.getCodeBefore = function() {
-                                    var decl = cooGetDecl(cmd);
+                                    var params = cooExtractParamValues(cmd, 5),
+                                        decl = cooGetDecl(cmd);
 
                                     if (!(cmd.parts[4].value in decl.data.methods)) {
                                         cmd.file.errorUnknownMethod(cmd.parts[4]);
@@ -2567,9 +2566,9 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                         cmd.hasSubblock = true;
                         cmd.processChild = cooProcessParams;
 
-                        var params = cooExtractParamValues(cmd, 3);
-
                         cmd.getCodeBefore = function() {
+                            var params = cooExtractParamValues(cmd, 3);
+
                             if (!(cmd.parts[2].value in cmd.root.data.methods)) {
                                 cmd.file.errorUnknownMethod(cmd.parts[2]);
                             }
@@ -2677,11 +2676,11 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                     '#': function() {
                         cmd.hasSubblock = true;
 
-                        cmd.data.params = cooExtractParamValues(cmd, 1);
-
                         cmd.processChild = cooGetProcessParamsAndEvents(true, {});
 
                         cmd.getCodeBefore = function() {
+                            cmd.data.params = cooExtractParamValues(cmd, 1);
+
                             var decl = cooGetDecl(cmd.root),
                                 method,
                                 ret = [],
@@ -2774,13 +2773,17 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
         },
         arrange: function(declCmd, cmdList) {
             var decls = declCmd[cmdDesc.cmdName],
-                arranged = {},
+                arranged = [],
+                arrangedValues = [],
                 initialName,
                 key,
                 cmd,
                 data,
-                depProps,
-                depCmd;
+                depData,
+                depCmd,
+                depList,
+                i,
+                j;
 
             for (key in decls) {
                 cmd = decls[key];
@@ -2788,12 +2791,14 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
 
                 if (data.exts) {
                     depCmd = cmd;
-                    depProps = data;
-                    initialName = depProps.name;
+                    depData = data;
+                    initialName = depData.name;
 
-                    while (depProps.exts) {
-                        if (depProps.exts in decls) {
-                            if (depProps.exts === initialName) {
+                    depList = [depData];
+
+                    while (depData.exts) {
+                        if (depData.exts in decls) {
+                            if (depData.exts === initialName) {
                                 depCmd.parts[3].error = 'Circular dependency';
                                 depCmd.file.errorUnexpectedPart(depCmd.parts[3]);
                             }
@@ -2801,23 +2806,41 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                             depCmd.file.errorUndeclared(depCmd.parts[3]);
                         }
 
-                        if (!(arranged[depProps.exts])) {
-                            arranged[depProps.exts] = decls[depProps.exts];
+                        depCmd = decls[depData.exts];
+                        depData = decls[depData.exts].data;
+                        depList.unshift(depData);
+                    }
+
+                    for (i = 0; i < depList.length - 1; i++) {
+                        depList[i + 1].properties = extend({}, depList[i].properties, depList[i + 1].properties);
+                        depList[i + 1].methods = extend({}, depList[i].methods, depList[i + 1].methods);
+                    }
+
+                    j = -1;
+
+                    for (i = depList.length - 1; i >= 0; i--) {
+                        // XXX: Probably do something about complexity here.
+                        if (arranged.indexOf(depList[i].name) < 0) {
+                            if (j < 0) {
+                                j = arranged.push(depList[i].name) - 1;
+                                arrangedValues.push(decls[depList[i].name]);
+                            } else {
+                                arranged.splice(j, 0, depList[i].name);
+                                arrangedValues.splice(j, 0, decls[depList[i].name]);
+                            }
                         }
-                        depCmd = decls[depProps.exts];
-                        depProps = decls[depProps.exts].data;
                     }
                 }
 
-                if (!(data.name in arranged)) {
-                    arranged[data.name] = cmd;
+                if (arranged.indexOf(data.name) < 0) {
+                    arranged.push(data.name);
+                    arrangedValues.push(cmd);
                 }
             }
 
-
             cmd = [];
-            for (key in arranged) {
-                cmd.push(arranged[key]);
+            for (i = 0; i < arranged.length; i++) {
+                cmd.push(arrangedValues[i]);
             }
 
             Array.prototype.splice.apply(cmdList, [0, 0].concat(cmd));
