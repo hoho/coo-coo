@@ -15,9 +15,7 @@
                 getCaller = function(go) {
                     return function(same) {
                         if (!same) {
-                            if (go) {
-                                self.current = Array.prototype.slice.call(arguments, 1);
-                            }
+                            self.current = go ? Array.prototype.slice.call(arguments, 1) : false;
 
                             for (var b in bindings) {
                                 bindings[b][go ? 0 : 1].apply(self, self.current || []);
