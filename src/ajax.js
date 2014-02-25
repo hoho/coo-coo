@@ -79,7 +79,7 @@
 
     function ajaxProcessSettings(cmd) {
         return cooMatchCommand(cmd, {
-            'url': getValueGetter(cmd, 'url', 'Duplicate URL'),
+            'url': getValueGetter(cmd, 'url', 'Duplicate url'),
 
             'get': function() {
                 checkForDuplicate(cmd, 'method', 'Duplicate request method');
@@ -103,7 +103,7 @@
 
             'success': {
                 '*': function(cmd) {
-                    checkForDuplicate(cmd, 'success', 'Duplicate SUCCESS');
+                    checkForDuplicate(cmd, 'success', 'Duplicate success');
 
                     if (cmd.parts.length > 2) {
                         cmd.parts[2].error = 'Too many parameters';
@@ -126,7 +126,7 @@
 
             'error': {
                 '@': function() {
-                    checkForDuplicate(cmd, 'error', 'Duplicate ERROR');
+                    checkForDuplicate(cmd, 'error', 'Duplicate error');
 
                     cooProcessBlockAsFunction(cmd, false, 1, {
                         getCodeBeforeBefore: function() {
@@ -144,7 +144,7 @@
 
             'complete': {
                 '@': function() {
-                    checkForDuplicate(cmd, 'complete', 'Duplicate COMPLETE');
+                    checkForDuplicate(cmd, 'complete', 'Duplicate complete');
 
                     cooProcessBlockAsFunction(cmd, false, 1, {
                         getCodeBeforeBefore: function() {
