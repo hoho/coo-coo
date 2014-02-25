@@ -228,55 +228,61 @@
                 return cmd.parts[0];
             }
 
+            var routesFunc = function() {
+                // routes [once]
+                //     ...
+                cooAssertNotValuePusher(cmd);
+                cmd.hasSubblock = true;
+                cmd.processChild = routeProcessChoices;
+
+                cmd.data.routes = [];
+
+                cmd.getCodeBefore = function() {
+                    var ret = [],
+                        routes = cmd.data.routes;
+
+                    if (!routes.length) {
+                        cmd.parts[0].error = 'No routes';
+                        cmd.file.errorUnexpectedPart(cmd.parts[0]);
+                    }
+
+                    ret.push('new CooCoo.Routes(this, ');
+                    ret.push(cmd.parts[1] ? 'true, ' : 'false, ');
+
+                    if (!cmd.hasOtherwise) {
+                        ret.push('null');
+                        if (routes.length) { ret.push(','); }
+                    }
+
+                    return ret.join('');
+                };
+
+                cmd.getCodeAfter = function() {
+                    var ret = [],
+                        routes = cmd.data.routes,
+                        route,
+                        i;
+
+                    for (i = 0; i < routes.length; i++) {
+                        route = routes[i];
+                        route.ignore = false;
+                        cooRunGenerators(route, ret, 1);
+                        route.ignore = true;
+                        if (i < routes.length - 1) {
+                            ret[ret.length - 1] += ',';
+                        }
+                    }
+
+                    ret.push(');');
+
+                    return ret.join('\n');
+                };
+            };
+
             return cooMatchCommand(cmd, {
-                'routes': function() {
-                    // routes
-                    //     ...
-                    cooAssertNotValuePusher(cmd);
-                    cmd.hasSubblock = true;
-                    cmd.processChild = routeProcessChoices;
-
-                    cmd.data.routes = [];
-
-                    cmd.getCodeBefore = function() {
-                        var ret = [],
-                            routes = cmd.data.routes;
-
-                        if (!routes.length) {
-                            cmd.parts[0].error = 'No routes';
-                            cmd.file.errorUnexpectedPart(cmd.parts[0]);
-                        }
-
-                        ret.push('new CooCoo.Routes(this, ');
-
-                        if (!cmd.hasOtherwise) {
-                            ret.push('null');
-                            if (routes.length) { ret.push(','); }
-                        }
-
-                        return ret.join('');
-                    };
-
-                    cmd.getCodeAfter = function() {
-                        var ret = [],
-                            routes = cmd.data.routes,
-                            route,
-                            i;
-
-                        for (i = 0; i < routes.length; i++) {
-                            route = routes[i];
-                            route.ignore = false;
-                            cooRunGenerators(route, ret, 1);
-                            route.ignore = true;
-                            if (i < routes.length - 1) {
-                                ret[ret.length - 1] += ',';
-                            }
-                        }
-
-                        ret.push(');');
-
-                        return ret.join('\n');
-                    };
+                'routes': {
+                    '@': routesFunc,
+                    'once': routesFunc
                 }
             });
         },
