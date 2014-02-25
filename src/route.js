@@ -6,7 +6,6 @@
     /* global COO_COMMAND_PART_JS */
     /* global COO_COMMAND_PART_IDENTIFIER */
     /* global cooExtractParamNames */
-    /* global cooPushScopeVariable */
     /* global INDENT */
     /* global cooRunGenerators */
     /* global cooCreateScope */
@@ -46,10 +45,6 @@
                         params = {};
                     } else if (cmd.parts[1].type === COO_COMMAND_PART_IDENTIFIER) {
                         params = cooExtractParamNames(cmd, cmd.parts, 1);
-
-                        for (var p in params) {
-                            cooPushScopeVariable(cmd, p, false);
-                        }
                     } else {
                         cmd.file.errorUnexpectedPart(cmd.parts[1]);
                     }
@@ -174,11 +169,10 @@
                         cooCreateScope(cmd);
 
                         cmd.getCodeBefore = function() {
-                            var ret = [],
-                                params = cooExtractParamNames(cmd, cmd.parts, 2);
-
                             cooGetDecl(cmd);
 
+                            var ret = [],
+                                params = cooExtractParamNames(cmd, cmd.parts, 2);
 
                             ret.push('{r: CooCoo.Route.' + cmd.parts[1].value + ', c: function(');
                             ret.push(cooGetParamsDecl(params));

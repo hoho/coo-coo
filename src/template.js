@@ -28,11 +28,11 @@
                             '#': function() {
                                 cooAssertValuePusher(cmd);
 
-                                var inlineParams = cooExtractParamValues(cmd, 3),
-                                    paramValues;
+                                var paramValues;
 
                                 cmd.getCodeBefore = function() {
-                                    var ret = [];
+                                    var ret = [],
+                                        inlineParams = cooExtractParamValues(cmd, 3);
 
                                     cmd.retWrap = cooWrapRet(cmd);
 

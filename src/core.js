@@ -1374,6 +1374,8 @@ function cooExtractParamNames(cmd, parts, firstParam) {
         }
 
         params[part.value] = true;
+
+        cooPushScopeVariable(cmd, part.value, false);
     }
 
     return params;
@@ -1476,10 +1478,6 @@ function cooProcessEvent(cmd, hasName, hasParams, actualName) {
 
     if (hasParams) {
         params = cooExtractParamNames(cmd, cmd.parts, hasParams);
-
-        for (var param in params) {
-            cooPushScopeVariable(cmd, param, false);
-        }
     }
 
     cmd.getCodeBefore = function() {
@@ -1532,10 +1530,6 @@ function cooProcessBlockAsFunction(cmd, valueRequired, firstParam, ext) {
     cooCreateScope(cmd);
 
     var params = firstParam === undefined ? {} : cooExtractParamNames(cmd, cmd.parts, firstParam);
-
-    for (var param in params) {
-        cooPushScopeVariable(cmd, param, false);
-    }
 
     cmd.getCodeBefore = function() {
         var ret = [],
@@ -2053,10 +2047,6 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                 params = specialData.extractParams(cmd);
             } else {
                 params = cooExtractParamNames(cmd, cmd.parts, special ? 1 : 2);
-
-                for (var p in params) {
-                    cooPushScopeVariable(cmd, p, false);
-                }
             }
 
             methods[methodName] = params;
