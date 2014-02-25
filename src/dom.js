@@ -168,6 +168,7 @@
                             // dom (expr) append
                             //     ...
                             cooAssertNotValuePusher(cmd);
+                            cmd.data.renderRet = true;
 
                             return cooProcessBlockAsValue(cmd, {
                                 getCodeBeforeBefore: function() {

@@ -1,4 +1,5 @@
 /* global window */
+/* global document */
 (function(window, undefined) {
     var objConstructor = {}.constructor,
         lastId = 0,
@@ -7,16 +8,22 @@
             Extendable: function() {}
         },
 
-        CooCooRet = CooCoo.Ret = function(val) {
-            if (this.constructor === CooCooRet) {
-                this.push(val);
-            } else {
-                return new CooCooRet(val);
-            }
+        CooCooRenderRet = function() {
+            this._ = document.createDocumentFragment();
+        },
+
+        CooCooRet = CooCoo.Ret = function(render) {
+            return this.constructor === CooCooRet ?
+                this
+                :
+                (render ? new CooCooRenderRet() : new CooCooRet());
         },
 
         cooUnwrap = CooCoo.unwrap = function(val) {
-            return val instanceof CooCooRet ? val.valueOf() : val;
+            return val instanceof CooCooRet || val instanceof CooCooRenderRet ?
+                val.valueOf()
+                :
+                val;
         },
 
         isPlainObject = function(obj) {
@@ -33,7 +40,7 @@
 
 
     CooCooRet.prototype.push = function(val) {
-        if (val instanceof CooCooRet) { val = val.valueOf(); }
+        val = cooUnwrap(val);
 
         if (val !== undefined) {
             if (this._ !== undefined) {
@@ -43,10 +50,18 @@
             this._ = val;
         }
     };
-    CooCooRet.prototype.valueOf = function() {
+
+    CooCooRet.prototype.valueOf = CooCooRenderRet.prototype.valueOf = function() {
         return this._;
     };
-    CooCooRet.prototype.isEmpty = function() { return this._ === undefined; };
+
+    CooCooRet.prototype.isEmpty = function() {
+        return this._ === undefined;
+    };
+
+    CooCooRenderRet.prototype.push = function(val) {
+        this._.appendChild(cooUnwrap(val));
+    };
 
 
     CooCoo.Extendable.prototype = {

@@ -22,7 +22,8 @@
             specialMethods: {
                 'render': {
                     actualName: '__render',
-                    required: true
+                    required: true,
+                    renderRet: true
                 }
             }
         },
@@ -38,13 +39,12 @@
                                 cmd.hasSubblock = true;
                                 cmd.processChild = cooProcessParams;
 
-                                var params = cooExtractParamValues(cmd, 4);
-
                                 cmd.getCodeBefore = function() {
                                     cooGetDecl(cmd);
 
                                     var ret = [],
-                                        retWrap = cooWrapRet(cmd);
+                                        retWrap = cooWrapRet(cmd),
+                                        params = cooExtractParamValues(cmd, 4);
 
                                     ret.push(retWrap[0]);
                                     ret.push(cooValueToJS(cmd, cmd.parts[2]));

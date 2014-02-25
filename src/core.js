@@ -309,7 +309,15 @@ function cooCreateScope(cmd, breaking) {
 
 /* exported cooSetScopeRet */
 function cooSetScopeRet(cmd) {
-    cooPushScopeVariable(cmd, COO_INTERNAL_VARIABLE_RET, 'CooCoo.Ret()').hasRet = true;
+    var scopeCmd = cooPushScopeVariable(cmd, COO_INTERNAL_VARIABLE_RET);
+
+    scopeCmd.hasRet = true;
+
+    // Variable is already added, we are replacing it with value constructor.
+    scopeCmd.data.scope.add(
+        COO_INTERNAL_VARIABLE_RET,
+        scopeCmd.data.renderRet ? 'CooCoo.Ret(true)' : 'CooCoo.Ret()'
+    );
 }
 
 
@@ -2035,6 +2043,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
             cmd.valueRequired = specialData ? !specialData.noValue : true;
 
             cmd.data.actualName = methodName;
+            cmd.data.renderRet = special ? specialData.renderRet : undefined;
 
             cooCreateScope(cmd);
 
