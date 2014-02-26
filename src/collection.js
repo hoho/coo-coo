@@ -13,45 +13,174 @@
     /* global cooWrapWithTypeCheck */
     /* global cooWrapRet */
 
-    function processEach(cmd) {
-        // collection identifier (expr) each identifier
-        cmd.hasSubblock = true;
-        cooAssertNotValuePusher(cmd);
+    function getEachHandler(self) {
+        return function processEach(cmd) {
+            // collection identifier (expr) each identifier
+            // this each identifier
+            cmd.hasSubblock = true;
+            cooAssertNotValuePusher(cmd);
 
-        cooCreateScope(cmd);
-        cooPushScopeVariable(cmd, cmd.parts[4].value, false);
+            cooCreateScope(cmd);
+            cooPushScopeVariable(cmd, cmd.parts[self ? 2 : 4].value, false);
 
-        cmd.getCodeBefore = function() {
-            cooGetDecl(cmd);
+            cmd.getCodeBefore = function() {
+                if (!self) {
+                    cooGetDecl(cmd);
+                }
 
-            var ret = [];
+                var ret = [];
 
-            ret.push(cooValueToJS(cmd, cmd.parts[2]));
-            ret.push('.each(function(');
-            ret.push(cmd.parts[4].value);
-            ret.push(') {');
-            ret.push(cooGetScopeVariablesDecl(cmd));
+                ret.push(self ? 'this' : cooValueToJS(cmd, cmd.parts[2]));
+                ret.push('.each(function(');
+                ret.push(cmd.parts[self ? 2 : 4].value);
+                ret.push(') {');
+                ret.push(cooGetScopeVariablesDecl(cmd));
 
-            return ret.join('');
-        };
+                return ret.join('');
+            };
 
-        cmd.getCodeAfter = function() {
-            var ret = [];
+            cmd.getCodeAfter = function() {
+                var ret = [];
 
-            ret.push('}');
-            ret.push(', this');
-            if (cmd.parts[5]) {
-                ret.push(', function(');
-                ret.push(cmd.parts[4].value);
-                ret.push(') { return ');
-                ret.push(cooValueToJS(cmd, cmd.parts[5]));
-                ret.push('; }');
-            }
-            ret.push(');');
+                ret.push('}');
+                ret.push(', this');
+                if (cmd.parts[self ? 3 : 5]) {
+                    ret.push(', function(');
+                    ret.push(cmd.parts[self ? 2 : 4].value);
+                    ret.push(') { return ');
+                    ret.push(cooValueToJS(cmd, cmd.parts[self ? 3 : 5]));
+                    ret.push('; }');
+                }
+                ret.push(');');
 
-            return ret.join('');
+                return ret.join('');
+            };
         };
     }
+
+
+    function getAddHandlers(self) {
+        return {
+            '@': function(cmd) {
+                // collection identifier (expr) add
+                //     ...
+                // this add
+                //     ...
+                cmd.hasSubblock = true;
+                cmd.valueRequired = true;
+
+                cooAssertNotValuePusher(cmd);
+
+                return cooProcessBlockAsValue(cmd, {
+                    getCodeBeforeBefore: function() {
+                        if (!self) {
+                            cooGetDecl(cmd);
+                        }
+
+                        return (self ? 'this' : cooValueToJS(cmd, cmd.parts[2])) + '.add(';
+                    },
+
+                    getCodeAfterAfter: function() {
+                        return ');';
+                    }
+                });
+            },
+
+            '(': function(cmd) {
+                // collection identifier (expr) add (expr2)
+                // this add (expr)
+                cooAssertNotValuePusher(cmd);
+
+                cmd.getCodeBefore = function() {
+                    if (!self) {
+                        cooGetDecl(cmd);
+                    }
+
+                    var ret = [];
+
+                    ret.push(self ? 'this' : cooValueToJS(cmd, cmd.parts[2]));
+                    ret.push('.add(');
+                    ret.push(cooValueToJS(cmd, cmd.parts[self ? 2 : 4]));
+                    ret.push(');');
+
+                    return ret.join('');
+                };
+            }
+        };
+    }
+
+
+    function getLengthHandler(self) {
+        return function(cmd) {
+            // collection identifier (expr) length
+            // this length
+            cooAssertValuePusher(cmd);
+
+            cmd.getCodeBefore = function() {
+                if (!self) {
+                    cooGetDecl(cmd);
+                }
+
+                var ret = [],
+                    retWrap = cooWrapRet(cmd);
+
+                ret.push(retWrap[0]);
+
+                if (!self) {
+                    ret.push(cooWrapWithTypeCheck(
+                        cmd,
+                        cmd.parts[2],
+                        'val instanceof CooCoo.Collection.' + cmd.parts[1].value,
+                        cooValueToJS(cmd, cmd.parts[2])
+                    ));
+                } else {
+                    ret.push('this');
+                }
+
+                ret.push('.length');
+                ret.push(retWrap[1]);
+
+                return ret.join('');
+            };
+        };
+    }
+
+
+    function getFindHandler(self) {
+        return {
+            '': {
+                '(': function processEach(cmd) {
+                    // collection identifier (expr) find identifier (expr)
+                    // this find identifier (expr)
+                    cooAssertValuePusher(cmd);
+
+                    cooCreateScope(cmd);
+                    cooPushScopeVariable(cmd, cmd.parts[self ? 2 : 4].value, false);
+
+                    cmd.getCodeBefore = function() {
+                        if (!self) {
+                            cooGetDecl(cmd);
+                        }
+
+                        var ret = [],
+                            retWrap = cooWrapRet(cmd);
+
+                        ret.push(retWrap[0]);
+                        ret.push(self ? 'this' : cooValueToJS(cmd, cmd.parts[2]));
+                        ret.push('.find(function(');
+                        ret.push(cmd.parts[self ? 2 : 4].value);
+                        ret.push(') { return ');
+                        ret.push(cooValueToJS(cmd, cmd.parts[self ? 3 : 5]));
+                        ret.push('; }, this)');
+                        ret.push(retWrap[1]);
+
+                        return ret.join('');
+                    };
+                }
+            }
+        };
+    }
+
 
     cooObjectBase(
         {
@@ -119,109 +248,35 @@
             'collection': {
                 '': {
                     '(': {
-                        'add': {
-                            '@': function(cmd) {
-                                // collection identifier (expr) add
-                                //     ...
-                                cmd.hasSubblock = true;
-                                cmd.valueRequired = true;
-
-                                cooAssertNotValuePusher(cmd);
-
-                                return cooProcessBlockAsValue(cmd, {
-                                    getCodeBeforeBefore: function() {
-                                        cooGetDecl(cmd);
-
-                                        return cooValueToJS(cmd, cmd.parts[2]) + '.add(';
-                                    },
-
-                                    getCodeAfterAfter: function() {
-                                        return ');';
-                                    }
-                                });
-                            },
-
-                            '(': function(cmd) {
-                                // collection identifier (expr) add (expr2)
-                                cooAssertNotValuePusher(cmd);
-
-                                cmd.getCodeBefore = function() {
-                                    cooGetDecl(cmd);
-
-                                    var ret = [];
-
-                                    ret.push(cooValueToJS(cmd, cmd.parts[2]));
-                                    ret.push('.add(');
-                                    ret.push(cooValueToJS(cmd, cmd.parts[4]));
-                                    ret.push(');');
-
-                                    return ret.join('');
-                                };
-                            }
-                        },
+                        'add': getAddHandlers(false),
 
                         'each': {
                             '': {
-                                '@': processEach,
-                                '(': processEach
+                                '@': getEachHandler(false),
+                                '(': getEachHandler(false)
                             }
                         },
 
-                        'length': function(cmd) {
-                            // collection identifier (expr) length
-                            cooAssertValuePusher(cmd);
+                        'length': getLengthHandler(false),
 
-                            cmd.getCodeBefore = function() {
-                                cooGetDecl(cmd);
-
-                                var ret = [],
-                                    retWrap = cooWrapRet(cmd);
-
-                                ret.push(retWrap[0]);
-                                ret.push(cooWrapWithTypeCheck(
-                                    cmd,
-                                    cmd.parts[2],
-                                    'val instanceof CooCoo.Collection.' + cmd.parts[1].value,
-                                    cooValueToJS(cmd, cmd.parts[2])
-                                ));
-                                ret.push('.length');
-                                ret.push(retWrap[1]);
-
-                                return ret.join('');
-                            };
-                        },
-
-                        'find': {
-                            '': {
-                                '(': function processEach(cmd) {
-                                    // collection identifier (expr) find identifier (expr)
-                                    cooAssertValuePusher(cmd);
-
-                                    cooCreateScope(cmd);
-                                    cooPushScopeVariable(cmd, cmd.parts[4].value, false);
-
-                                    cmd.getCodeBefore = function() {
-                                        cooGetDecl(cmd);
-
-                                        var ret = [],
-                                            retWrap = cooWrapRet(cmd);
-
-                                        ret.push(retWrap[0]);
-                                        ret.push(cooValueToJS(cmd, cmd.parts[2]));
-                                        ret.push('.find(function(');
-                                        ret.push(cmd.parts[4].value);
-                                        ret.push(') { return ');
-                                        ret.push(cooValueToJS(cmd, cmd.parts[5]));
-                                        ret.push('; }, this)');
-                                        ret.push(retWrap[1]);
-
-                                        return ret.join('');
-                                    };
-                                }
-                            }
-                        }
+                        'find': getFindHandler(false)
                     }
                 }
+            },
+
+            'this': {
+                'add': getAddHandlers(true),
+
+                'each': {
+                    '': {
+                        '@': getEachHandler(true),
+                        '(': getEachHandler(true)
+                    }
+                },
+
+                'length': getLengthHandler(true),
+
+                'find': getFindHandler(true)
             }
         }
     );
