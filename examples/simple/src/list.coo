@@ -38,7 +38,7 @@ view Item
 
             "remove" node
                 dom $node
-                    click
+                    "click"
                         model Item @model destroy
 
 
@@ -63,7 +63,7 @@ view Page
 
             "add" node
                 dom $node
-                    click
+                    "click"
                         collection List @list add [+dom @input value get]
                         dom @input value set ""
 

@@ -11,41 +11,7 @@
     /* global cooProcessBlockAsValue */
 
     var DOM_FUNC = 'CooCoo.DOM',
-        DOM_OBJ = 'new ' + DOM_FUNC,
-        eventList = {
-            click: 'click',
-            dblclick: 'dblclick',
-            mousedown: 'mousedown',
-            mouseup: 'mouseup',
-            mouseover: 'mouseover',
-            mousemove: 'mousemove',
-            mouseout: 'mouseout',
-            dragstart: 'dragstart',
-            drag: 'drag',
-            dragenter: 'dragenter',
-            dragleave: 'dragleave',
-            dragover: 'dragover',
-            drop: 'drop',
-            dragend: 'dragend',
-            keydown: 'keydown',
-            keypress: 'keypress',
-            keyup: 'keyup',
-            load: 'load',
-            unload: 'unload',
-            abort: 'abort',
-            error: 'error',
-            resize: 'resize',
-            scroll: 'scroll',
-            select: 'select',
-            change: 'change',
-            input: 'input',
-            submit: 'submit',
-            reset: 'reset',
-            focus: 'focus',
-            blur: 'blur',
-            focusin: 'focusin',
-            focusout: 'focusout'
-        };
+        DOM_OBJ = 'new ' + DOM_FUNC;
 
 
     function getSetter(method, params) {
@@ -214,14 +180,10 @@
                     },
 
                     'trigger': {
-                        '': {
+                        '(': {
                             '#': function() {
                                 // dom (expr) trigger identifier (expr) (expr2) ...
                                 cooAssertNotValuePusher(cmd);
-
-                                if (!(cmd.parts[3].value in eventList)) {
-                                    cmd.file.errorUnexpectedPart(cmd.parts[3]);
-                                }
 
                                 cmd.getCodeBefore = function() {
                                     var ret = [];
@@ -230,7 +192,7 @@
                                     ret.push('.trigger(');
                                     ret.push(cooValueToJS(cmd, cmd.parts[1]));
                                     ret.push(', "');
-                                    ret.push(eventList[cmd.parts[3].value]);
+                                    ret.push(cooValueToJS(cmd, cmd.parts[3]));
                                     ret.push('"');
 
                                     for (var i = 4; i < cmd.parts.length; i++) {
@@ -264,15 +226,11 @@
         });
     }
 
-    var eventPatterns = {
-
-    };
-
-    function getProcessEventFunc(name, hasParam) {
+    function getProcessEventFunc(hasParam) {
         return function(cmd) {
-            // event
+            // (expr)
             // or
-            // event identifier
+            // (expr) identifier
             cmd.hasSubblock = true;
 
             cooCreateScope(cmd, true);
@@ -284,9 +242,9 @@
             cmd.getCodeBefore = function() {
                 var ret = [];
 
-                ret.push('.on("');
-                ret.push(name);
-                ret.push('", function(');
+                ret.push('.on(');
+                ret.push(cooValueToJS(cmd, cmd.parts[0]));
+                ret.push(', function(');
 
                 if (hasParam) {
                     ret.push(cmd.parts[1].value);
@@ -304,15 +262,13 @@
         };
     }
 
-    for (var e in eventList) {
-        eventPatterns[e] = {
-            '@': getProcessEventFunc(eventList[e], false),
-            '': getProcessEventFunc(eventList[e], true)
-        };
-    }
-
     function domProcessEvents(cmd) {
-        return cooMatchCommand(cmd, eventPatterns);
+        return cooMatchCommand(cmd, {
+            '(': {
+                '@': getProcessEventFunc(false),
+                '': getProcessEventFunc(true)
+            }
+        });
     }
 
 
