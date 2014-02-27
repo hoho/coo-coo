@@ -182,7 +182,7 @@
                     'trigger': {
                         '(': {
                             '#': function() {
-                                // dom (expr) trigger identifier (expr) (expr2) ...
+                                // dom (expr) trigger (expr) (expr2) ...
                                 cooAssertNotValuePusher(cmd);
 
                                 cmd.getCodeBefore = function() {
@@ -191,9 +191,8 @@
                                     ret.push(DOM_FUNC);
                                     ret.push('.trigger(');
                                     ret.push(cooValueToJS(cmd, cmd.parts[1]));
-                                    ret.push(', "');
+                                    ret.push(', ');
                                     ret.push(cooValueToJS(cmd, cmd.parts[3]));
-                                    ret.push('"');
 
                                     for (var i = 4; i < cmd.parts.length; i++) {
                                         ret.push(', ');
