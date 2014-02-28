@@ -1,6 +1,6 @@
 {
     "name": "coocoo",
-    "version": "0.0.22",
+    "version": "0.0.23",
     "description": "Domain-specific language to create MVC applications",
     "main": "lib/coocoo.js",
     "directories": {
