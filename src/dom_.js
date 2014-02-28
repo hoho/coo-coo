@@ -1,5 +1,5 @@
 /* global document */
-(function(CooCoo) {
+(function(CooCoo, document) {
     var handlers = {},
         CooCooDOM,
         captureEvents = {focus: true, blur: true},
@@ -184,13 +184,15 @@
     };
 
     CooCooDOM.trigger = function(node, name/*, ...*/) {
-        /* global $ */
         unwrapArguments(arguments);
-        $(node).trigger(name);
+        var e = document.createEvent('HTMLEvents');
+        e.initEvent(name, true, false);
+        node.dispatchEvent(e);
     };
 
     CooCooDOM.serialize = function(node) {
         unwrapArguments(arguments);
+        /* global $ */
         return $(node).serializeArray();
     };
-})(CooCoo);
+})(CooCoo, document);
