@@ -1,6 +1,8 @@
 application
     construct parentNode
-        dom $parentNode append [+view Page [+view Page create] render]
+        // +view Page [+view Page create] render
+        // +view Page render
+        dom $parentNode append [+view Page render]
 
 
 model Item
@@ -69,4 +71,4 @@ view Page
 
     method addItem m
         dom @container append
-            +view Item [+view Item create $m] render
+            +view Item render $m

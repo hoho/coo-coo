@@ -120,7 +120,7 @@
             F = function() {},
 
             CooCooBase = function CooCooBase() {
-                this.init.apply(this, arguments);
+                return this.init.apply(this, arguments);
             };
 
         F.prototype = self.prototype;

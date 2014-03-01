@@ -1652,7 +1652,7 @@ function cooProcessParams(cmd) {
 
 
 /* exported cooProcessCreateCommand */
-function cooProcessCreateCommand(cmd, firstParam, paramCount, events) {
+function cooProcessCreateCommand(cmd, firstParam, paramCount, events, isView) {
     cmd.hasSubblock = true;
 
     cmd.getCodeBefore = function() {
@@ -1670,7 +1670,14 @@ function cooProcessCreateCommand(cmd, firstParam, paramCount, events) {
         ret.push(decl.data.storage);
         ret.push('.');
         ret.push(cls.value);
-        ret.push('(this');
+        ret.push('(');
+
+        if (isView) {
+            ret.push(cmd.data.isRender ? 'true' : 'false');
+            ret.push(', ');
+        }
+
+        ret.push('this');
 
         var tmp = cooGetParamValues(cmd, cmd.data.params, cmd.data.elemParams);
         if (tmp) {
@@ -1762,7 +1769,8 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
             baseClass: {
                 name: 'CooCoo.ViewBase',
                 methods: {init: true, destroy: true, render: true}
-            }
+            },
+            isView: false
         }
 
     `declExt` is an object like:
@@ -2361,7 +2369,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                     '#': function() {
                         // `name` identifier create (expr1) (expr2) ...
                         //     ...
-                        cooProcessCreateCommand(cmd, 3, undefined, instanceEvents);
+                        cooProcessCreateCommand(cmd, 3, undefined, instanceEvents, cmdDesc.isView);
                     }
                 },
 

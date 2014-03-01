@@ -1,6 +1,17 @@
 CooCoo.View = {};
 
 CooCoo.ViewBase = CooCoo.Base.extend({
+    init: function(render/*, parent, ...*/) {
+        var args = Array.prototype.slice.call(arguments, 1);
+
+        CooCoo.ViewBase.__super__.init.apply(this, args);
+
+        if (render) {
+            args.shift();
+            return this._render.call(this, args);
+        }
+    },
+
     _render: function() {
         var self = this,
             elems = self.__elems = [],
