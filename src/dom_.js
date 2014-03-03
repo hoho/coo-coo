@@ -185,9 +185,13 @@
 
     CooCooDOM.trigger = function(node, name/*, ...*/) {
         unwrapArguments(arguments);
-        var e = document.createEvent('HTMLEvents');
-        e.initEvent(name, true, false);
-        node.dispatchEvent(e);
+        if ((name === 'focus' || name === 'blur') && node[name]) {
+            node[name]();
+        } else {
+            var e = document.createEvent('HTMLEvents');
+            e.initEvent(name, true, false);
+            node.dispatchEvent(e);
+        }
     };
 
     CooCooDOM.serialize = function(node) {

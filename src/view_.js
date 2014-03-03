@@ -8,7 +8,7 @@ CooCoo.ViewBase = CooCoo.Base.extend({
 
         if (render) {
             args.shift();
-            return this._render.call(this, args);
+            return this._render.apply(this, args);
         }
     },
 
