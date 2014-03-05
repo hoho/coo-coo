@@ -30,7 +30,19 @@
             // XXX: Rather simplified version of isPlainObject. Fix in case of
             //      necessity.
             return obj && (obj.constructor === objConstructor);
+        },
+
+        CooCooHolder = CooCoo.Holder = function() {
         };
+
+
+    CooCooHolder.prototype.on = function(callback) {
+        this._cb = callback;
+    };
+
+    CooCooHolder.prototype.feed = function(data) {
+        this._cb && this._cb(data);
+    };
 
 
     CooCoo.reset = function(val, prev) {
@@ -60,7 +72,15 @@
     };
 
     CooCooRenderRet.prototype.push = function(val) {
-        this._.appendChild(cooUnwrap(val));
+        val = cooUnwrap(val);
+
+        if (val instanceof CooCooHolder) {
+            var tmp = document.createComment(' CooCoo Holder ');
+            tmp._cooHolder = val;
+            val = tmp;
+        }
+
+        this._.appendChild(val);
     };
 
 
