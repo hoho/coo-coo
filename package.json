@@ -33,11 +33,10 @@
         "grunt-contrib-jshint": "~0.8.0",
         "grunt-contrib-qunit": "~0.3.0",
         "grunt-contrib-watch": "~0.5.3",
-        "grunt-conkitty": "~0.4.3",
+        "grunt-conkitty": "~0.4.4",
         "qunitjs": "~1.12.0",
 
         "concat.js": "~0.9.0",
-        "histery": "~0.6.0",
-        "jquery-browser": "~1.10.2"
+        "uglify-js": "~1.3.5"
     }
 }

@@ -72,6 +72,69 @@ function cooClearComments(code) {
 }
 
 
+var jsParser = require('uglify-js').parser,
+    jsUglify = require('uglify-js').uglify,
+    extend = require('deep-extend');
+
+
+function fixVariableReferences(ast, vars) {
+    if (!ast || !ast.length) { return; }
+
+    var curVars = extend({}, vars),
+        cur,
+        i,
+        j;
+
+    for (i = 0; i < ast.length; i++) {
+        cur = ast[i];
+
+        if (cur instanceof Array) {
+            if (cur[0] === 'var') {
+                for (j = 0; j < cur[1].length; j++) {
+                    // Delete we don't need to substitute this variable no more.
+                    delete curVars[cur[1][j][0]];
+                }
+            }
+
+            fixVariableReferences(cur, curVars);
+        }
+
+        if (cur && cur.length === 2 && cur[0] === 'name' && (cur[1] in curVars)) {
+            // Replace reference.
+            ast[i] = ['dot', ['name', '__args'], cur[1]];
+        }
+    }
+}
+
+
+function adjustJSExpression(code, vars) {
+    /* jshint -W106 */
+    var ast = jsParser.parse('f(\n' + code + '\n)');
+    ast = jsUglify.ast_lift_variables(ast);
+    fixVariableReferences(ast, vars);
+
+    // Strip f() call.
+    ast[1] = ast[1][0][1][2];
+    return jsUglify.gen_code(ast, {beautify: true});
+    /* jshint +W106 */
+}
+
+
+function adjustJSFunction(code, vars) {
+    /* jshint -W106 */
+    var ast = jsParser.parse('function f() {\n' + code + '\n}');
+    ast = jsUglify.ast_lift_variables(ast);
+    fixVariableReferences(ast, vars);
+
+    // Strip function f() {} wrapper.
+    ast[1] = ast[1][0][3];
+    return jsUglify.gen_code(ast, {beautify: true});
+    /* jshint +W106 */
+}
+
+
 module.exports = {
-    cooClearComments: cooClearComments
+    cooClearComments: cooClearComments,
+    adjustJSExpression: adjustJSExpression,
+    adjustJSFunction: adjustJSFunction
 };
