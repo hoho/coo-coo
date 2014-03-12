@@ -235,7 +235,7 @@
             cooCreateScope(cmd, true);
 
             if (hasParam) {
-                cooPushScopeVariable(cmd, cmd.parts[1].value, false);
+                cooPushScopeVariable(cmd, cmd.parts[1].value, false, true);
             }
 
             cmd.getCodeBefore = function() {

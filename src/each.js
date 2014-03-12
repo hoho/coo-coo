@@ -25,8 +25,8 @@
                 cmd.getCodeBefore = function() {
                     var ret = [];
 
-                    cooPushScopeVariable(cmd, cmd.parts[1].value, false);
-                    if (withKey) { cooPushScopeVariable(cmd, cmd.parts[2].value, false); }
+                    cooPushScopeVariable(cmd, cmd.parts[1].value, false, true);
+                    if (withKey) { cooPushScopeVariable(cmd, cmd.parts[2].value, false, true); }
 
                     ret.push('CooCoo.each(');
                     ret.push(cooValueToJS(cmd, cmd.parts[withKey ? 3 : 2]));

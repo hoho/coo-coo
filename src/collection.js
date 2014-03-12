@@ -21,7 +21,7 @@
             cooAssertNotValuePusher(cmd);
 
             cooCreateScope(cmd);
-            cooPushScopeVariable(cmd, cmd.parts[self ? 2 : 4].value, false);
+            cooPushScopeVariable(cmd, cmd.parts[self ? 2 : 4].value, false, true);
 
             cmd.getCodeBefore = function() {
                 if (!self) {
@@ -155,7 +155,7 @@
                     cooAssertValuePusher(cmd);
 
                     cooCreateScope(cmd);
-                    cooPushScopeVariable(cmd, cmd.parts[self ? 2 : 4].value, false);
+                    cooPushScopeVariable(cmd, cmd.parts[self ? 2 : 4].value, false, true);
 
                     cmd.getCodeBefore = function() {
                         if (!self) {

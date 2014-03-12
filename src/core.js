@@ -256,23 +256,25 @@ CooCooScope.prototype.add = function add(name, value) {
 
 
 /* exported cooPushScopeVariable */
-function cooPushScopeVariable(cmd, name, value) {
+function cooPushScopeVariable(cmd, name, value, closest) {
     var tmp = cmd,
-        scope = cmd.data.scope;
+        scopes = [];
 
-    while (!scope && tmp.parent) {
+    while (tmp) {
+        if (tmp.data.scope) {
+            scopes.push(tmp);
+        }
         tmp = tmp.parent;
-        scope = tmp.data.scope;
     }
 
-    if (!scope) {
+    if (scopes.length) {
+        tmp = scopes[closest ? 0 : scopes.length - 1];
+        tmp.data.scope.add(name, value);
+        return tmp;
+    } else {
         cmd.parts[0].error = 'No variable scope';
         cmd.file.errorUnexpectedPart(cmd.parts[0]);
     }
-
-    scope.add(name, value);
-
-    return tmp;
 }
 
 
@@ -309,7 +311,7 @@ function cooCreateScope(cmd, breaking) {
 
 /* exported cooSetScopeRet */
 function cooSetScopeRet(cmd) {
-    var scopeCmd = cooPushScopeVariable(cmd, COO_INTERNAL_VARIABLE_RET);
+    var scopeCmd = cooPushScopeVariable(cmd, COO_INTERNAL_VARIABLE_RET, undefined, true);
 
     scopeCmd.hasRet = true;
 
@@ -565,6 +567,8 @@ function cooWrapWithTypeCheck(cmd, part, type, valString, nullable) {
 function cooValueToJS(cmd, part) {
     switch (part.type) {
         case COO_COMMAND_PART_JS:
+            return cooWrapWithTypeCheck(cmd, part, part.typification, util.adjustJS(part.value));
+
         case COO_COMMAND_PART_STRING:
             return cooWrapWithTypeCheck(cmd, part, part.typification, part.value);
 
@@ -724,7 +728,7 @@ CooFile.prototype = {
                                 ret.push(cmd.retWrap[0]);
 
                                 ret.push('(function() {\n');
-                                ret.push(val.value);
+                                ret.push(cooValueToJS(cmd, val));
 
                                 return ret.join('');
                             };
@@ -958,11 +962,11 @@ CooFile.prototype = {
         tmp = val.join(indent ? '\n' : '');
 
         try {
-            part.value = util[indent ? 'adjustJSFunction' : 'adjustJSExpression'](tmp);
+            part.value = util[indent ? 'parseJSFunction' : 'parseJSExpression'](tmp);
         } catch(e) {
             this.error(
                 e.message,
-                (indent ? 0 : startChar) + e.col - 1,
+                (indent || e.line > 2 ? 0 : startChar) + e.col - 1,
                 startLine + e.line - 1 - (indent ? 0 : 1)
             );
         }
@@ -1379,7 +1383,7 @@ function cooExtractParamNames(cmd, parts, firstParam) {
 
         params[part.value] = true;
 
-        cooPushScopeVariable(cmd, part.value, false);
+        cooPushScopeVariable(cmd, part.value, false, true);
     }
 
     return params;

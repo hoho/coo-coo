@@ -101,47 +101,52 @@ function fixVariableReferences(ast, vars) {
 
         if (cur && cur.length === 2 && cur[0] === 'name' && (cur[1] in curVars)) {
             // Replace reference.
-            ast[i] = ['dot', ['name', '__args'], cur[1]];
+            ast[i] = ['dot', ['name', '__vars'], cur[1]];
         }
     }
 }
 
 
-function adjustJS(code, stripFunc, vars) {
+function parseJS(code, stripFunc) {
     /* jshint -W106 */
     var ast = jsParser.parse(code);
-
     ast = jsUglify.ast_lift_variables(ast);
-    fixVariableReferences(ast, vars);
 
     // Strip f() call.
     stripFunc(ast);
 
+    return ast;
+    /* jshint +W106 */
+}
+
+
+function parseJSExpression(code) {
+    return parseJS(
+        'f(\n' + code + '\n)',
+        function(ast) { ast[1] = ast[1][0][1][2]; /* Strip f() call. */ }
+    );
+}
+
+
+function parseJSFunction(code) {
+    return parseJS(
+        'function f() {\n' + code + '\n}',
+        function(ast) { ast[1] = ast[1][0][3]; /* Strip function f() {} wrapper. */ }
+    );
+}
+
+
+function adjustJS(ast, vars) {
+    /* jshint -W106 */
+    fixVariableReferences(ast, vars);
     return jsUglify.gen_code(ast, {beautify: true, indent_start: 4});
     /* jshint +W106 */
 }
 
 
-function adjustJSExpression(code, vars) {
-    return adjustJS(
-        'f(\n' + code + '\n)',
-        function(ast) { ast[1] = ast[1][0][1][2]; /* Strip f() call. */ },
-        vars
-    );
-}
-
-
-function adjustJSFunction(code, vars) {
-    return adjustJS(
-        'function f() {\n' + code + '\n}',
-        function(ast) { ast[1] = ast[1][0][3]; /* Strip function f() {} wrapper. */ },
-        vars
-    );
-}
-
-
 module.exports = {
     cooClearComments: cooClearComments,
-    adjustJSExpression: adjustJSExpression,
-    adjustJSFunction: adjustJSFunction
+    parseJSExpression: parseJSExpression,
+    parseJSFunction: parseJSFunction,
+    adjustJS: adjustJS
 };

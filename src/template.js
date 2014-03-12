@@ -101,7 +101,7 @@
                     cmd.hasSubblock = true;
 
                     cooCreateScope(cmd, true);
-                    cooPushScopeVariable(cmd, cmd.parts[1].value, false);
+                    cooPushScopeVariable(cmd, cmd.parts[1].value, false, true);
 
                     cmd.getCodeBefore = function() {
                         var ret = [];
