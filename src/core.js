@@ -1,5 +1,5 @@
 /*!
- * coo-coo v0.0.2, https://github.com/hoho/coocoo
+ * coo-coo v0.0.25, https://github.com/hoho/coocoo
  * (c) 2013 Marat Abdullin, MIT license
  */
 var fs = require('fs'),
@@ -875,7 +875,10 @@ CooFile.prototype = {
 
     readJS: function(indent, noSkipWhitespacesAfter) {
         var part = new CooCommandPart(COO_COMMAND_PART_JS, this.lineAt, this.charAt),
-            val = [];
+            val = [],
+            tmp,
+            startLine = this.lineAt,
+            startChar = this.charAt;
 
         if (!indent) {
             if (this.code[this.lineAt][this.charAt] !== '(') {
@@ -883,8 +886,6 @@ CooFile.prototype = {
             }
 
             var brackets,
-                startLine = this.lineAt,
-                startChar = this.charAt,
                 inString;
 
             brackets = 1;
@@ -954,7 +955,17 @@ CooFile.prototype = {
             part._charEnd = this.charAt;
         }
 
-        part.value = val.join(indent ? '\n' : '');
+        tmp = val.join(indent ? '\n' : '');
+
+        try {
+            part.value = util[indent ? 'adjustJSFunction' : 'adjustJSExpression'](tmp);
+        } catch(e) {
+            this.error(
+                e.message,
+                (indent ? 0 : startChar) + e.col - 1,
+                startLine + e.line - 1 - (indent ? 0 : 1)
+            );
+        }
 
         return part;
     },

@@ -107,29 +107,36 @@ function fixVariableReferences(ast, vars) {
 }
 
 
-function adjustJSExpression(code, vars) {
+function adjustJS(code, stripFunc, vars) {
     /* jshint -W106 */
-    var ast = jsParser.parse('f(\n' + code + '\n)');
+    var ast = jsParser.parse(code);
+
     ast = jsUglify.ast_lift_variables(ast);
     fixVariableReferences(ast, vars);
 
     // Strip f() call.
-    ast[1] = ast[1][0][1][2];
-    return jsUglify.gen_code(ast, {beautify: true});
+    stripFunc(ast);
+
+    return jsUglify.gen_code(ast, {beautify: true, indent_start: 4});
     /* jshint +W106 */
 }
 
 
-function adjustJSFunction(code, vars) {
-    /* jshint -W106 */
-    var ast = jsParser.parse('function f() {\n' + code + '\n}');
-    ast = jsUglify.ast_lift_variables(ast);
-    fixVariableReferences(ast, vars);
+function adjustJSExpression(code, vars) {
+    return adjustJS(
+        'f(\n' + code + '\n)',
+        function(ast) { ast[1] = ast[1][0][1][2]; /* Strip f() call. */ },
+        vars
+    );
+}
 
-    // Strip function f() {} wrapper.
-    ast[1] = ast[1][0][3];
-    return jsUglify.gen_code(ast, {beautify: true});
-    /* jshint +W106 */
+
+function adjustJSFunction(code, vars) {
+    return adjustJS(
+        'function f() {\n' + code + '\n}',
+        function(ast) { ast[1] = ast[1][0][3]; /* Strip function f() {} wrapper. */ },
+        vars
+    );
 }
 
 
