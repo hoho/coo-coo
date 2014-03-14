@@ -62,11 +62,11 @@
             } else {
                 handlers[id] = self._handlers = {
                     count: 1,
-                    events: {} // events: {click: {h: function, funcs: []}}
+                    events: {} // events: {click: callback, ...}
                 };
             }
 
-            node['_coo' + id] = parent;
+            node['_coo' + id] = {parent: parent, cb: {}};
 
             CooCoo.DOM.__super__.init.call(self, parent);
         },
@@ -79,7 +79,7 @@
             if (h && !(--h.count)) {
                 h = h.events;
                 for (event in h) {
-                    document.body.removeEventListener(event, h[event].h);
+                    document.body.removeEventListener(event, h[event]);
                 }
                 delete handlers[self.id];
             }
@@ -90,29 +90,27 @@
         on: function(event, callback) {
             var self = this,
                 handler = self._handlers,
-                eventHandler,
+                id = '_coo' + self.id,
                 funcs;
 
             if (handler) {
-                if (!((eventHandler = handler.events[event]))) {
-                    funcs = [];
-                    eventHandler = handler.events[event] = {funcs: funcs};
-
+                if (!handler.events[event]) {
                     document.body.addEventListener(
                         event,
-                        (eventHandler.h = function(e) {
-                            var parent = e.target,
-                                i = '_coo' + self.id,
+                        (handler.events[event] = function(e) {
+                            var meta = e.target,
+                                i,
                                 ret,
                                 cur;
 
-                            while (parent && !parent[i]) {
-                                parent = parent.parentNode;
+                            while (meta && !meta[id]) {
+                                meta = meta.parentNode;
                             }
 
-                            if (parent && ((parent = parent[i]))) {
+                            if (meta && ((meta = meta[id]))) {
+                                funcs = meta.cb[event];
                                 for (i = 0; i < funcs.length; i++) {
-                                    cur = funcs[i].call(parent, e);
+                                    cur = funcs[i].call(meta.parent, e);
 
                                     if (cur !== undefined && ret === undefined) {
                                         ret = cur;
@@ -125,9 +123,11 @@
                         event in captureEvents
                     );
                 }
-
-                eventHandler.funcs.push(callback);
             }
+
+            funcs = self.node[id].cb;
+            funcs = funcs[event] || (funcs[event] = []);
+            funcs.push(callback);
 
             return self;
         }
