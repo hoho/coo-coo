@@ -1,5 +1,6 @@
 /* global COO_COMMAND_PART_IDENTIFIER */
 /* global COO_COMMAND_PART_JS */
+/* global cooValueToJS */
 
 CooCoo.cmd.String = {
     process: function(cmd) { return cmd.parts[0]; },
@@ -73,7 +74,7 @@ CooCoo.cmd.js = {
             ret.push('(function(');
             ret.push(part.value[1].value);
             ret.push(') { return ');
-            ret.push(part.value[2].value);
+            ret.push(cooValueToJS(cmd, part.value[2]));
             ret.push('; })(');
             ret.push(val);
             ret.push(')');
