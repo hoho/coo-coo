@@ -38,10 +38,11 @@
             } else {
                 conkittyBindings[id][origin] = self._bindings = {
                     count: 1,
-                    name: origin.substring(9),
-                    funcs: {}
+                    name: origin.substring(9)
                 };
             }
+
+            self.funcs = {};
 
             CooCoo.Template.__super__.init.call(self, parent);
         },
@@ -64,13 +65,11 @@
             var self = this,
                 funcs;
 
-            if (!self.bindings) {
-                if (!((funcs = self._bindings.funcs[name]))) {
-                    self._bindings.funcs[name] = funcs = [];
-                }
-
-                funcs.push(func);
+            if (!((funcs = self.funcs[name]))) {
+                self.funcs[name] = funcs = [];
             }
+
+            funcs.push(func);
 
             return self;
         },
@@ -86,7 +85,7 @@
                 conkittyBindings[self.id][self.origin] = self.bindings = self._bindings;
             }
 
-            currentBindings = self.bindings.funcs;
+            currentBindings = self.funcs;
             currentParent = self.parent;
 
             for (i = 0; i < arguments.length; i++) {

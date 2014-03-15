@@ -232,7 +232,7 @@
             // (expr) identifier
             cmd.hasSubblock = true;
 
-            cooCreateScope(cmd, true);
+            cooCreateScope(cmd);
 
             if (hasParam) {
                 cooPushScopeVariable(cmd, cmd.parts[1].value, false, true);

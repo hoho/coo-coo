@@ -100,7 +100,7 @@
                 '': function() {
                     cmd.hasSubblock = true;
 
-                    cooCreateScope(cmd, true);
+                    cooCreateScope(cmd);
                     cooPushScopeVariable(cmd, cmd.parts[1].value, false, true);
 
                     cmd.getCodeBefore = function() {
