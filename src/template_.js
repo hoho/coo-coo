@@ -2,8 +2,7 @@
     /* global $C */
 
     var currentBindings,
-        currentParent,
-        conkittyBindings = {};
+        currentParent;
 
     $C.define('trigger', function(item, index, arr, args) {
         var funcs,
@@ -18,47 +17,19 @@
 
     CooCoo.Template = CooCoo.Extendable.extend({
         init: function(parent, id, origin) {
-            var self = this,
-                bindings;
-
-            self.parent = parent;
-            self.origin = origin;
-
             if (origin.substring(0, 9) !== 'conkitty:') {
                 throw new Error('Template is not recognized: "' + origin + '"');
             }
 
-            if (!((bindings = conkittyBindings[(self.id = id)]))) {
-                bindings = conkittyBindings[id] = {};
-            }
+            var self = this;
 
-            if ((bindings = bindings[origin])) {
-                bindings.count++;
-                self.bindings = bindings;
-            } else {
-                conkittyBindings[id][origin] = self._bindings = {
-                    count: 1,
-                    name: origin.substring(9)
-                };
-            }
-
+            self.id = id;
+            self.parent = parent;
+            self.origin = origin;
+            self.name = origin.substring(9);
             self.funcs = {};
 
             CooCoo.Template.__super__.init.call(self, parent);
-        },
-
-        destroy: function() {
-            var self = this,
-                bindings = conkittyBindings[self.id][self.origin];
-
-            if (bindings) {
-                bindings.count--;
-                if (!bindings.count) {
-                    delete conkittyBindings[self.id][self.origin];
-                }
-            }
-
-            CooCoo.Template.__super__.destroy.call(self);
         },
 
         on: function(name, func) {
@@ -81,10 +52,6 @@
                 prevBindings = currentBindings,
                 prevParent = currentParent;
 
-            if (self._bindings) {
-                conkittyBindings[self.id][self.origin] = self.bindings = self._bindings;
-            }
-
             currentBindings = self.funcs;
             currentParent = self.parent;
 
@@ -93,7 +60,7 @@
             }
 
             // Reuse i variable for return value.
-            i = $C.tpl[self.bindings.name].apply(null, args);
+            i = $C.tpl[self.name].apply(null, args);
 
             currentBindings = prevBindings;
             currentParent = prevParent;

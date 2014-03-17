@@ -1,5 +1,5 @@
 /*!
- * coo-coo v0.0.25, https://github.com/hoho/coocoo
+ * coo-coo v0.0.26, https://github.com/hoho/coocoo
  * (c) 2013 Marat Abdullin, MIT license
  */
 var fs = require('fs'),
