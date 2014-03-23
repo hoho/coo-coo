@@ -9,6 +9,7 @@
     /* global cooAssertValuePusher */
     /* global cooAssertNotValuePusher */
     /* global cooProcessBlockAsValue */
+    /* global cooGetScopeRet */
 
     var DOM_FUNC = 'CooCoo.DOM',
         DOM_OBJ = 'new ' + DOM_FUNC;
@@ -231,6 +232,7 @@
             // or
             // (expr) identifier
             cmd.hasSubblock = true;
+            cmd.valueRequired = true;
 
             cooCreateScope(cmd);
 
@@ -256,7 +258,16 @@
             };
 
             cmd.getCodeAfter = function() {
-                return '})';
+                var ret = [],
+                    tmp = cooGetScopeRet(cmd);
+
+                if (tmp) {
+                    ret.push(tmp);
+                }
+
+                ret.push('})');
+
+                return ret.join('');
             };
         };
     }
