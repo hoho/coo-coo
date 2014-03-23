@@ -100,8 +100,7 @@
                         (handler.events[event] = function(e) {
                             var meta = e.target,
                                 i,
-                                ret,
-                                cur;
+                                ret;
 
                             while (meta && !meta[id]) {
                                 meta = meta.parentNode;
@@ -110,14 +109,13 @@
                             if (meta && ((meta = meta[id]))) {
                                 funcs = meta.cb[event];
                                 for (i = 0; i < funcs.length; i++) {
-                                    cur = funcs[i].call(meta.parent, e);
+                                    ret = funcs[i].call(meta.parent, e);
 
-                                    if (cur !== undefined && ret === undefined) {
-                                        ret = cur;
+                                    if (ret === false) {
+                                        e.preventDefault();
+                                        e.stopPropagation();
                                     }
                                 }
-
-                                return ret;
                             }
                         }),
                         event in captureEvents
