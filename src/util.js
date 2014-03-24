@@ -73,38 +73,7 @@ function cooClearComments(code) {
 
 
 var jsParser = require('uglify-js').parser,
-    jsUglify = require('uglify-js').uglify,
-    extend = require('deep-extend');
-
-
-function fixVariableReferences(ast, vars) {
-    if (!ast || !ast.length) { return; }
-
-    var curVars = extend({}, vars),
-        cur,
-        i,
-        j;
-
-    for (i = 0; i < ast.length; i++) {
-        cur = ast[i];
-
-        if (cur instanceof Array) {
-            if (cur[0] === 'var') {
-                for (j = 0; j < cur[1].length; j++) {
-                    // Delete we don't need to substitute this variable no more.
-                    delete curVars[cur[1][j][0]];
-                }
-            }
-
-            fixVariableReferences(cur, curVars);
-        }
-
-        if (cur && cur.length === 2 && cur[0] === 'name' && (cur[1] in curVars)) {
-            // Replace reference.
-            ast[i] = ['dot', ['name', '__vars'], cur[1]];
-        }
-    }
-}
+    jsUglify = require('uglify-js').uglify;
 
 
 function parseJS(code, stripFunc) {
@@ -136,9 +105,8 @@ function parseJSFunction(code) {
 }
 
 
-function adjustJS(ast, vars) {
+function adjustJS(ast) {
     /* jshint -W106 */
-    fixVariableReferences(ast, vars);
     return jsUglify.gen_code(ast, {beautify: true, indent_start: 4});
     /* jshint +W106 */
 }
