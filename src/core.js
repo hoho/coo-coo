@@ -38,7 +38,6 @@ function CooCommand(file, parent, decls) {
 CooCommand.prototype = {
     root: null,
     valuePusher: false,
-    valueRequired: false,
     noScope: false,
     hasSubblock: false,
     hasRet: false,
@@ -255,6 +254,45 @@ CooCooScope.prototype.add = function add(name, value) {
 };
 
 
+/* exported cooAssertNotValuePusher */
+function cooAssertNotValuePusher(cmd) {
+    if (cmd.valuePusher) {
+        cmd.file.errorNoValue(cmd.parts[0]);
+    }
+}
+
+
+/* exported cooAssertValuePusher */
+function cooAssertValuePusher(cmd) {
+    if (!cmd.valuePusher) {
+        cmd.file.errorMeaninglessValue(cmd.parts[0]);
+    }
+}
+
+
+/* exported cooAssertHasSubcommands */
+function cooAssertHasSubcommands(cmd) {
+    if (!cmd.children.length) {
+        cmd.file.errorMeaninglessCommand(cmd.parts[0]);
+    }
+}
+
+
+/* exported cooAssertShouldBeHolder */
+function cooAssertShouldBeHolder(cmd) {
+    if (!cmd.valueHolder) {
+        cmd.file.errorShouldBeHolder(cmd.parts[0]);
+    }
+}
+
+/* exported cooAssertShouldNotBeHolder */
+function cooAssertShouldNotBeHolder(cmd) {
+    if (cmd.valueHolder) {
+        cmd.file.errorShouldNotBeHolder(cmd.parts[0]);
+    }
+}
+
+
 /* exported cooPushScopeVariable */
 function cooPushScopeVariable(cmd, name, value, closest) {
     var tmp = cmd,
@@ -419,7 +457,8 @@ function cooCheckProperty(cmd, decl, part) {
 /* exported cooProcessBlockAsValue */
 function cooProcessBlockAsValue(cmd, ext) {
     cmd.hasSubblock = true;
-    cmd.valueRequired = true;
+
+    cooAssertShouldBeHolder(cmd);
 
     cooCreateScope(cmd);
 
@@ -655,20 +694,39 @@ CooFile.prototype = {
 
         i = noIndentCheck ? this.charAt : this.blockIndent;
 
-        if (line[i] === '+') {
-            if (!parent || !parent.valueRequired) {
-                // Pretty dumb error messages.
-                this.error(
-                    parent ?
-                        '"' + parent.name + '" command does not require return value'
-                        :
-                        'No place to return value to',
-                    i
-                );
-            } else {
-                // This command pushes value to parent one.
-                cmd.valuePusher = true;
-                i++;
+        if (line[i] === '=') {
+            cmd.valueHolder = true;
+            i++;
+        } else {
+            cmd.valueHolder = false;
+        }
+
+        cmd.valuePusher = 0;
+
+        while (line[i] === '+') {
+            cmd.valuePusher++;
+            i++;
+        }
+
+        if (cmd.valuePusher) {
+            var tmp = cmd.parent,
+                async = false;
+
+            for (var j = cmd.valuePusher; j > 0; j--) {
+                while (tmp && !tmp.valueHolder) {
+                    async = async || tmp.isAsync;
+                    tmp = tmp.parent;
+                }
+
+                if (!tmp) {
+                    this.error('No place to return value to', i - j);
+                }
+            }
+
+            cmd.valueTaker = tmp;
+
+            if (async && !tmp.isRender) {
+                this.error('Only render methods support asynchronous returns', i - cmd.valuePusher);
             }
         }
 
@@ -687,7 +745,7 @@ CooFile.prototype = {
             {
                 // Check for certain conditions in case command begins with
                 // a string or with a JavaScript expression.
-                if (parent && parent.valueRequired && cmd.valuePusher) {
+                if (parent && cmd.valuePusher) {
                     cmd.getCodeBefore = function() {
                         var ret = [],
                             retWrap = cooWrapRet(cmd);
@@ -769,7 +827,11 @@ CooFile.prototype = {
                 }
 
                 if (cmd.hasSubblock) {
-                    if (cmd.valueRequired && !cmd.noScope) { cooCreateScope(cmd); }
+                    if (cmd.noScope) {
+                        cooAssertShouldNotBeHolder(cmd);
+                    } else {
+                        cooCreateScope(cmd);
+                    }
                     this.readBlock(cmd);
 
                 } else {
@@ -1119,7 +1181,7 @@ CooFile.prototype = {
         }
 
         part.value = new CooCommand(this, parent, this.ret.declCmd);
-        part.value.valueRequired = true;
+        part.value.valueHolder = true;
 
         cooProcessBlockAsValue(part.value, {});
 
@@ -1270,32 +1332,16 @@ CooFile.prototype = {
 
     errorIncompleteCommand: function(part) {
         this.error('Incomplete command', part._charEnd, part._lineEnd);
+    },
+
+    errorShouldBeHolder: function(part) {
+        this.error('Command should be value holder', part._charAt, part._lineAt);
+    },
+
+    errorShouldNotBeHolder: function(part) {
+        this.error('Command should not be value holder', part._charAt, part._lineAt);
     }
 };
-
-
-/* exported cooAssertNotValuePusher */
-function cooAssertNotValuePusher(cmd) {
-    if (cmd.valuePusher) {
-        cmd.file.errorNoValue(cmd.parts[0]);
-    }
-}
-
-
-/* exported cooAssertValuePusher */
-function cooAssertValuePusher(cmd) {
-    if (!cmd.valuePusher) {
-        cmd.file.errorMeaninglessValue(cmd.parts[0]);
-    }
-}
-
-
-/* exported cooAssertHasSubcommands */
-function cooAssertHasSubcommands(cmd) {
-    if (!cmd.children.length) {
-        cmd.file.errorMeaninglessCommand(cmd.parts[0]);
-    }
-}
 
 
 function CooCoo(filenames, common, app, debug) {
@@ -1431,6 +1477,7 @@ function cooProcessParam(cmd, hasValue) {
             return cooValueToJS(cmd, cmd.parts[1]);
         };
     } else {
+        cooAssertShouldBeHolder(cmd);
         return cooProcessBlockAsValue(cmd, {
             getCodeBeforeBefore: function() {
                 cmd.ignore = true;
@@ -1531,9 +1578,14 @@ function cooProcessEvent(cmd, hasName, hasParams, actualName) {
 
 
 /* exported cooProcessBlockAsFunction */
-function cooProcessBlockAsFunction(cmd, valueRequired, firstParam, ext) {
+function cooProcessBlockAsFunction(cmd, shouldBeHolder, firstParam, ext) {
     cmd.hasSubblock = true;
-    cmd.valueRequired = valueRequired;
+
+    if (shouldBeHolder) {
+        cooAssertShouldBeHolder(cmd);
+    } else {
+        cooAssertShouldNotBeHolder(cmd);
+    }
 
     cooCreateScope(cmd);
 
@@ -1571,7 +1623,7 @@ function cooProcessBlockAsFunction(cmd, valueRequired, firstParam, ext) {
 
         if (tmp) {
             ret.push(tmp);
-        } else if (valueRequired) {
+        } else if (shouldBeHolder) {
             cmd.file.errorNoValue(cmd.parts[0]);
         }
 
@@ -1688,7 +1740,7 @@ function cooProcessCreateCommand(cmd, firstParam, paramCount, events, isView) {
         ret.push('(');
 
         if (isView) {
-            ret.push(cmd.data.isRender ? 'true' : 'false');
+            ret.push(cmd.isRender ? 'true' : 'false');
             ret.push(', ');
         }
 
@@ -1978,7 +2030,9 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                 }
             } else {
                 cmd.hasSubblock = true;
-                cmd.valueRequired = true;
+                if (cmd.children.length) {
+                    cooAssertShouldBeHolder(cmd);
+                }
                 cooCreateScope(cmd);
             }
 
@@ -2050,7 +2104,11 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
             }
 
             cmd.hasSubblock = true;
-            cmd.valueRequired = specialData ? !specialData.noValue : true;
+
+            if (specialData && specialData.noValue && cmd.valueHolder) {
+                part.error = 'Method should return no value';
+                return part;
+            }
 
             cmd.data.actualName = methodName;
             cmd.data.renderRet = special ? specialData.renderRet : undefined;
@@ -2259,7 +2317,8 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                     // `name` identifier (something) set identifier
 
                     cmd.hasSubblock = true;
-                    cmd.valueRequired = true;
+
+                    cooAssertShouldBeHolder(cmd);
 
                     cmd.file.errorNotImplemented(cmd.parts[0]);
                 },

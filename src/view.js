@@ -66,7 +66,7 @@
                             // view identifier render (expr2) (expr3) ...
                             cooAssertValuePusher(cmd);
 
-                            cmd.data.isRender = true;
+                            cmd.isRender = true;
 
                             cooProcessCreateCommand(cmd, 3, undefined, {}, true);
                         }

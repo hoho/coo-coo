@@ -13,7 +13,6 @@
                     // test (expr)
                     //     ...
                     cmd.hasSubblock = true;
-                    cmd.valueRequired = cmd.parent.valueRequired;
                     cmd.noScope = true;
 
                     cmd.getCodeBefore = function() {

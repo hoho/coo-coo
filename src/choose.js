@@ -34,7 +34,6 @@
                     }
 
                     cmd.hasSubblock = true;
-                    cmd.valueRequired = cmd.parent.parent.valueRequired;
                     cmd.noScope = true;
 
                     cmd.getCodeBefore = function() {
@@ -71,7 +70,6 @@
                 cmd.parent.hasOtherwise = true;
 
                 cmd.hasSubblock = true;
-                cmd.valueRequired = cmd.parent.parent.valueRequired;
                 cmd.noScope = true;
 
                 cmd.getCodeBefore = function() {

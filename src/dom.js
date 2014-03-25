@@ -10,6 +10,7 @@
     /* global cooAssertNotValuePusher */
     /* global cooProcessBlockAsValue */
     /* global cooGetScopeRet */
+    /* global cooAssertShouldBeHolder */
 
     var DOM_FUNC = 'CooCoo.DOM',
         DOM_OBJ = 'new ' + DOM_FUNC;
@@ -89,8 +90,6 @@
                     '@': function() {
                         // dom (expr)
                         cmd.hasSubblock = true;
-                        cmd.valueRequired = false;
-
                         cmd.processChild = domProcessEvents;
 
                         cmd.getCodeBefore = function() {
@@ -232,7 +231,6 @@
             // or
             // (expr) identifier
             cmd.hasSubblock = true;
-            cmd.valueRequired = true;
 
             cooCreateScope(cmd);
 

@@ -12,6 +12,7 @@
     /* global cooAssertValuePusher */
     /* global cooWrapWithTypeCheck */
     /* global cooWrapRet */
+    /* global cooAssertShouldBeHolder */
 
     function getEachHandler(self) {
         return function processEach(cmd) {
@@ -67,8 +68,8 @@
                 // this add
                 //     ...
                 cmd.hasSubblock = true;
-                cmd.valueRequired = true;
 
+                cooAssertShouldBeHolder(cmd);
                 cooAssertNotValuePusher(cmd);
 
                 return cooProcessBlockAsValue(cmd, {
@@ -202,7 +203,7 @@
                             'model': {
                                 '@': function() {
                                     cmd.hasSubblock = true;
-                                    cmd.valueRequired = true;
+                                    cooAssertShouldBeHolder(cmd);
                                 },
 
                                 '': function() {
