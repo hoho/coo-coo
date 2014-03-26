@@ -10,7 +10,6 @@
     /* global cooAssertNotValuePusher */
     /* global cooProcessBlockAsValue */
     /* global cooGetScopeRet */
-    /* global cooAssertShouldBeHolder */
 
     var DOM_FUNC = 'CooCoo.DOM',
         DOM_OBJ = 'new ' + DOM_FUNC;
@@ -134,7 +133,7 @@
                             // dom (expr) append
                             //     ...
                             cooAssertNotValuePusher(cmd);
-                            cmd.data.renderRet = true;
+                            cmd.renderRet = true;
 
                             return cooProcessBlockAsValue(cmd, {
                                 getCodeBeforeBefore: function() {
@@ -231,6 +230,7 @@
             // or
             // (expr) identifier
             cmd.hasSubblock = true;
+            cmd.isAsync = true;
 
             cooCreateScope(cmd);
 

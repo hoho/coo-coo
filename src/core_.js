@@ -40,7 +40,7 @@
         this._cb = callback;
     };
 
-    CooCooHolder.prototype.feed = function(data) {
+    CooCooHolder.prototype.push = function(data) {
         this._cb && this._cb(data);
     };
 

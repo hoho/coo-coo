@@ -18,7 +18,10 @@ var INDENT_WITH = ' ',
     COO_COMMAND_PART_TYPIFICATION = 'typification',
     COO_COMMAND_PART_SUBCOOCOO = 'sub CooCoo',
 
-    COO_INTERNAL_VARIABLE_RET = '__ret';
+    COO_INTERNAL_VARIABLE_RET = '__ret',
+    COO_INTERNAL_VARIABLE_HOLDER = '__h',
+    cooLastRetId = 1,
+    cooLastHolderId = 1;
 
 
 function CooCommand(file, parent, decls) {
@@ -239,14 +242,13 @@ function cooWrapRet(cmd) {
     } else if (cmd.single) {
         return ['', ''];
     } else {
-        return [COO_INTERNAL_VARIABLE_RET + '.push(', ');'];
+        return [(cmd.valueTaker.valueHolder2 || cmd.valueTaker.valueHolder) + '.push(', ');'];
     }
 }
 
 
-function CooCooScope(breaking) {
+function CooCooScope() {
     this.vars = {};
-    this.breaking = breaking;
 }
 
 CooCooScope.prototype.add = function add(name, value) {
@@ -322,14 +324,10 @@ function cooCheckScopeVariable(cmd, part) {
 
     while (tmp && ok === undefined) {
         if (tmp.data.scope) {
-            ok = tmp.data.scope.vars[part.value];
+            ok = part.value in tmp.data.scope.vars;
         }
 
-        if (!tmp.data.scope || !tmp.data.scope.breaking) {
-            tmp = tmp.parent;
-        } else {
-            break;
-        }
+        tmp = tmp.parent;
     }
 
     if (ok === undefined) {
@@ -340,23 +338,23 @@ function cooCheckScopeVariable(cmd, part) {
 
 
 /* exported cooCreateScope */
-function cooCreateScope(cmd, breaking) {
+function cooCreateScope(cmd) {
     if (!cmd.data.scope) {
-        cmd.data.scope = new CooCooScope(breaking);
+        cmd.data.scope = new CooCooScope();
     }
 }
 
 
 /* exported cooSetScopeRet */
 function cooSetScopeRet(cmd) {
-    var scopeCmd = cooPushScopeVariable(cmd, COO_INTERNAL_VARIABLE_RET, undefined, true);
+    var scopeCmd = cooPushScopeVariable(cmd, cmd.valueHolder, undefined, true);
 
     scopeCmd.hasRet = true;
 
     // Variable is already added, we are replacing it with value constructor.
     scopeCmd.data.scope.add(
-        COO_INTERNAL_VARIABLE_RET,
-        scopeCmd.data.renderRet ? 'CooCoo.Ret(true)' : 'CooCoo.Ret()'
+        cmd.valueHolder,
+        scopeCmd.renderRet ? 'CooCoo.Ret(true)' : 'CooCoo.Ret()'
     );
 }
 
@@ -408,7 +406,7 @@ function cooGetScopeVariablesDecl(cmd) {
 /* exported cooGetScopeRet */
 function cooGetScopeRet(cmd) {
     if (cmd.hasRet) {
-        return INDENT + 'return CooCoo.unwrap(' + COO_INTERNAL_VARIABLE_RET + ');\n';
+        return INDENT + 'return CooCoo.unwrap(' + cmd.valueHolder + ');\n';
     } else {
         return '';
     }
@@ -634,6 +632,32 @@ function cooValueToJS(cmd, part) {
 }
 
 
+function cooPushHolder(srcCmd, file, parent) {
+    var cmd = new CooCommand(file, parent),
+        retName = srcCmd.valueTaker.valueHolder,
+        name = COO_INTERNAL_VARIABLE_HOLDER + (cooLastHolderId++);
+
+    cooPushScopeVariable(srcCmd.valueTaker, name);
+
+    parent.children.push(cmd);
+
+    cmd.getCodeBefore = function() {
+        var ret = [];
+
+        ret.push(retName);
+        ret.push('.push(');
+        ret.push(name);
+        ret.push(' = new CooCoo.Holder());');
+
+        return ret.join('');
+    };
+
+    cmd.valueHolder = retName;
+    cmd.valueHolder2 = name;
+    srcCmd.valueTaker = cmd;
+}
+
+
 function CooFile(filename) {
     var data = fs.readFileSync(filename, {encoding: 'utf8'});
 
@@ -695,7 +719,7 @@ CooFile.prototype = {
         i = noIndentCheck ? this.charAt : this.blockIndent;
 
         if (line[i] === '=') {
-            cmd.valueHolder = true;
+            cmd.valueHolder = COO_INTERNAL_VARIABLE_RET + (cooLastRetId++);
             i++;
         } else {
             cmd.valueHolder = false;
@@ -710,31 +734,42 @@ CooFile.prototype = {
 
         if (cmd.valuePusher) {
             var tmp = cmd.parent,
-                async = false;
+                async;
 
             for (var j = cmd.valuePusher; j > 0; j--) {
                 while (tmp && !tmp.valueHolder) {
-                    async = async || tmp.isAsync;
+                    if (tmp.isAsync) { async = tmp; }
                     tmp = tmp.parent;
                 }
 
                 if (!tmp) {
                     this.error('No place to return value to', i - j);
                 }
+
+                if (j > 1) {
+                    tmp = tmp.parent;
+                }
             }
 
             cmd.valueTaker = tmp;
+            tmp.hasValue = true;
 
-            if (async && !tmp.isRender) {
-                this.error('Only render methods support asynchronous returns', i - cmd.valuePusher);
+            if (async) {
+                if (tmp.renderRet) {
+                    // Current command tree is not added yet, appending
+                    // holder command before top asynchronous command.
+                    cooPushHolder(cmd, this, async.parent.parent);
+                } else {
+                    this.error('Only render methods support asynchronous returns', i - cmd.valuePusher);
+                }
             }
         }
 
         if (line[i].match(/[a-zA-Z"'(_$@]/)) {
             var parts = cmd.parts = this.readCommandParts(i, cmd);
 
-            if (cmd.valuePusher) {
-                cooSetScopeRet(cmd);
+            if (cmd.valueTaker) {
+                cooSetScopeRet(cmd.valueTaker);
             }
 
             if ((parts[0].type === COO_COMMAND_PART_STRING ||
@@ -829,11 +864,9 @@ CooFile.prototype = {
                 if (cmd.hasSubblock) {
                     if (cmd.noScope) {
                         cooAssertShouldNotBeHolder(cmd);
-                    } else {
-                        cooCreateScope(cmd);
                     }
-                    this.readBlock(cmd);
 
+                    this.readBlock(cmd);
                 } else {
                     this.nextLine();
                 }
@@ -1526,6 +1559,7 @@ function cooGetParamValues(cmd, inlineParams, elemParams) {
 
 function cooProcessEvent(cmd, hasName, hasParams, actualName) {
     cmd.hasSubblock = true;
+    cmd.isAsync = true;
 
     cooCreateScope(cmd);
 
@@ -1888,6 +1922,8 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
         if (cmd.parent) {
             return cmdProcessCommand(cmd);
         } else {
+            cooAssertShouldNotBeHolder(cmd);
+
             var patterns = {},
                 error,
                 exts,
@@ -2111,7 +2147,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
             }
 
             cmd.data.actualName = methodName;
-            cmd.data.renderRet = special ? specialData.renderRet : undefined;
+            cmd.renderRet = special ? specialData.renderRet : undefined;
 
             cooCreateScope(cmd);
 

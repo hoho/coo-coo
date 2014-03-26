@@ -37,7 +37,7 @@
                             '#': function(cmd) {
                                 // view identifier (expr) render (expr2) (expr3) ...
                                 cooAssertValuePusher(cmd);
-
+                                cmd.isRender = true;
                                 cmd.hasSubblock = true;
                                 cmd.processChild = cooProcessParams;
 
@@ -65,9 +65,7 @@
                         '#': function(cmd) {
                             // view identifier render (expr2) (expr3) ...
                             cooAssertValuePusher(cmd);
-
                             cmd.isRender = true;
-
                             cooProcessCreateCommand(cmd, 3, undefined, {}, true);
                         }
                     }

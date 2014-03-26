@@ -3,6 +3,7 @@
     /* global cooValueToJS */
     /* global cooMatchCommand */
     /* global cooProcessBlockAsFunction */
+    /* global cooAssertNotValuePusher */
 
     function checkForDuplicate(cmd, what, err) {
         if (cmd.parent.data[what]) {
@@ -58,9 +59,7 @@
 
             return cooMatchCommand(cmd, {
                 'ajax': function() {
-                    if (cmd.valuePusher) {
-                        cmd.file.errorNoValue(cmd.parts[0]);
-                    }
+                    cooAssertNotValuePusher(cmd);
 
                     cmd.getCodeBefore = function() {
                         return 'new CooCoo.Ajax(this, {';

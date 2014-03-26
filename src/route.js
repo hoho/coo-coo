@@ -1,7 +1,6 @@
 (function() {
     /* global cooObjectBase */
     /* global cooGetScopeVariablesDecl */
-    /* global COO_INTERNAL_VARIABLE_RET */
     /* global COO_COMMAND_PART_STRING */
     /* global COO_COMMAND_PART_JS */
     /* global COO_COMMAND_PART_IDENTIFIER */
@@ -110,7 +109,7 @@
                     var ret;
 
                     if (cmd.hasRet) {
-                        ret = INDENT + 'return CooCoo.unwrap(' + COO_INTERNAL_VARIABLE_RET + ');\n';
+                        ret = INDENT + 'return CooCoo.unwrap(' + cmd.valueTaker.valueHolder + ');\n';
                     } else {
                         ret = '';
                     }
