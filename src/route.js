@@ -16,7 +16,10 @@
     function createRouteMethod(actualName) {
         return {
             actualName: actualName,
-            allowValues: true,
+
+            getPatterns: function(callback) {
+                return {'#': function() { return callback(); }}
+            },
 
             extractParams: function(cmd) {
                 var params;

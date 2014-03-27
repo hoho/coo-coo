@@ -20,9 +20,7 @@ var INDENT_WITH = ' ',
     COO_COMMAND_PART_DOM_TAKER = 'DOM taker',
 
     COO_INTERNAL_VARIABLE_RET = '__ret',
-    COO_INTERNAL_VARIABLE_HOLDER = '__h',
-    cooLastRetId = 1,
-    cooLastHolderId = 1;
+    cooLastRetId = 1;
 
 
 function CooCommand(file, parent, decls) {
@@ -302,14 +300,14 @@ function cooMatchCommand(cmd, patterns, pos) {
 
 /* exported cooWrapRet */
 function cooWrapRet(cmd) {
-    if (!(cmd.valuePusher || cmd.domPusher)) {
+    if (!(cmd.retPusher || cmd.domPusher)) {
         return ['', ';'];
+    } else if (cmd.domPusher) {
+        return [cmd.domTaker.domName + '.push(', ');'];
     } else if (cmd.single) {
         return ['', ''];
-    } else if (cmd.valuePusher) {
-        return [(cmd.valueTaker.valueHolder2 || cmd.valueTaker.valueHolder) + '.push(', ');'];
-    } else { // cmd.domPusher
-        return [cmd.domTaker.name + '.push(', ');'];
+    } else {
+        return [cmd.retTaker.retName + '.push(', ');'];
     }
 }
 
@@ -712,7 +710,7 @@ function cooValueToJS(cmd, part) {
 }
 
 
-function cooPushHolder(srcCmd, file, parent) {
+function cooPushDOMHolder(srcCmd, file, parent) {
     var cmd = new CooCommand(file, parent),
         retName = srcCmd.valueTaker.valueHolder,
         name = COO_INTERNAL_VARIABLE_HOLDER + (cooLastHolderId++);
@@ -799,48 +797,57 @@ CooFile.prototype = {
         i = noIndentCheck ? this.charAt : this.blockIndent;
 
         if (line[i] === '^') {
-            cmd.domTaker = new CooCommandPart(COO_COMMAND_PART_DOM_TAKER, this.lineAt, i);
-            cmd.domTaker.name = COO_INTERNAL_VARIABLE_HOLDER + (cooLastHolderId++);
+            cmd.domName = COO_INTERNAL_VARIABLE_RET + (cooLastRetId++);
             i++;
         }
 
-        if (line[i] === '=') {
-            if (cmd.domTaker) {
-                this.error('Command should be either value taker or DOM taker', i);
-            }
-            cmd.valueHolder = COO_INTERNAL_VARIABLE_RET + (cooLastRetId++);
+        if (line[i] === '=' && !cmd.domName) {
+            cmd.retName = COO_INTERNAL_VARIABLE_RET + (cooLastRetId++);
             i++;
         }
 
         cmd.domPusher = 0;
-        cmd.valuePusher = 0;
+        cmd.retPusher = 0;
 
         while (line[i] === '*' || line[i] === '+') {
             if (line[i] === '*') {
                 cmd.domPusher++;
             } else {
-                cmd.valuePusher++;
+                cmd.retPusher++;
             }
 
-            if (cmd.domPusher && cmd.valuePusher) {
+            if (cmd.domPusher && cmd.retPusher) {
                 this.error('Command should be either value pusher or DOM pusher', i);
             }
 
             i++;
         }
 
-        if (cmd.valuePusher) {
+        if (cmd.domPusher || cmd.retPusher) {
             var tmp = cmd.parent,
-                async;
+                async,
+                pusherKey,
+                retNameKey,
+                takerKey;
 
-            for (var j = cmd.valuePusher; j > 0; j--) {
-                while (tmp && !tmp.valueHolder) {
+            if (cmd.domName) {
+                pusherKey = 'domPusher';
+                retNameKey = 'domName';
+                takerKey = 'domTaker';
+            } else {
+                pusherKey = 'retPusher';
+                retNameKey = 'retName';
+                takerKey = 'retTaker';
+            }
+
+            for (var j = cmd[pusherKey]; j > 0; j--) {
+                while (tmp && !tmp[retNameKey]) {
                     if (tmp.isAsync) { async = tmp; }
                     tmp = tmp.parent;
                 }
 
                 if (!tmp) {
-                    this.error('No place to return value to', i - j);
+                    this.error('No place to push value to', i - j);
                 }
 
                 if (j > 1) {
@@ -848,16 +855,16 @@ CooFile.prototype = {
                 }
             }
 
-            cmd.valueTaker = tmp;
-            tmp.hasValue = true;
+            cmd[takerKey] = tmp;
+            tmp.hasPusher = true;
 
             if (async) {
-                if (tmp.renderRet) {
+                if (tmp.domPusher) {
                     // Current command tree is not added yet, appending
                     // holder command before top asynchronous command.
-                    cooPushHolder(cmd, this, async.parent.parent);
+                    cooPushDOMHolder(cmd, this, async.parent.parent);
                 } else {
-                    this.error('Only render methods support asynchronous returns', i - cmd.valuePusher);
+                    this.error('Only DOM supports asynchronous pushers', i - cmd[pusherKey]);
                 }
             }
         }
@@ -865,39 +872,51 @@ CooFile.prototype = {
         if (line[i].match(/[a-zA-Z"'(_$@]/)) {
             var parts = cmd.parts = this.readCommandParts(i, cmd);
 
-            if (cmd.domTaker) {
-                cooSetScopeRet(cmd);
-                parts.unshift(cmd.domTaker);
-            }
-
-            if (cmd.valueTaker) {
-                cooSetScopeRet(cmd.valueTaker);
-            }
-
-            if (cmd.valuePusher &&
+            if ((cmd.retPusher || cmd.domPusher || cmd.domName) &&
                 (parts[0].type === COO_COMMAND_PART_STRING ||
                  parts[0].type === COO_COMMAND_PART_JS ||
                  parts[0].type === COO_COMMAND_PART_VARIABLE ||
                  parts[0].type === COO_COMMAND_PART_PROPERTY) &&
                 (!parent || !parent.processChild))
             {
-                // Check for certain conditions in case command begins with
-                // a string or with a JavaScript expression.
-                if (parent && cmd.valuePusher) {
-                    cmd.getCodeBefore = function() {
-                        var ret = [],
-                            retWrap = cooWrapRet(cmd);
-
-                        ret.push(retWrap[0]);
-                        ret.push(cooValueToJS(cmd, cmd.parts[0]));
-                        ret.push(retWrap[1]);
-
-                        return ret.join('');
-                    };
-
+                if (parent) {
                     if (parts.length > 1) { this.errorUnexpectedPart(parts[1]); }
 
-                    this.nextLine();
+                    if (cmd.retPusher || cmd.domPusher) {
+                        cmd.getCodeBefore = function() {
+                            var ret = [],
+                                retWrap = cooWrapRet(cmd);
+
+                            ret.push(retWrap[0]);
+                            ret.push(cooValueToJS(cmd, cmd.parts[0]));
+                            ret.push(retWrap[1]);
+
+                            return ret.join('');
+                        };
+
+                        this.nextLine();
+                    } else {
+                        // domName is not empty.
+                        cmd.hasSubblock = true;
+                        cooPushScopeVariable(cmd, cmd.domName);
+
+                        cmd.getCodeBefore = function() {
+                            var ret = [];
+
+                            if (!cmd.hasPusher) {
+                                //assert
+                            }
+
+                            ret.push(cmd.domName);
+                            ret.push(' = new CooCoo.DOMBuilder(');
+                            ret.push(cooValueToJS(cmd, cmd.parts[0]));
+                            ret.push(');');
+
+                            return ret.join('');
+                        };
+
+                        this.readBlock(cmd);
+                    }
                 } else {
                     this.errorUnexpectedPart(parts[0]);
                 }
@@ -942,7 +961,7 @@ CooFile.prototype = {
                         }
                     });
                 } else {
-                    var cmdName = cmd.name || cmd.root.name,
+                    var cmdName = cmd.name === 'this' || !cmd.name ? cmd.root.name : cmd.name,
                         commandHandlers = CooCoo.cmd[cmdName];
 
                     if (commandHandlers) {
@@ -1680,16 +1699,16 @@ function cooProcessEvent(cmd, hasName, hasParams, actualName) {
 
         ret.push('.on(');
 
-        if (!actualName && cmd.parts[0].type !== COO_COMMAND_PART_IDENTIFIER) {
-            ret.push(cooValueToJS(cmd, cmd.parts[0]));
+        if (!actualName && cmd.parts[1].type !== COO_COMMAND_PART_IDENTIFIER) {
+            ret.push(cooValueToJS(cmd, cmd.parts[1]));
             nameIsJSVal = true;
         } else {
             ret.push('"');
-            ret.push(actualName || cmd.parts[0].value.toLowerCase());
+            ret.push(actualName || cmd.parts[1].value.toLowerCase());
         }
 
         if (hasName) {
-            var name = cmd.parts[1];
+            var name = cmd.parts[2];
             ret.push(':');
 
             if (name.type === COO_COMMAND_PART_STRING) {
@@ -1794,34 +1813,36 @@ function cooGetProcessParamsAndEvents(hasParams, events) {
             };
         }
 
+        patterns.on = {};
+
         for (key in events) {
             (function(name, event) {
                 if (event.hasParams === false) {
-                    patterns[name] = function() {
+                    patterns.on[name] = function() {
                         return cooProcessEvent(cmd, false, false, event.actualName);
                     };
                 } else {
                     if (event.hasName) {
-                        patterns[name] = {
+                        patterns.on[name] = {
                             '(': {
-                                '*': function() {
+                                '($$)<': function() {
                                     // event (expr) identifier identifier2 ...
-                                    return cooProcessEvent(cmd, true, 2, event.actualName);
+                                    return cooProcessEvent(cmd, true, 3, event.actualName);
                                 }
                             },
 
                             '': {
-                                '*': function() {
+                                '($$)<': function() {
                                     // event identifier identifier2 ...
-                                    return cooProcessEvent(cmd, false, 1, event.actualName);
+                                    return cooProcessEvent(cmd, false, 2, event.actualName);
                                 }
                             }
                         };
                     } else {
-                        patterns[name] = {
-                            '*': function() {
+                        patterns.on[name] = {
+                            '($$)<': function() {
                                 // add identifier identifier2 ...
-                                return cooProcessEvent(cmd, false, 1, event.actualName);
+                                return cooProcessEvent(cmd, false, 2, event.actualName);
                             }
                         };
                     }
@@ -1829,10 +1850,10 @@ function cooGetProcessParamsAndEvents(hasParams, events) {
             })(key, events[key]);
         }
 
-        patterns['('] = {
-            '*': function() {
+        patterns.on['('] = {
+            '($$)<': function() {
                 // "custom-event" identifier identifier2 ...
-                return cooProcessEvent(cmd, false, 1);
+                return cooProcessEvent(cmd, false, 2);
             }
         };
 
@@ -1981,22 +2002,6 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
 
     `declExt` is an object like:
         {
-            specialProperties: {
-                prop: {
-                    actualName: name,
-                    default: value,
-                    required: true
-
-                    tuneCommand: func,
-                    getCodeBeforeBefore: func,
-                    getCodeBefore: func, // override.
-                    getCodeBeforeAfter: func,
-                    getCodeAfterBefore: func,
-                    getCodeAfter: func, // override.
-                    getCodeAfterAfter: func
-                },
-                ...
-            },
             specialMethods: {
                 method: {
                     actualName: name,
@@ -2151,7 +2156,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
     function cmdProcessDecl(cmd) {
         function processProperty(typeval, special, specialData) {
             var props = cmd.parent.data.properties,
-                part = cmd.parts[special ? 1 : 0],
+                part = cmd.parts[0],
                 propName = special ? specialData.actualName : part.value;
 
             if (propName in props) {
@@ -2236,15 +2241,13 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
 
         function processMethod(special, specialData) {
             var methods = cmd.parent.data.methods,
-                part = cmd.parts[special ? 0 : 1],
+                part = cmd.parts[0],
                 methodName = special ? specialData.actualName : part.value;
 
             if (methodName in methods) {
                 part.error = 'Duplicate method';
                 return part;
             }
-
-            cmd.hasSubblock = true;
 
             if (specialData && specialData.noValue && cmd.valueHolder) {
                 part.error = 'Method should return no value';
@@ -2261,7 +2264,8 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
             if (specialData && specialData.extractParams) {
                 params = specialData.extractParams(cmd);
             } else {
-                params = cooExtractParamNames(cmd, cmd.parts, special ? 1 : 2);
+                cmd.hasSubblock = true;
+                params = cooExtractParamNames(cmd, cmd.parts, 1);
             }
 
             methods[methodName] = params;
@@ -2363,34 +2367,18 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                 };
             }
 
-            if ((tmp = declExt.specialProperties)) {
-                for (key in tmp) {
-                    (function(special, specialData) {
-                        patterns[special] = {
-                            '@': function() {
-                                return processProperty({}, special, specialData);
-                            }
-                        };
-
-                        patterns[special]['('] = function() {
-                            return processProperty({value: cmd.parts[1]}, special, specialData);
-                        };
-                    })(key, tmp[key]);
-                }
-            }
-
             if ((tmp = declExt.specialMethods)) {
                 for (key in tmp) {
                     (function(special, specialData) {
-                        patterns[special] = {
-                            '($$)<': function() {
+                        if (specialData.getPatterns) {
+                            patterns[special] = specialData.getPatterns(function() {
                                 return processMethod(special, specialData);
-                            }
-                        };
-
-                        if (specialData.allowValues) {
-                            patterns[special]['#'] =  function() {
-                                return processMethod(special, specialData);
+                            });
+                        } else {
+                            patterns[special] = {
+                                '($$)<': function() {
+                                    return processMethod(special, specialData);
+                                }
                             };
                         }
                     })(key, tmp[key]);
@@ -2410,8 +2398,8 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
             }
 
             if (declExt.methods) {
-                patterns.method = {
-                    '*': function() {
+                patterns[''] = {
+                    '($$)<': function() {
                         return processMethod();
                     }
                 };
@@ -2747,24 +2735,6 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
 
                 cmd.getCodeBefore = function() {
                     return 'this.destroy();';
-                };
-            }
-        };
-
-        pattern['^'] = {
-            '(': function() {
-                cmd.hasSubblock = true;
-                cooPushScopeVariable(cmd, cmd.parts[0].name);
-
-                cmd.getCodeBefore = function() {
-                    var ret = [];
-
-                    ret.push(cmd.parts[0].name);
-                    ret.push(' = new CooCoo.DOMBuilder(');
-                    ret.push(cooValueToJS(cmd, cmd.parts[1]));
-                    ret.push(');');
-
-                    return ret.join('');
                 };
             }
         };

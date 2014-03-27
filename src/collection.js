@@ -198,19 +198,21 @@
                     actualName: 'model',
                     required: true,
 
-                    tuneCommand: function(cmd) {
-                        return cooMatchCommand(cmd, {
-                            'model': {
-                                '@': function() {
-                                    cmd.hasSubblock = true;
-                                    cooAssertShouldBeHolder(cmd);
-                                },
+                    getPatterns: function(callback) {
+                        return {
+                            '@': function(cmd) { cmd.hasSubblock = true; return callback(); },
+                            '': function() { return callback(); }
+                        }
+                    },
 
-                                '': function() {
-                                    cmd.hasSubblock = false;
-                                }
-                            }
-                        });
+                    extractParams: function(cmd) {
+                        var ret = {};
+
+                        if (cmd.parts[1]) {
+                            ret[cmd.parts[1].value] = true;
+                        }
+
+                        return ret;
                     },
 
                     getCodeBefore: function(cmd) {
