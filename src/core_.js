@@ -19,7 +19,7 @@
                 (render ? new CooCooRenderRet() : new CooCooRet());
         },
 
-        cooUnwrap = CooCoo.unwrap = function(val) {
+        cooUnwrap = CooCoo.u = function(val) {
             return val instanceof CooCooRet || val instanceof CooCooRenderRet ?
                 val.valueOf()
                 :
