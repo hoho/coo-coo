@@ -5,6 +5,11 @@
     /* global cooValueToJS */
     /* global cooAssertNotValuePusher */
     /* global cooProcessBlockAsValue */
+    /* global COO_COMMAND_PART_VARIABLE */
+    /* global COO_COMMAND_PART_PROPERTY */
+    /* global cooAssertHasSubcommands */
+    /* global cooCheckProperty */
+    /* global cooWrapWithTypeCheck */
 
     function setFromBody(cmd) {
         // set identifier

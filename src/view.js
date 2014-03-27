@@ -5,10 +5,9 @@
     /* global cooValueToJS */
     /* global cooGetDecl */
     /* global cooGetParamValues */
-    /* global cooAssertValuePusher */
     /* global cooProcessParams */
     /* global cooProcessCreateCommand */
-
+    /* global cooAssertValuePusherOrDOMPusher */
 
     cooObjectBase(
         {
