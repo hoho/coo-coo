@@ -9,7 +9,7 @@
         var i;
 
         for (i = 0; i < args.length; i++) {
-            args[i] = CooCoo.unwrap(args[i]);
+            args[i] = CooCoo.u(args[i]);
         }
     }
 
@@ -54,7 +54,7 @@
                 h = handlers[id];
 
             self.id = id;
-            self.node = CooCoo.unwrap(node);
+            self.node = CooCoo.u(node);
             self.parent = parent;
 
             if (h) {

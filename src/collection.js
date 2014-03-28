@@ -1,15 +1,14 @@
 (function() {
     /* global cooObjectBase */
-    /* global cooMatchCommand */
     /* global cooGetScopeVariablesDecl */
     /* global cooGetScopeRet */
     /* global cooProcessBlockAsValue */
     /* global cooValueToJS */
-    /* global cooAssertNotValuePusher */
+    /* global cooAssertNotRetPusher */
     /* global cooCreateScope */
     /* global cooPushScopeVariable */
     /* global cooGetDecl */
-    /* global cooAssertValuePusher */
+    /* global cooAssertRetPusher */
     /* global cooWrapWithTypeCheck */
     /* global cooWrapRet */
     /* global cooAssertShouldBeHolder */
@@ -19,7 +18,7 @@
             // collection identifier (expr) each identifier
             // this each identifier
             cmd.hasSubblock = true;
-            cooAssertNotValuePusher(cmd);
+            cooAssertNotRetPusher(cmd);
 
             cooCreateScope(cmd);
             cooPushScopeVariable(cmd, cmd.parts[self ? 2 : 4].value, false, true);
@@ -69,8 +68,8 @@
                 //     ...
                 cmd.hasSubblock = true;
 
-                cooAssertShouldBeHolder(cmd);
-                cooAssertNotValuePusher(cmd);
+                //cooAssertShouldBeHolder(cmd);
+                cooAssertNotRetPusher(cmd);
 
                 return cooProcessBlockAsValue(cmd, {
                     getCodeBeforeBefore: function() {
@@ -90,7 +89,7 @@
             '(': function(cmd) {
                 // collection identifier (expr) add (expr2)
                 // this add (expr)
-                cooAssertNotValuePusher(cmd);
+                cooAssertNotRetPusher(cmd);
 
                 cmd.getCodeBefore = function() {
                     if (!self) {
@@ -115,7 +114,7 @@
         return function(cmd) {
             // collection identifier (expr) length
             // this length
-            cooAssertValuePusher(cmd);
+            cooAssertRetPusher(cmd);
 
             cmd.getCodeBefore = function() {
                 if (!self) {
@@ -153,7 +152,7 @@
                 '(': function processEach(cmd) {
                     // collection identifier (expr) find identifier (expr)
                     // this find identifier (expr)
-                    cooAssertValuePusher(cmd);
+                    cooAssertRetPusher(cmd);
 
                     cooCreateScope(cmd);
                     cooPushScopeVariable(cmd, cmd.parts[self ? 2 : 4].value, false, true);
@@ -202,7 +201,7 @@
                         return {
                             '@': function(cmd) { cmd.hasSubblock = true; return callback(); },
                             '': function() { return callback(); }
-                        }
+                        };
                     },
 
                     extractParams: function(cmd) {

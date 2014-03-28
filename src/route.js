@@ -10,7 +10,7 @@
     /* global cooCreateScope */
     /* global cooMatchCommand */
     /* global cooGetParamsDecl */
-    /* global cooAssertNotValuePusher */
+    /* global cooAssertNotRetPusher */
     /* global cooGetDecl */
 
     function createRouteMethod(actualName) {
@@ -18,7 +18,7 @@
             actualName: actualName,
 
             getPatterns: function(callback) {
-                return {'#': function() { return callback(); }}
+                return {'#': function() { return callback(); }};
             },
 
             extractParams: function(cmd) {
@@ -112,7 +112,7 @@
                     var ret;
 
                     if (cmd.hasRet) {
-                        ret = INDENT + 'return CooCoo.unwrap(' + cmd.valueTaker.valueHolder + ');\n';
+                        ret = INDENT + 'return CooCoo.u(' + cmd.valueTaker.valueHolder + ');\n';
                     } else {
                         ret = '';
                     }
@@ -157,7 +157,7 @@
                     '*': function() {
                         // route identifier ...
                         //     ...
-                        cooAssertNotValuePusher(cmd);
+                        cooAssertNotRetPusher(cmd);
 
                         if (cmd.parent.hasOtherwise) {
                             return cmd.parts[0];
@@ -195,7 +195,7 @@
             'otherwise': function() {
                 // otherwise
                 //     ...
-                cooAssertNotValuePusher(cmd);
+                cooAssertNotRetPusher(cmd);
 
                 if (cmd.parent.hasOtherwise) {
                     return cmd.parts[0];
@@ -227,7 +227,7 @@
             var routesFunc = function() {
                 // routes [once]
                 //     ...
-                cooAssertNotValuePusher(cmd);
+                cooAssertNotRetPusher(cmd);
                 cmd.hasSubblock = true;
                 cmd.processChild = routeProcessChoices;
 

@@ -54,7 +54,7 @@
                 i,
                 model;
 
-            val = CooCoo.unwrap(val);
+            val = CooCoo.u(val);
 
             if (val !== undefined) {
                 if (!(val instanceof Array)) {

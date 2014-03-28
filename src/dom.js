@@ -6,8 +6,8 @@
     /* global cooGetScopeVariablesDecl */
     /* global cooWrapRet */
     /* global cooAssertHasSubcommands */
-    /* global cooAssertValuePusher */
-    /* global cooAssertNotValuePusher */
+    /* global cooAssertRetPusher */
+    /* global cooAssertNotRetPusher */
     /* global cooProcessBlockAsValue */
     /* global cooGetScopeRet */
 
@@ -19,7 +19,7 @@
         return {
             '#': function(cmd) {
                 // dom (expr) class add (expr2) ...
-                cooAssertNotValuePusher(cmd);
+                cooAssertNotRetPusher(cmd);
 
                 cmd.getCodeBefore = function() {
                     var ret = [];
@@ -51,7 +51,7 @@
     function getGetter(method, params) {
         return function(cmd) {
             // dom (expr) value get
-            cooAssertValuePusher(cmd);
+            cooAssertRetPusher(cmd);
 
             cmd.getCodeBefore = function() {
                 var ret = [],
@@ -92,7 +92,7 @@
                         cmd.processChild = domProcessEvents;
 
                         cmd.getCodeBefore = function() {
-                            cooAssertNotValuePusher(cmd);
+                            cooAssertNotRetPusher(cmd);
                             cooAssertHasSubcommands(cmd);
 
                             var ret = [];
@@ -132,7 +132,7 @@
                         '@': function() {
                             // dom (expr) append
                             //     ...
-                            cooAssertNotValuePusher(cmd);
+                            cooAssertNotRetPusher(cmd);
                             cmd.renderRet = true;
 
                             return cooProcessBlockAsValue(cmd, {
@@ -155,7 +155,7 @@
 
                         '(': function() {
                             // dom (expr) append (expr2)
-                            cooAssertNotValuePusher(cmd);
+                            cooAssertNotRetPusher(cmd);
 
                             cmd.getCodeBefore = function() {
                                 var ret = [];
@@ -182,7 +182,7 @@
                         '(': {
                             '#': function() {
                                 // dom (expr) trigger (expr) (expr2) ...
-                                cooAssertNotValuePusher(cmd);
+                                cooAssertNotRetPusher(cmd);
 
                                 cmd.getCodeBefore = function() {
                                     var ret = [];

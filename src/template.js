@@ -8,7 +8,7 @@
     /* global cooProcessParam */
     /* global cooGetParamValues */
     /* global cooGetScopeVariablesDecl */
-    /* global cooAssertValuePusher */
+    /* global cooAssertRetPusherOrDOMPusher */
 
 
     function templateProcess(cmd) {
@@ -26,7 +26,7 @@
                     '(': {
                         'apply': {
                             '#': function() {
-                                cooAssertValuePusher(cmd);
+                                cooAssertRetPusherOrDOMPusher(cmd);
 
                                 var paramValues;
 

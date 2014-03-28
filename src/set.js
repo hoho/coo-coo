@@ -3,7 +3,7 @@
     /* global cooPushScopeVariable */
     /* global cooWrapRet */
     /* global cooValueToJS */
-    /* global cooAssertNotValuePusher */
+    /* global cooAssertNotRetPusher */
     /* global cooProcessBlockAsValue */
     /* global COO_COMMAND_PART_VARIABLE */
     /* global COO_COMMAND_PART_PROPERTY */
@@ -14,7 +14,7 @@
     function setFromBody(cmd) {
         // set identifier
         //     ...
-        cooAssertNotValuePusher(cmd);
+        cooAssertNotRetPusher(cmd);
 
         if (cmd.parts[1].type === COO_COMMAND_PART_VARIABLE) {
             cooPushScopeVariable(cmd.parent, cmd.parts[1].value);
@@ -100,7 +100,7 @@
         var name = cmd.parts[1].value,
             val = cmd.parts[2];
 
-        cooAssertNotValuePusher(cmd);
+        cooAssertNotRetPusher(cmd);
 
         if (cmd.parts[1].type === COO_COMMAND_PART_VARIABLE) {
             cooPushScopeVariable(cmd.parent, name);

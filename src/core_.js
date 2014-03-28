@@ -32,7 +32,11 @@
             return obj && (obj.constructor === objConstructor);
         },
 
-        CooCooHolder = CooCoo.Holder = function() {
+        CooCooHolder = CooCoo.DOMHolder = function() {
+        },
+
+        CooCooPusher = CooCoo.DOMPusher = function(parent) {
+            this._p = parent;
         };
 
 
@@ -42,6 +46,10 @@
 
     CooCooHolder.prototype.push = function(data) {
         this._cb && this._cb(data);
+    };
+
+    CooCooPusher.prototype.push = function(node) {
+        this._p.appendChild(node);
     };
 
 

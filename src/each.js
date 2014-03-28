@@ -1,7 +1,7 @@
 (function() {
     /* global cooMatchCommand */
     /* global cooValueToJS */
-    /* global cooAssertNotValuePusher */
+    /* global cooAssertNotRetPusher */
     /* global cooCreateScope */
     /* global cooPushScopeVariable */
 
@@ -17,7 +17,7 @@
                 //     ...
                 // each key val (expr)
                 //     ...
-                cooAssertNotValuePusher(cmd);
+                cooAssertNotRetPusher(cmd);
                 cmd.hasSubblock = true;
 
                 cooCreateScope(cmd);
