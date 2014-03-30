@@ -10,6 +10,7 @@
 
         CooCooRenderRet = function() {
             this._ = document.createDocumentFragment();
+            this._e = [];
         },
 
         CooCooRet = CooCoo.Ret = function(render) {
@@ -20,10 +21,7 @@
         },
 
         cooUnwrap = CooCoo.u = function(val) {
-            return val instanceof CooCooRet || val instanceof CooCooRenderRet ?
-                val.valueOf()
-                :
-                val;
+            return val instanceof CooCooRet ? val.valueOf() : val;
         },
 
         isPlainObject = function(obj) {
@@ -33,23 +31,53 @@
         },
 
         CooCooHolder = CooCoo.DOMHolder = function() {
+            // Creating comment node as placeholder.
+            this._n = document.createComment(' CooCoo Holder ');
+
+            // `this._e` will be set in case this holder is a part of top-level
+            // nodes of CooCooRenderRet. This is the way to track view nodes
+            // and remove them with view destruction.
         },
 
         CooCooPusher = CooCoo.DOMPusher = function(parent) {
-            this._p = parent;
+            this._ = parent;
+        },
+
+        pushElement = function pushElement(dst, node) {
+            /* jshint browser: true */
+            if (dst && (node instanceof Node)) {
+                if (node.nodeType === 11) {
+                    // It's a document fragment.
+                    node = node.firstChild;
+                    while (node) {
+                        dst.push(node);
+                        node = node.nextSibling;
+                    }
+                } else {
+                    dst.push(node);
+                }
+            }
+            /* jshint browser: false */
         };
 
 
-    CooCooHolder.prototype.on = function(callback) {
-        this._cb = callback;
-    };
+    CooCooHolder.prototype.push = function(node) {
+        var self = this,
+            n = self._n,
+            e = self._e;
 
-    CooCooHolder.prototype.push = function(data) {
-        this._cb && this._cb(data);
-    };
+        if (n.parentNode) {
+            if (node instanceof CooCooHolder) {
+                node._e = e;
+                node = node._n;
+            }
 
-    CooCooPusher.prototype.push = function(node) {
-        this._p.appendChild(node);
+            pushElement(e, node);
+
+            // XXX: Might not work for all the cases,
+            //      do think about it further.
+            n.parentNode.insertBefore(node, n);
+        }
     };
 
 
@@ -60,18 +88,10 @@
 
 
     CooCooRet.prototype.push = function(val) {
-        val = cooUnwrap(val);
-
-        if (val !== undefined) {
-            if (this._ !== undefined) {
-                throw new Error('Too many results');
-            }
-
-            this._ = val;
-        }
+        this._ = cooUnwrap(val);
     };
 
-    CooCooRet.prototype.valueOf = CooCooRenderRet.prototype.valueOf = function() {
+    CooCooRet.prototype.valueOf = function() {
         return this._;
     };
 
@@ -79,14 +99,17 @@
         return this._ === undefined;
     };
 
-    CooCooRenderRet.prototype.push = function(val) {
+    CooCooRenderRet.prototype.push = CooCooPusher.prototype.push = function(val) {
+        var e = this._e;
+
         val = cooUnwrap(val);
 
         if (val instanceof CooCooHolder) {
-            var tmp = document.createComment(' CooCoo Holder ');
-            tmp._cooHolder = val;
-            val = tmp;
+            val._e = e;
+            val = val._n;
         }
+
+        pushElement(e, val);
 
         this._.appendChild(val);
     };

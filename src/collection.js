@@ -11,7 +11,6 @@
     /* global cooAssertRetPusher */
     /* global cooWrapWithTypeCheck */
     /* global cooWrapRet */
-    /* global cooAssertShouldBeHolder */
 
     function getEachHandler(self) {
         return function processEach(cmd) {

@@ -7,7 +7,6 @@
     /* global cooGetParamValues */
     /* global cooProcessParams */
     /* global cooProcessCreateCommand */
-    /* global cooAssertValuePusherOrDOMPusher */
 
     cooObjectBase(
         {

@@ -97,7 +97,7 @@
             },
 
             '(': {
-                '': function() {
+                '($$)<': function() {
                     cmd.hasSubblock = true;
 
                     cooCreateScope(cmd);

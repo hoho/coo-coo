@@ -1,37 +1,4 @@
 (function(CooCoo) {
-    function pushElements(elem, elems) {
-        /* jshint browser: true */
-        if (elem instanceof Node) {
-            if (elem.nodeType === 11) {
-                // It's a document fragment.
-                elem = elem.firstChild;
-                while (elem) {
-                    elems.push(elem);
-                    elem = elem.nextSibling;
-                }
-            } else {
-                elems.push(elem);
-            }
-
-            for (var i = 0; i < elems.length; i++) {
-                elem = elems[i];
-                if (elem._cooHolder) {
-                    (function(holder) {
-                        holder._cooHolder.on(function(data) {
-                            if (holder.parentNode) {
-                                // XXX: Might not work for all the cases,
-                                //      do think about it further.
-                                holder.parentNode.insertBefore(data, holder);
-                            }
-                            pushElements(data, elems);
-                        });
-                    })(elem);
-                }
-            }
-        }
-        /* jshint browser: false */
-    }
-
     CooCoo.View = {};
 
     CooCoo.ViewBase = CooCoo.Base.extend({
@@ -50,9 +17,9 @@
             var self = this,
                 ret = self.__render.apply(self, arguments);
 
-            pushElements(ret.valueOf(), (self.__elems = []));
+            self.__elems = ret._e;
 
-            return ret;
+            return ret._;
         },
 
         __render: function() {},

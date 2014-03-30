@@ -2186,7 +2186,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
             } else {
                 cmd.hasSubblock = true;
                 if (cmd.children.length) {
-                    cooAssertShouldBeHolder(cmd);
+                    //cooAssertShouldBeHolder(cmd);
                 }
                 cooCreateScope(cmd);
             }
@@ -2455,7 +2455,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
 
                     cmd.hasSubblock = true;
 
-                    cooAssertShouldBeHolder(cmd);
+                    //cooAssertShouldBeHolder(cmd);
 
                     cmd.file.errorNotImplemented(cmd.parts[0]);
                 },
