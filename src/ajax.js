@@ -101,7 +101,7 @@
             'data': getValueGetter(cmd, 'data', 'Duplicate data'),
 
             'success': {
-                '*': function(cmd) {
+                '($)': function(cmd) {
                     checkForDuplicate(cmd, 'success', 'Duplicate success');
 
                     if (cmd.parts.length > 2) {
