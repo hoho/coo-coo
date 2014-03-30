@@ -3,7 +3,7 @@
     /* global cooGetScopeVariablesDecl */
     /* global COO_COMMAND_PART_STRING */
     /* global COO_COMMAND_PART_JS */
-    /* global COO_COMMAND_PART_IDENTIFIER */
+    /* global COO_COMMAND_PART_VARIABLE */
     /* global cooExtractParamNames */
     /* global INDENT */
     /* global cooRunGenerators */
@@ -18,7 +18,10 @@
             actualName: actualName,
 
             getPatterns: function(callback) {
-                return {'#': function() { return callback(); }};
+                return {
+                    '#': function() { return callback(); },
+                    '($$)': function() { return callback(); }
+                };
             },
 
             extractParams: function(cmd) {
@@ -45,7 +48,7 @@
                         cmd.parts[1].type === COO_COMMAND_PART_JS)
                     {
                         params = {};
-                    } else if (cmd.parts[1].type === COO_COMMAND_PART_IDENTIFIER) {
+                    } else if (cmd.parts[1].type === COO_COMMAND_PART_VARIABLE) {
                         params = cooExtractParamNames(cmd, cmd.parts, 1);
                     } else {
                         cmd.file.errorUnexpectedPart(cmd.parts[1]);
@@ -60,7 +63,9 @@
             },
 
             tuneCommand: function(cmd) {
-                if (cmd.parts[1] && cmd.parts[1].type !== COO_COMMAND_PART_IDENTIFIER) {
+                cmd.hasSubblock = true;
+
+                if (cmd.parts[1] && cmd.parts[1].type !== COO_COMMAND_PART_VARIABLE) {
                     cmd.hasSubblock = false;
                 }
 
@@ -112,7 +117,7 @@
                     var ret;
 
                     if (cmd.hasRet) {
-                        ret = INDENT + 'return CooCoo.u(' + cmd.valueTaker.valueHolder + ');\n';
+                        ret = INDENT + 'return CooCoo.u(' + cmd.retName + ');\n';
                     } else {
                         ret = '';
                     }
@@ -154,7 +159,7 @@
         return cooMatchCommand(cmd, {
             'route': {
                 '': {
-                    '*': function() {
+                    '($$)': function() {
                         // route identifier ...
                         //     ...
                         cooAssertNotRetPusher(cmd);

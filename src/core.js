@@ -1202,7 +1202,7 @@ CooFile.prototype = {
         return part;
     },
 
-    readIdentifier: function(noGetters, terminal) {
+    readIdentifier: function(noProperties, terminal) {
         var part,
             type,
             line = this.code[this.lineAt],
@@ -1212,17 +1212,17 @@ CooFile.prototype = {
         switch (line[this.charAt]) {
             /* jshint -W086 */
             case '@':
-                if (!noGetters) {
+                if (!noProperties) {
                     type = COO_COMMAND_PART_PROPERTY;
                     nextChar = 1;
                     break;
                 }
+
             case '$':
-                if (!noGetters) {
-                    type = COO_COMMAND_PART_VARIABLE;
-                    nextChar = 1;
-                    break;
-                }
+                type = COO_COMMAND_PART_VARIABLE;
+                nextChar = 1;
+                break;
+
             default:
                 type = COO_COMMAND_PART_IDENTIFIER;
             /* jshint +W086 */
@@ -1296,6 +1296,7 @@ CooFile.prototype = {
                         if (this.code[this.lineAt][this.charAt] !== '>') {
                             this.skipWhitespaces();
                         }
+                    } else if (this.code[this.lineAt][this.charAt] === '(') {
                     } else {
                         val.push(this.readIdentifier(true, '>'));
                     }

@@ -1,4 +1,4 @@
-/* global COO_COMMAND_PART_IDENTIFIER */
+/* global COO_COMMAND_PART_VARIABLE */
 /* global COO_COMMAND_PART_JS */
 /* global cooValueToJS */
 
@@ -41,7 +41,7 @@ CooCoo.cmd.js = {
                 file.errorUnexpectedPart(part.value[0]);
             }
 
-            if (part.value[1].type !== COO_COMMAND_PART_IDENTIFIER) {
+            if (part.value[1].type !== COO_COMMAND_PART_VARIABLE) {
                 file.errorUnexpectedPart(part.value[1]);
             }
 
