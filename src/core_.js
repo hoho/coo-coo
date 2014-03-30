@@ -100,6 +100,7 @@
     };
 
     CooCooRenderRet.prototype.push = CooCooPusher.prototype.push = function(val) {
+        // TODO: This element tracking is ugly and buggy. Redo it completely.
         var e = this._e;
 
         val = cooUnwrap(val);

@@ -14,8 +14,8 @@
 
     function getEachHandler(self) {
         return function processEach(cmd) {
-            // collection identifier (expr) each identifier
-            // this each identifier
+            // collection identifier (expr) each $var
+            // this each $var
             cmd.hasSubblock = true;
             cooAssertNotRetPusher(cmd);
 
@@ -147,10 +147,10 @@
 
     function getFindHandler(self) {
         return {
-            '': {
+            '($)': {
                 '(': function processEach(cmd) {
-                    // collection identifier (expr) find identifier (expr)
-                    // this find identifier (expr)
+                    // collection identifier (expr) find $var (expr)
+                    // this find $var (expr)
                     cooAssertRetPusher(cmd);
 
                     cooCreateScope(cmd);
@@ -252,7 +252,7 @@
                         'add': getAddHandlers(false),
 
                         'each': {
-                            '': {
+                            '($)': {
                                 '@': getEachHandler(false),
                                 '(': getEachHandler(false)
                             }
@@ -269,7 +269,7 @@
                 'add': getAddHandlers(true),
 
                 'each': {
-                    '': {
+                    '($)': {
                         '@': getEachHandler(true),
                         '(': getEachHandler(true)
                     }
