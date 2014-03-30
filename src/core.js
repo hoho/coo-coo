@@ -1835,14 +1835,14 @@ function cooGetProcessParamsAndEvents(hasParams, events) {
                         patterns.on[name] = {
                             '(': {
                                 '($$)<': function() {
-                                    // event (expr) identifier identifier2 ...
+                                    // event (expr) $var $var2 ...
                                     return cooProcessEvent(cmd, true, 3, event.actualName);
                                 }
                             },
 
                             '': {
                                 '($$)<': function() {
-                                    // event identifier identifier2 ...
+                                    // event $var $var2 ...
                                     return cooProcessEvent(cmd, false, 2, event.actualName);
                                 }
                             }
@@ -1850,7 +1850,7 @@ function cooGetProcessParamsAndEvents(hasParams, events) {
                     } else {
                         patterns.on[name] = {
                             '($$)<': function() {
-                                // add identifier identifier2 ...
+                                // add $var $var2 ...
                                 return cooProcessEvent(cmd, false, 2, event.actualName);
                             }
                         };
@@ -1861,7 +1861,7 @@ function cooGetProcessParamsAndEvents(hasParams, events) {
 
         patterns.on['('] = {
             '($$)<': function() {
-                // "custom-event" identifier identifier2 ...
+                // "custom-event" $var $var2 ...
                 return cooProcessEvent(cmd, false, 2);
             }
         };
@@ -2449,9 +2449,9 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
             setPatterns;
 
         setPatterns = {
-            '': {
+            '(@)': {
                 '@': function() {
-                    // `name` identifier (something) set identifier
+                    // `name` identifier (something) set @prop
 
                     cmd.hasSubblock = true;
 
@@ -2461,7 +2461,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                 },
 
                 '(': function() {
-                    // `name` identifier (something) set identifier (expr)
+                    // `name` identifier (something) set @prop (expr)
                     cooAssertNotRetPusher(cmd);
 
                     cmd.getCodeBefore = function() {
@@ -2533,8 +2533,8 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                             };
                         },
 
-                        '': function() {
-                            // `name` identifier (something) get identifier
+                        '(@)': function() {
+                            // `name` identifier (something) get @prop
                             cooAssertRetPusher(cmd);
 
                             cmd.getCodeBefore = function() {

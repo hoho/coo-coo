@@ -226,27 +226,27 @@
 
     function getProcessEventFunc(hasParam) {
         return function(cmd) {
-            // (expr)
+            // on (expr)
             // or
-            // (expr) identifier
+            // on (expr) $var
             cmd.hasSubblock = true;
             cmd.isAsync = true;
 
             cooCreateScope(cmd);
 
             if (hasParam) {
-                cooPushScopeVariable(cmd, cmd.parts[1].value, false, true);
+                cooPushScopeVariable(cmd, cmd.parts[2].value, false, true);
             }
 
             cmd.getCodeBefore = function() {
                 var ret = [];
 
                 ret.push('.on(');
-                ret.push(cooValueToJS(cmd, cmd.parts[0]));
+                ret.push(cooValueToJS(cmd, cmd.parts[1]));
                 ret.push(', function(');
 
                 if (hasParam) {
-                    ret.push(cmd.parts[1].value);
+                    ret.push(cmd.parts[2].value);
                 }
 
                 ret.push(') {');
@@ -272,9 +272,11 @@
 
     function domProcessEvents(cmd) {
         return cooMatchCommand(cmd, {
-            '(': {
-                '@': getProcessEventFunc(false),
-                '': getProcessEventFunc(true)
+            'on': {
+                '(': {
+                    '@': getProcessEventFunc(false),
+                    '($)': getProcessEventFunc(true)
+                }
             }
         });
     }
