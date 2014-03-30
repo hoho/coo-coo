@@ -1,15 +1,14 @@
 application
-    construct parentNode
-        // +view Page [+view Page create] render
-        // +view Page render
-        dom $parentNode append [+view Page render]
+    construct $parent
+        ^$parent
+            *view Page render
 
 
 model Item
-    property title<String>
+    @title<String>
 
-    construct title
-        this set title $title
+    construct $title
+        set @title $title
 
 
 collection List
@@ -17,58 +16,61 @@ collection List
 
 
 view Item
-    property model<model Item>
-    property textNode<Node>
+    @model<model Item>
+    @textNode<dom>
 
-    construct m
-        this set model $m
+    construct $m
+        set @model $m
 
         model Item $m
-            change "title" val
+            on change "title" $val
                 dom @textNode text set $val
 
-            destroy
-                this destroy
+            on destroy
+                destroy
 
-    render
-        +template "conkitty:item" apply
-            param
-                +model Item @model get title
+    ^render
+        *template "conkitty:item" apply
+            =param
+                +model Item @model get @title
 
-            "text" node
-                this set textNode $node
+            "text" $node
+                set @textNode $node
 
-            "remove" node
+            "remove" $node
                 dom $node
-                    "click"
+                    on "click" $e
                         model Item @model destroy
 
 
 view Page
-    property container<Node>
-    property input<Node>
-    property list<collection List>
+    @container<dom>
+    @input<dom>
+    @list<collection List>
 
     construct
-        this set list
+        =set @list
             +collection List create
-                add m
-                    this call addItem $m
+                on add $m
+                    call addItem $m
 
-    render
-        +template "conkitty:page" apply
-            "container" node
-                this set container $node
+    ^render
+        *js
+            return document.createElement('a');
 
-            "input" node
-                this set input $node
+        *template "conkitty:page" apply
+            "container" $node
+                set @container $node
 
-            "add" node
+            "input" $node
+                set @input $node
+
+            "add" $node
                 dom $node
-                    "click"
+                    on "click"
                         collection List @list add [+dom @input value get]
                         dom @input value set ""
 
-    method addItem m
-        dom @container append
-            +view Item render $m
+    addItem $m
+        ^@container
+            *view Item render $m

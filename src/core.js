@@ -970,7 +970,8 @@ CooFile.prototype = {
                         }
                     });
                 } else {
-                    var cmdName = cmd.name === 'this' || !cmd.name ? cmd.root.name : cmd.name,
+                    var thisCmds = {'this': true, 'call': true, 'trigger': true, 'destroy': true},
+                        cmdName = (cmd.name in thisCmds) || !cmd.name ? cmd.root.name : cmd.name,
                         commandHandlers = CooCoo.cmd[cmdName];
 
                     if (commandHandlers) {
@@ -2646,108 +2647,108 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                 cmd.getCodeAfter = function() {
                     return ';';
                 };
-            },
+            }
+        };
 
-            'call': {
-                '': {
-                    '#': function() {
-                        // this call identifier (expr) (expr) ...
-                        cmd.hasSubblock = true;
-                        cmd.processChild = cooProcessParams;
+        pattern.call = {
+            '': {
+                '#': function() {
+                    // call identifier (expr) (expr) ...
+                    cmd.hasSubblock = true;
+                    cmd.processChild = cooProcessParams;
 
-                        cmd.getCodeBefore = function() {
-                            var params = cooExtractParamValues(cmd, 3);
+                    cmd.getCodeBefore = function() {
+                        var params = cooExtractParamValues(cmd, 2);
 
-                            if (!(cmd.parts[2].value in cmd.root.data.methods)) {
-                                cmd.file.errorUnknownMethod(cmd.parts[2]);
-                            }
-
-                            var ret = [],
-                                retWrap = cooWrapRet(cmd);
-
-                            ret.push(retWrap[0]);
-                            ret.push('this.');
-                            ret.push(cmd.parts[2].value);
-                            ret.push('(');
-                            ret.push(cooGetParamValues(cmd, params, cmd.data.elemParams));
-                            ret.push(')');
-                            ret.push(retWrap[1]);
-
-                            return ret.join('');
-                        };
-                    }
-                }
-            },
-
-            'trigger': {
-                '': {
-                    '#': function() {
-                        // this trigger identifier (expr) (expr) ...
-                        cooAssertNotRetPusher(cmd);
-
-                        var events = CooCoo.cmd[cmd.root.name].triggers || {},
-                            event = events[cmd.parts[2].value];
-
-                        if (!event) {
-                            cmd.parts[2].error = 'You can\'t trigger this event';
-                            cmd.file.errorUnexpectedPart(cmd.parts[2]);
+                        if (!(cmd.parts[1].value in cmd.root.data.methods)) {
+                            cmd.file.errorUnknownMethod(cmd.parts[1]);
                         }
 
-                        cmd.getCodeBefore = function() {
-                            var ret = [];
+                        var ret = [],
+                            retWrap = cooWrapRet(cmd);
 
-                            ret.push('this.trigger("');
-                            ret.push(event.actualName);
-                            ret.push('"');
+                        ret.push(retWrap[0]);
+                        ret.push('this.');
+                        ret.push(cmd.parts[1].value);
+                        ret.push('(');
+                        ret.push(cooGetParamValues(cmd, params, cmd.data.elemParams));
+                        ret.push(')');
+                        ret.push(retWrap[1]);
 
-                            var params = cooExtractParamValues(cmd, 3);
+                        return ret.join('');
+                    };
+                }
+            }
+        };
 
-                            if (params.length) {
-                                ret.push(', ');
-                                ret.push(params.join(', '));
-                            }
+        pattern.trigger = {
+            '': {
+                '#': function() {
+                    // trigger identifier (expr) (expr) ...
+                    cooAssertNotRetPusher(cmd);
 
-                            ret.push(');');
+                    var events = CooCoo.cmd[cmd.root.name].triggers || {},
+                        event = events[cmd.parts[1].value];
 
-                            return ret.join('');
-                        };
+                    if (!event) {
+                        cmd.parts[2].error = 'You can\'t trigger this event';
+                        cmd.file.errorUnexpectedPart(cmd.parts[1]);
                     }
-                },
 
-                '(': {
-                    '#': function() {
-                        // this trigger "custom-event" (expr) (expr) ...
-                        cooAssertNotRetPusher(cmd);
+                    cmd.getCodeBefore = function() {
+                        var ret = [];
 
-                        cmd.getCodeBefore = function() {
-                            var ret = [];
+                        ret.push('this.trigger("');
+                        ret.push(event.actualName);
+                        ret.push('"');
 
-                            ret.push('this.trigger(');
-                            ret.push(cooValueToJS(cmd, cmd.parts[2]));
+                        var params = cooExtractParamValues(cmd, 2);
 
-                            var params = cooExtractParamValues(cmd, 3);
+                        if (params.length) {
+                            ret.push(', ');
+                            ret.push(params.join(', '));
+                        }
 
-                            if (params.length) {
-                                ret.push(', ');
-                                ret.push(params.join(', '));
-                            }
+                        ret.push(');');
 
-                            ret.push(');');
-
-                            return ret.join('');
-                        };
-                    }
+                        return ret.join('');
+                    };
                 }
             },
 
-            'destroy': function() {
-                // this destroy
-                cooAssertNotRetPusher(cmd);
+            '(': {
+                '#': function() {
+                    // trigger "custom-event" (expr) (expr) ...
+                    cooAssertNotRetPusher(cmd);
 
-                cmd.getCodeBefore = function() {
-                    return 'this.destroy();';
-                };
+                    cmd.getCodeBefore = function() {
+                        var ret = [];
+
+                        ret.push('this.trigger(');
+                        ret.push(cooValueToJS(cmd, cmd.parts[1]));
+
+                        var params = cooExtractParamValues(cmd, 2);
+
+                        if (params.length) {
+                            ret.push(', ');
+                            ret.push(params.join(', '));
+                        }
+
+                        ret.push(');');
+
+                        return ret.join('');
+                    };
+                }
             }
+        };
+
+        pattern.destroy = function() {
+            // this destroy
+            cooAssertNotRetPusher(cmd);
+
+            cmd.getCodeBefore = function() {
+                return 'this.destroy();';
+            };
         };
 
         return cooMatchCommand(cmd, extend(pattern, commandExt));
