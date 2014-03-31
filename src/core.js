@@ -2590,6 +2590,69 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                         }
                     },
 
+                    'trigger': {
+                        '': {
+                            '#': function() {
+                                // `name` identifier (something) trigger identifier (expr) (expr) ...
+                                cooAssertNotRetPusher(cmd);
+
+                                var events = CooCoo.cmd[cmd.parts[0].value].triggers || {},
+                                    event = events[cmd.parts[4].value];
+
+                                if (!event) {
+                                    cmd.parts[4].error = 'You can\'t trigger this event';
+                                    cmd.file.errorUnexpectedPart(cmd.parts[4]);
+                                }
+
+                                cmd.getCodeBefore = function() {
+                                    var ret = [];
+
+                                    ret.push(cooValueToJS(cmd, cmd.parts[2]));
+                                    ret.push('.trigger("');
+                                    ret.push(event.actualName);
+                                    ret.push('"');
+
+                                    var params = cooExtractParamValues(cmd, 5);
+
+                                    if (params.length) {
+                                        ret.push(', ');
+                                        ret.push(params.join(', '));
+                                    }
+
+                                    ret.push(');');
+
+                                    return ret.join('');
+                                };
+                            }
+                        },
+
+                        '(': {
+                            '#': function() {
+                                // `name` identifier (something) trigger "custom-event" (expr) (expr) ...
+                                cooAssertNotRetPusher(cmd);
+
+                                cmd.getCodeBefore = function() {
+                                    var ret = [];
+
+                                    ret.push(cooValueToJS(cmd, cmd.parts[2]));
+                                    ret.push('.trigger(');
+                                    ret.push(cooValueToJS(cmd, cmd.parts[4]));
+
+                                    var params = cooExtractParamValues(cmd, 5);
+
+                                    if (params.length) {
+                                        ret.push(', ');
+                                        ret.push(params.join(', '));
+                                    }
+
+                                    ret.push(');');
+
+                                    return ret.join('');
+                                };
+                            }
+                        }
+                    },
+
                     'destroy': function() {
                         // `name` identifier (something) destroy
                         cooAssertNotRetPusher(cmd);
@@ -2900,7 +2963,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                                 event = events[cmd.parts[1].value];
 
                             if (!event) {
-                                cmd.parts[2].error = 'You can\'t trigger this event';
+                                cmd.parts[1].error = 'You can\'t trigger this event';
                                 cmd.file.errorUnexpectedPart(cmd.parts[1]);
                             }
 
