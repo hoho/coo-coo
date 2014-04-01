@@ -100,7 +100,8 @@
                         (handler.events[event] = function(e) {
                             var meta = e.target,
                                 i,
-                                ret;
+                                ret = 0,
+                                lastRet = 0;
 
                             while (meta && !meta[id]) {
                                 meta = meta.parentNode;
@@ -109,11 +110,24 @@
                             if (meta && ((meta = meta[id]))) {
                                 funcs = meta.cb[event];
                                 for (i = 0; i < funcs.length; i++) {
-                                    ret = funcs[i].call(meta.parent, e);
+                                    lastRet = funcs[i].call(meta.parent, e);
 
-                                    if (ret === false) {
+                                    // (ret & 1) - prevent default.
+                                    // (ret & 2) - stop propagation.
+                                    // (ret & 4) - stop immediate propagation.
+
+                                    if (!(ret & 1) && (lastRet & 1)) {
                                         e.preventDefault();
+                                    }
+
+                                    if (!((ret & 2) || (ret & 4)) && ((lastRet & 2) || (lastRet & 4))) {
                                         e.stopPropagation();
+                                    }
+
+                                    ret |= lastRet;
+
+                                    if (ret & 4) {
+                                        break;
                                     }
                                 }
                             }
