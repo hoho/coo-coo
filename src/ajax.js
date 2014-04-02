@@ -109,6 +109,8 @@
                         cmd.file.errorUnexpectedPart(cmd.parts[2]);
                     }
 
+                    cmd.isAsync = true;
+
                     cooProcessBlockAsFunction(cmd, false, 1, {
                         getCodeBeforeBefore: function() {
                             return 'success: ';
@@ -127,6 +129,8 @@
                 '@': function() {
                     checkForDuplicate(cmd, 'error', 'Duplicate error');
 
+                    cmd.isAsync = true;
+
                     cooProcessBlockAsFunction(cmd, false, 1, {
                         getCodeBeforeBefore: function() {
                             return 'error: ';
@@ -144,6 +148,8 @@
             'complete': {
                 '@': function() {
                     checkForDuplicate(cmd, 'complete', 'Duplicate complete');
+
+                    cmd.isAsync = true;
 
                     cooProcessBlockAsFunction(cmd, false, 1, {
                         getCodeBeforeBefore: function() {
