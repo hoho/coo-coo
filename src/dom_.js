@@ -1,9 +1,14 @@
 /* global document */
 (function(CooCoo, document) {
-    var handlers = {},
-        CooCooDOM,
+    var CooCooDOM,
+        eventHandlers = {},
         captureEvents = {focus: true, blur: true},
         props = {checked: true};
+
+    function hasKeys(obj) {
+        for (obj in obj) { return true; }
+        return false;
+    }
 
     function unwrapArguments(args) {
         var i;
@@ -50,38 +55,46 @@
 
     CooCooDOM = CooCoo.DOM = CooCoo.Extendable.extend({
         init: function(parent, id, node) {
-            var self = this,
-                h = handlers[id];
+            var self = this;
 
             self.id = id;
             self.node = CooCoo.u(node);
             self.parent = parent;
-
-            if (h) {
-                h.count++;
-            } else {
-                handlers[id] = self._handlers = {
-                    count: 1,
-                    events: {} // events: {click: callback, ...}
-                };
-            }
-
-            node['_coo' + id] = {parent: parent, cb: {}};
+            self.events = {};
 
             CooCoo.DOM.__super__.init.call(self, parent);
         },
 
         destroy: function() {
             var self = this,
-                h = handlers[self.id],
-                event;
+                meta = self.node._coo,
+                events = self.events,
+                event,
+                tmp,
+                cur,
+                eventHandler;
 
-            if (h && !(--h.count)) {
-                h = h.events;
-                for (event in h) {
-                    document.body.removeEventListener(event, h[event]);
+
+            for (event in events) {
+                tmp = meta[event];
+                cur = tmp[self.id];
+                delete tmp[self.id];
+
+                if (!hasKeys(tmp)) {
+                    delete meta[event];
                 }
-                delete handlers[self.id];
+
+                eventHandler = eventHandlers[event];
+                eventHandler.count -= cur.cb.length;
+
+                if (!eventHandler.count) {
+                    document.body.removeEventListener(event, eventHandler.cb);
+                    delete eventHandlers[event];
+                }
+            }
+
+            if (!hasKeys(meta)) {
+                delete self.node._coo;
             }
 
             CooCooDOM.__super__.destroy.call(self);
@@ -89,57 +102,88 @@
 
         on: function(event, callback) {
             var self = this,
-                handler = self._handlers,
-                id = '_coo' + self.id,
-                funcs;
+                eventHandler,
+                cb,
+                meta;
 
-            if (handler) {
-                if (!handler.events[event]) {
-                    document.body.addEventListener(
-                        event,
-                        (handler.events[event] = function(e) {
-                            var meta = e.target,
-                                i,
-                                ret = 0,
-                                lastRet = 0;
+            if ((eventHandler = eventHandlers[event])) {
+                eventHandler.count++;
+            } else {
+                document.body.addEventListener(
+                    event,
+                    (cb = function(e) {
+                        var node = e.target,
+                            meta,
+                            id,
+                            funcs,
+                            parent,
+                            ret = 0,
+                            i;
 
-                            while (meta && !meta[id]) {
-                                meta = meta.parentNode;
-                            }
+                        while (node) {
+                            if (((meta = node._coo)) && ((meta = meta[event]))) {
+                                for (id in meta) {
+                                    funcs = meta[id];
+                                    parent = funcs.parent;
+                                    funcs = funcs.cb;
 
-                            if (meta && ((meta = meta[id]))) {
-                                funcs = meta.cb[event];
-                                for (i = 0; i < funcs.length; i++) {
-                                    lastRet = funcs[i].call(meta.parent, e);
+                                    for (i = 0; i < funcs.length; i++) {
+                                        /* jshint -W016 */
+                                        ret |= funcs[i].call(parent, e);
 
-                                    // (ret & 1) - prevent default.
-                                    // (ret & 2) - stop propagation.
-                                    // (ret & 4) - stop immediate propagation.
+                                        // (ret & 1) - prevent default.
+                                        // (ret & 2) - stop propagation.
+                                        // (ret & 4) - stop immediate propagation.
 
-                                    if (!(ret & 1) && (lastRet & 1)) {
-                                        e.preventDefault();
-                                    }
+                                        if ((ret & 1) && !e.defaultPrevented) {
+                                            e.preventDefault();
+                                        }
 
-                                    if (!((ret & 2) || (ret & 4)) && ((lastRet & 2) || (lastRet & 4))) {
-                                        e.stopPropagation();
-                                    }
-
-                                    ret |= lastRet;
-
-                                    if (ret & 4) {
-                                        break;
+                                        if (ret & 4) {
+                                            return;
+                                        }
+                                        /* jshint +W016 */
                                     }
                                 }
                             }
-                        }),
-                        event in captureEvents
-                    );
-                }
+
+                            /* jshint -W016 */
+                            if (ret & 2) {
+                                break;
+                            }
+                            /* jshint +W016 */
+                            node = node.parentNode;
+                        }
+                    }),
+                    event in captureEvents
+                );
+
+                eventHandlers[event] = {
+                    count: 1,
+                    cb: cb
+                };
             }
 
-            funcs = self.node[id].cb;
-            funcs = funcs[event] || (funcs[event] = []);
-            funcs.push(callback);
+            self.events[event] = true;
+
+            if (!(meta = self.node._coo)) {
+                meta = self.node._coo = {};
+            }
+
+            if (event in meta) {
+                meta = meta[event];
+            } else {
+                meta = meta[event] = {};
+            }
+
+            if (self.id in meta) {
+                meta[self.id].cb.push(callback);
+            } else {
+                meta[self.id] = {
+                    parent: self.parent,
+                    cb: [callback]
+                };
+            }
 
             return self;
         }
