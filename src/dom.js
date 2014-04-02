@@ -9,7 +9,9 @@
     /* global cooAssertRetPusher */
     /* global cooAssertNotRetPusher */
     /* global cooProcessBlockAsValue */
-    /* global cooGetScopeRet */
+    /* global cooGetNextRetName */
+    /* global cooAssertNotRetOrDOMTaker */
+    /* global INDENT */
 
     var DOM_FUNC = 'CooCoo.DOM',
         DOM_OBJ = 'new ' + DOM_FUNC;
@@ -74,6 +76,40 @@
 
                 return ret.join('');
             };
+        };
+    }
+
+
+    function domStop(cmd) {
+        var tmp = cmd;
+
+        while (tmp && !tmp.isAsync) {
+            tmp = tmp.parent;
+        }
+
+        if (!tmp || tmp.name !== 'on' || !tmp.parent || tmp.parent.name !== 'dom') {
+            cmd.parts[0].error = 'Command should be inside DOM event handler';
+            cmd.file.errorUnexpectedPart(cmd.parts[0]);
+        }
+
+        if (!tmp.eventRet) {
+            tmp.eventRet = cooGetNextRetName();
+            cooPushScopeVariable(tmp, tmp.eventRet, '0', true);
+        }
+
+        cmd.getCodeBefore = function() {
+            var ret = [];
+
+            ret.push(tmp.eventRet);
+            ret.push(' |= ');
+            switch (cmd.parts[2].value) {
+                case 'default': ret.push('1'); break;
+                case 'propagation': ret.push('2'); break;
+                case 'immediate': ret.push('4'); break;
+            }
+            ret.push(';');
+
+            return ret.join('');
         };
     }
 
@@ -219,6 +255,12 @@
                     'form': {
                         'serialize': getGetter('serialize', [])
                     }
+                },
+
+                'stop': {
+                    'default': domStop,
+                    'propagation': domStop,
+                    'immediate': domStop
                 }
             }
         });
@@ -229,6 +271,8 @@
             // on (expr)
             // or
             // on (expr) $var
+            cooAssertNotRetOrDOMTaker(cmd);
+
             cmd.hasSubblock = true;
             cmd.isAsync = true;
 
@@ -256,11 +300,13 @@
             };
 
             cmd.getCodeAfter = function() {
-                var ret = [],
-                    tmp = cooGetScopeRet(cmd);
+                var ret = [];
 
-                if (tmp) {
-                    ret.push(tmp);
+                if (cmd.eventRet) {
+                    ret.push(INDENT);
+                    ret.push('return ');
+                    ret.push(cmd.eventRet);
+                    ret.push(';\n');
                 }
 
                 ret.push('})');
