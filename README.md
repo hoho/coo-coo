@@ -16,12 +16,12 @@ Here is an application source example.
     application
         construct
             // Application entry point.
-            dom (document.body) append
+            ^(document.body)
                 // Render Page view to <body>
-                +view Page render
+                *view Page render
 
 
     view Page
-        render
+        ^render
             // Return template call result.
-            +template "conkitty:page" apply
+            *template "conkitty:page" apply

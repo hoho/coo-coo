@@ -175,6 +175,8 @@
 
                         cooCreateScope(cmd);
 
+                        cmd.isAsync = true;
+
                         cmd.getCodeBefore = function() {
                             cooGetDecl(cmd);
 

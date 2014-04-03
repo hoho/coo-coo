@@ -13,9 +13,9 @@
 
         function getEachHandler(withKey) {
             return function eachHandler() {
-                // each val (expr)
+                // each $val (expr)
                 //     ...
-                // each key val (expr)
+                // each $key $val (expr)
                 //     ...
                 cooAssertNotRetPusher(cmd);
                 cmd.hasSubblock = true;
@@ -51,9 +51,9 @@
 
         return cooMatchCommand(cmd, {
             'each': {
-                '': {
+                '($)': {
                     '(': getEachHandler(false),
-                    '': {
+                    '($)': {
                         '(': getEachHandler(true)
                     }
                 }
