@@ -976,7 +976,7 @@ CooFile.prototype = {
                                 ret.push(cmd.retWrap[0]);
 
                                 ret.push('(function() {\n');
-                                ret.push(cooValueToJS(cmd, val));
+                                ret.push(INDENT + cooValueToJS(cmd, val).split('\n').join('\n' + INDENT));
 
                                 return ret.join('');
                             };
@@ -2456,6 +2456,12 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
         },
 
         'change': {
+            hasName: true,
+            hasParams: true
+        },
+
+        // TODO: This event is for models and collections only.
+        'activate': {
             hasName: true,
             hasParams: true
         },

@@ -181,6 +181,50 @@
     }
 
 
+    function getActivateHandler(self) {
+        return function(cmd) {
+            // collection identifier (expr) activate (name) (model) (true?)
+            // this activate (name) (model) (true?)
+            cooAssertNotRetPusher(cmd);
+
+            cmd.getCodeBefore = function() {
+                if (!self) {
+                    cooGetDecl(cmd);
+                }
+
+                var ret = [],
+                    partOffset = self ? 0 : 2;
+
+                if (!self) {
+                    ret.push(cooWrapWithTypeCheck(
+                        cmd,
+                        cmd.parts[2],
+                            'val instanceof CooCoo.Collection.' + cmd.parts[1].value,
+                        cooValueToJS(cmd, cmd.parts[2])
+                    ));
+                } else {
+                    ret.push('this');
+                }
+
+                ret.push('.activate(');
+
+                ret.push(cooValueToJS(cmd, cmd.parts[2 + partOffset]));
+                ret.push(', true, ');
+                ret.push(cooValueToJS(cmd, cmd.parts[3 + partOffset]));
+
+                if (cmd.parts[4 + partOffset]) {
+                    ret.push(', ');
+                    ret.push(cooValueToJS(cmd, cmd.parts[4 + partOffset]));
+                }
+
+                ret.push(');');
+
+                return ret.join('');
+            };
+        };
+    }
+
+
     cooObjectBase(
         {
             cmdName: 'collection',
@@ -249,6 +293,15 @@
             'collection': {
                 '': {
                     '(': {
+                        'activate': {
+                            '(': {
+                                '(': {
+                                    '@': getActivateHandler(false),
+                                    '(': getActivateHandler(false)
+                                }
+                            }
+                        },
+
                         'add': getAddHandlers(false),
 
                         'each': {
@@ -266,6 +319,15 @@
             },
 
             'this': {
+                'activate': {
+                    '(': {
+                        '(': {
+                            '@': getActivateHandler(true),
+                            '(': getActivateHandler(true)
+                        }
+                    }
+                },
+
                 'add': getAddHandlers(true),
 
                 'each': {

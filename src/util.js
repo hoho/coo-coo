@@ -107,7 +107,7 @@ function parseJSFunction(code) {
 
 function adjustJS(ast) {
     /* jshint -W106 */
-    return jsUglify.gen_code(ast, {beautify: true, indent_start: 4});
+    return jsUglify.gen_code(ast, {beautify: true, indent_start: 0});
     /* jshint +W106 */
 }
 

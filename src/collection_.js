@@ -15,38 +15,82 @@
 
     CooCoo.CollectionBase = CooCoo.Base.extend({
         init: function(/*parent, ...*/) {
-            // Collection items.
-            this.__i = {};
-            this.length = 0;
+            var self = this;
 
-            CooCoo.CollectionBase.__super__.init.apply(this, arguments);
+            // Collection items.
+            self.__i = {};
+            self.length = 0;
+
+            // Storage for names active states.
+            self.__a = {};
+
+            CooCoo.CollectionBase.__super__.init.apply(self, arguments);
         },
 
         __construct: function(items) {
             var self = this;
 
-            self.add(items);
+            self
+                .add(items)
+                .on('destroy',
+                    function(model) {
+                        if (model) {
+                            self.remove(model);
+                        } else {
+                            var i,
+                                item,
+                                items = self.__i,
+                                ids = getKeys(items);
 
-            self.on('destroy', function(m) {
-                if (m) {
-                    self.remove(m);
-                } else {
-                    var i,
-                        item,
-                        items = self.__i,
-                        ids = getKeys(items);
-
-                    for (i = 0; i < ids.length; i++) {
-                        if ((item = items[ids[i]])) {
-                            if (item.__parent === self) {
-                                item.destroy();
-                            } else {
-                                self.remove(item);
+                            for (i = 0; i < ids.length; i++) {
+                                if ((item = items[ids[i]])) {
+                                    if (item.__parent === self) {
+                                        item.destroy();
+                                    } else {
+                                        self.remove(item);
+                                    }
+                                }
                             }
                         }
-                    }
-                }
-            }, self);
+                    },
+                    self)
+                .on('activate',
+                    function(model, val, name, keepPrevious) {
+                        var cur = self.__a[name],
+                            ids,
+                            i,
+                            m;
+
+                        if (!val) {
+                            if (cur) {
+                                delete cur[model.__id];
+                                if (getKeys(cur).length === 0) { delete self.__a[name]; }
+                            }
+                        } else {
+                            if (cur && !keepPrevious) {
+                                ids = getKeys(cur);
+
+                                for (i = 0; i < ids.length; i++) {
+                                    m = cur[ids[i]];
+
+                                    if (m) {
+                                        m.activate(name, false);
+                                    }
+                                }
+                            }
+
+                            if (!cur) {
+                                cur = self.__a[name] = {};
+                            }
+
+                            cur[model.__id] = model;
+                        }
+                    },
+                    self);
+        },
+
+        activate: function(name, val, model, keepPrevious) {
+            model.activate(name, val, keepPrevious);
         },
 
         add: function(val) {
