@@ -79,18 +79,24 @@
                                 }
                             }
 
-                            if (!cur) {
-                                cur = self.__a[name] = {};
-                            }
+                            if (model) {
+                                if (!cur) {
+                                    cur = self.__a[name] = {};
+                                }
 
-                            cur[model.__id] = model;
+                                cur[model.__id] = model;
+                            }
                         }
                     },
                     self);
         },
 
         activate: function(name, val, model, keepPrevious) {
-            model.activate(name, val, keepPrevious);
+            if (model) {
+                model.activate(name, val, keepPrevious);
+            } else {
+                this.trigger('activate:' + name, model, val, name);
+            }
         },
 
         add: function(val) {
