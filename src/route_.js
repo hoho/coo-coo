@@ -64,7 +64,7 @@
     });
 
     CooCoo.Routes = CooCoo.Extendable.extend({
-        init: function(parent, once/*, otherwise, route1, route2, ...*/) {
+        init: function(parent, once/*, before, after, otherwise, route1, route2, ...*/) {
             // otherwise is a callback when none of routeNs are matched.
             // routeN is an object: {r: <Route instance>, c: <callback>}.
             var self = this,
@@ -72,13 +72,17 @@
                 i,
                 done = self._done = function() {
                     if (self.changed && !self.__destroyed) {
+                        if (self.before) {
+                            self.before.call(parent);
+                        }
+
                         if (self.matches) {
                             var i,
                                 cb,
                                 matches = self.matches;
 
                             // Call macth in order of declaration.
-                            for (i = 3; i < routes.length; i++) {
+                            for (i = 5; i < routes.length; i++) {
                                 if ((cb = matches[routes[i].r.__id])) {
                                     cb[0].apply(parent, cb[1]);
                                     break;
@@ -87,15 +91,22 @@
                         } else if (self.otherwise) {
                             self.otherwise.call(parent);
                         }
+
+                        if (self.after) {
+                            self.after.call(parent);
+                        }
+
                         self.changed = self.matches = false;
                     }
                 };
 
             CooCoo.Routes.__super__.init.call(self, parent);
 
-            self.otherwise = routes[2];
+            self.before = routes[2];
+            self.after = routes[3];
+            self.otherwise = routes[4];
 
-            for (i = 3; i < routes.length; i++) {
+            for (i = 5; i < routes.length; i++) {
                 (function(route) {
                     var r = route.r,
                         c = route.c,
@@ -137,7 +148,7 @@
                 i,
                 routes = self.routes;
             
-            for (i = 3; i < routes.length; i++) {
+            for (i = 5; i < routes.length; i++) {
                 routes[i].r.unbind(self.__id);
             }
 

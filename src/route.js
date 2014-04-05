@@ -155,6 +155,34 @@
     );
 
 
+    function getBeforeAfterOtherwiseHandler(cmd) {
+        // before
+        // after
+        // otherwise
+        //     ...
+        cooAssertNotRetPusher(cmd);
+
+        if (cmd.parent['has' + cmd.parts[0].value]) {
+            cmd.parts[0].error = 'Duplicate `' + cmd.parts[0].value + '`';
+            return cmd.parts[0];
+        }
+
+        cmd.parent['has' + cmd.parts[0].value] = cmd;
+        cmd.hasSubblock = true;
+        cmd.ignore = true;
+
+        cooCreateScope(cmd);
+
+        cmd.getCodeBefore = function() {
+            return 'function() {';
+        };
+
+        cmd.getCodeAfter = function() {
+            return '}';
+        };
+    }
+
+
     function routeProcessChoices(cmd) {
         return cooMatchCommand(cmd, {
             'route': {
@@ -164,7 +192,7 @@
                         //     ...
                         cooAssertNotRetPusher(cmd);
 
-                        if (cmd.parent.hasOtherwise) {
+                        if (cmd.parent.hasotherwise) {
                             return cmd.parts[0];
                         }
 
@@ -199,28 +227,9 @@
                 }
             },
 
-            'otherwise': function() {
-                // otherwise
-                //     ...
-                cooAssertNotRetPusher(cmd);
-
-                if (cmd.parent.hasOtherwise) {
-                    return cmd.parts[0];
-                }
-
-                cmd.parent.hasOtherwise = true;
-                cmd.hasSubblock = true;
-
-                cooCreateScope(cmd);
-
-                cmd.getCodeBefore = function() {
-                    return 'function() {';
-                };
-
-                cmd.getCodeAfter = function() {
-                    return '},';
-                };
-            }
+            'otherwise': getBeforeAfterOtherwiseHandler,
+            'before': getBeforeAfterOtherwiseHandler,
+            'after': getBeforeAfterOtherwiseHandler
         });
     }
 
@@ -250,12 +259,7 @@
                     }
 
                     ret.push('new CooCoo.Routes(this, ');
-                    ret.push(cmd.parts[1] ? 'true, ' : 'false, ');
-
-                    if (!cmd.hasOtherwise) {
-                        ret.push('null');
-                        if (routes.length) { ret.push(','); }
-                    }
+                    ret.push(cmd.parts[1] ? 'true,' : 'false,');
 
                     return ret.join('');
                 };
@@ -266,11 +270,21 @@
                         route,
                         i;
 
+                    routes.unshift(cmd.hasotherwise || null);
+                    routes.unshift(cmd.hasafter || null);
+                    routes.unshift(cmd.hasbefore || null);
+
                     for (i = 0; i < routes.length; i++) {
                         route = routes[i];
-                        route.ignore = false;
-                        cooRunGenerators(route, ret, 1);
-                        route.ignore = true;
+
+                        if (route) {
+                            route.ignore = false;
+                            cooRunGenerators(route, ret, 1);
+                            route.ignore = true;
+                        } else {
+                            ret.push(INDENT + 'null');
+                        }
+
                         if (i < routes.length - 1) {
                             ret[ret.length - 1] += ',';
                         }
