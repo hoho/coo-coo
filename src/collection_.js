@@ -80,7 +80,7 @@
                             }
 
                             if (model) {
-                                if (!cur) {
+                                if (!((cur = self.__a[name]))) {
                                     cur = self.__a[name] = {};
                                 }
 
