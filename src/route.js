@@ -170,6 +170,7 @@
         cmd.parent['has' + cmd.parts[0].value] = cmd;
         cmd.hasSubblock = true;
         cmd.ignore = true;
+        cmd.isAsync = true;
 
         cooCreateScope(cmd);
 
