@@ -212,7 +212,7 @@
 
             if (self.__destroyed) { return; }
 
-            self.trigger('destroy', self);
+            self.trigger('destroy');
 
             if (self.__destroyed) { return; }
 
