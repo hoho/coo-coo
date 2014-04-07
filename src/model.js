@@ -8,7 +8,9 @@
     function getActivateHandler(self) {
         return function(cmd) {
             // model identifier (expr) activate (name) (true?)
+            // model identifier (expr) deactivate (name)
             // this activate (name) (true?)
+            // this deactivate (name)
             cooAssertNotRetPusher(cmd);
 
             cmd.getCodeBefore = function() {
@@ -34,7 +36,11 @@
 
                 ret.push(cooValueToJS(cmd, cmd.parts[2 + partOffset]));
 
-                ret.push(', true');
+                if (cmd.parts[1 + partOffset].value === 'activate') {
+                    ret.push(', true');
+                } else {
+                    ret.push(', false');
+                }
 
                 if (cmd.parts[3 + partOffset]) {
                     ret.push(', ');
@@ -69,6 +75,12 @@
                                 '@': getActivateHandler(false),
                                 '(': getActivateHandler(false)
                             }
+                        },
+
+                        'deactivate': {
+                            '(': {
+                                '@': getActivateHandler(false)
+                            }
                         }
                     }
                 }
@@ -79,6 +91,12 @@
                     '(': {
                         '@': getActivateHandler(true),
                         '(': getActivateHandler(true)
+                    }
+                },
+
+                'deactivate': {
+                    '(': {
+                        '@': getActivateHandler(true)
                     }
                 }
             }
