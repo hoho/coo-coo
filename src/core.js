@@ -13,6 +13,7 @@ var INDENT_WITH = ' ',
     COO_COMMAND_PART_STRING = 'string',
     COO_COMMAND_PART_JS = 'JavaScript',
     COO_COMMAND_PART_IDENTIFIER = 'identifier',
+    COO_COMMAND_PART_GLOBAL_PROPERTY = 'global property',
     COO_COMMAND_PART_PROPERTY = 'property',
     COO_COMMAND_PART_VARIABLE = 'variable',
     COO_COMMAND_PART_TYPIFICATION = 'typification',
@@ -96,6 +97,7 @@ function cooMatchCommand(cmd, patterns, pos) {
      '"string"' in case of exact string,
      '(' in case of JavaScript, property, variable, string or subcoocoo,
      '(@)' in case of just property,
+     '(@@)' in case of application (global) property,
      '($)' in case of just variable,
      '($$)' in case of any number of variables,
      '*' in case of any number of identifiers,
@@ -114,6 +116,7 @@ function cooMatchCommand(cmd, patterns, pos) {
         switch (part.type) {
             case COO_COMMAND_PART_STRING:
             case COO_COMMAND_PART_JS:
+            case COO_COMMAND_PART_GLOBAL_PROPERTY:
             case COO_COMMAND_PART_PROPERTY:
             case COO_COMMAND_PART_VARIABLE:
             case COO_COMMAND_PART_SUBCOOCOO:
@@ -137,6 +140,19 @@ function cooMatchCommand(cmd, patterns, pos) {
                     part.typified = true;
                     error = cooMatchCommand(cmd, patterns['(<'], pos + 1);
                     unexpected = false;
+                }
+
+                if (part.type === COO_COMMAND_PART_GLOBAL_PROPERTY) {
+                    if ((error || unexpected) && patterns['(@@)']) {
+                        error = cooMatchCommand(cmd, patterns['(@@)'], pos + 1);
+                        unexpected = false;
+                    }
+
+                    if ((error || unexpected) && patterns['(@@)<']) {
+                        part.typified = true;
+                        error = cooMatchCommand(cmd, patterns['(@@)<'], pos + 1);
+                        unexpected = false;
+                    }
                 }
 
                 if (part.type === COO_COMMAND_PART_PROPERTY) {
@@ -704,6 +720,10 @@ function cooValueToJS(cmd, part) {
             cooCheckProperty(cmd, cmd.root, part);
             return cooWrapWithTypeCheck(cmd, part, part.typification, 'this.get("' + part.value + '")');
 
+        case COO_COMMAND_PART_GLOBAL_PROPERTY:
+            cooCheckProperty(cmd, cmd.decls.application.App, part);
+            return cooWrapWithTypeCheck(cmd, part, part.typification, 'this.__root.get("' + part.value + '")');
+
         case COO_COMMAND_PART_SUBCOOCOO:
             var ret = [],
                 wrapper = cooWrapWithTypeCheck(cmd, part, part.typification);
@@ -895,7 +915,8 @@ CooFile.prototype = {
                 (parts[0].type === COO_COMMAND_PART_STRING ||
                  parts[0].type === COO_COMMAND_PART_JS ||
                  parts[0].type === COO_COMMAND_PART_VARIABLE ||
-                 parts[0].type === COO_COMMAND_PART_PROPERTY) &&
+                 parts[0].type === COO_COMMAND_PART_PROPERTY ||
+                 parts[0].type === COO_COMMAND_PART_GLOBAL_PROPERTY) &&
                 (!parent || !parent.processChild))
             {
                 if (parent) {
@@ -909,6 +930,9 @@ CooFile.prototype = {
 
                             if (parts[0].type === COO_COMMAND_PART_PROPERTY) {
                                 decl = cooGetDecl(cmd);
+                                cooCheckProperty(cmd, decl, cmd.parts[0]);
+                            } else if (parts[0].type === COO_COMMAND_PART_GLOBAL_PROPERTY) {
+                                decl = cmd.decls.application.App;
                                 cooCheckProperty(cmd, decl, cmd.parts[0]);
                             } else if (parts[0].type === COO_COMMAND_PART_VARIABLE) {
                                 cooCheckScopeVariable(cmd, cmd.parts[0]);
@@ -1235,8 +1259,13 @@ CooFile.prototype = {
             /* jshint -W086 */
             case '@':
                 if (!noProperties) {
-                    type = COO_COMMAND_PART_PROPERTY;
-                    nextChar = 1;
+                    if (line[this.charAt + 1] === '@') {
+                        type = COO_COMMAND_PART_GLOBAL_PROPERTY;
+                        nextChar = 2;
+                    } else {
+                        type = COO_COMMAND_PART_PROPERTY;
+                        nextChar = 1;
+                    }
                     break;
                 }
 

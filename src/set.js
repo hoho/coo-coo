@@ -7,6 +7,7 @@
     /* global cooProcessBlockAsValue */
     /* global COO_COMMAND_PART_VARIABLE */
     /* global COO_COMMAND_PART_PROPERTY */
+    /* global COO_COMMAND_PART_GLOBAL_PROPERTY */
     /* global cooAssertHasSubcommands */
     /* global cooCheckProperty */
     /* global cooWrapWithTypeCheck */
@@ -22,16 +23,23 @@
 
         var exts;
 
-        if (cmd.parts[1].type === COO_COMMAND_PART_PROPERTY) {
+        if (cmd.parts[1].type === COO_COMMAND_PART_PROPERTY ||
+            cmd.parts[1].type === COO_COMMAND_PART_GLOBAL_PROPERTY)
+        {
             exts = {
                 getCodeBeforeBefore: function() {
                     cooAssertHasSubcommands(cmd);
 
-                    var type = cooCheckProperty(cmd, cmd.root, cmd.parts[1]),
+                    var isApp = cmd.parts[1].type === COO_COMMAND_PART_GLOBAL_PROPERTY,
+                        type = cooCheckProperty(cmd, isApp ? cmd.decls.application.App : cmd.root, cmd.parts[1]),
                         ret = [],
                         wrapper;
 
-                    ret.push('this.set("');
+                    ret.push('this.');
+                    if (isApp) {
+                        ret.push('__root.');
+                    }
+                    ret.push('set("');
                     ret.push(cmd.parts[1].value);
                     ret.push('", ');
 
@@ -112,10 +120,17 @@
 
             ret.push(retWrap[0]);
 
-            if (cmd.parts[1].type === COO_COMMAND_PART_PROPERTY) {
-                var type = cooCheckProperty(cmd, cmd.root, cmd.parts[1]);
+            if (cmd.parts[1].type === COO_COMMAND_PART_PROPERTY ||
+                cmd.parts[1].type === COO_COMMAND_PART_GLOBAL_PROPERTY)
+            {
+                var isApp = cmd.parts[1].type === COO_COMMAND_PART_GLOBAL_PROPERTY,
+                    type = cooCheckProperty(cmd, isApp ? cmd.decls.application.App: cmd.root, cmd.parts[1]);
 
-                ret.push('this.set("');
+                ret.push('this.');
+                if (isApp) {
+                    ret.push('__root.');
+                }
+                ret.push('set("');
                 ret.push(cmd.parts[1].value);
                 ret.push('", ');
 
@@ -170,6 +185,11 @@
                 '(@)': {
                     '@': setFromBody,
                     '(<': setFromExpr
+                },
+
+                '(@@)': {
+                    '@': setFromBody,
+                    '(<': setFromExpr
                 }
             },
 
@@ -180,6 +200,11 @@
                 },
 
                 '(@)': {
+                    '@': setFromBody,
+                    '(<': setFromExpr
+                },
+
+                '(@@)': {
                     '@': setFromBody,
                     '(<': setFromExpr
                 }
