@@ -3,7 +3,8 @@
     var CooCooDOM,
         eventHandlers = {},
         captureEvents = {focus: true, blur: true},
-        props = {checked: true};
+        props = {checked: true},
+        whitespace = /[\x20\t\r\n\f]+/;
 
     function hasKeys(obj) {
         for (obj in obj) { return true; }
@@ -104,85 +105,97 @@
             var self = this,
                 eventHandler,
                 cb,
-                meta;
+                meta,
+                events,
+                i;
 
-            if ((eventHandler = eventHandlers[event])) {
-                eventHandler.count++;
+            events = event.split(whitespace);
+
+            if (events.length !== 1) {
+                for (i = 0; i < events.length; i++) {
+                    self.on(events[i], callback);
+                }
             } else {
-                document.body.addEventListener(
-                    event,
-                    (cb = function(e) {
-                        var node = e.target,
-                            meta,
-                            id,
-                            funcs,
-                            parent,
-                            ret = 0,
-                            i;
+                event = events[0];
 
-                        while (node) {
-                            if (((meta = node._coo)) && ((meta = meta[event]))) {
-                                for (id in meta) {
-                                    funcs = meta[id];
-                                    parent = funcs.parent;
-                                    funcs = funcs.cb;
+                if ((eventHandler = eventHandlers[event])) {
+                    eventHandler.count++;
+                } else {
+                    document.body.addEventListener(
+                        event,
+                        (cb = function (e) {
+                            var node = e.target,
+                                meta,
+                                id,
+                                funcs,
+                                parent,
+                                ret = 0,
+                                i;
 
-                                    for (i = 0; i < funcs.length; i++) {
-                                        /* jshint -W016 */
-                                        ret |= funcs[i].call(parent, e);
+                            while (node) {
+                                if (((meta = node._coo)) && ((meta = meta[event]))) {
+                                    for (id in meta) {
+                                        funcs = meta[id];
+                                        parent = funcs.parent;
+                                        funcs = funcs.cb;
 
-                                        // (ret & 1) - prevent default.
-                                        // (ret & 2) - stop propagation.
-                                        // (ret & 4) - stop immediate propagation.
+                                        for (i = 0; i < funcs.length; i++) {
+                                            /* jshint -W016 */
+                                            ret |= funcs[i].call(parent, e);
 
-                                        if ((ret & 1) && !e.defaultPrevented) {
-                                            e.preventDefault();
+                                            // (ret & 1) - prevent default.
+                                            // (ret & 2) - stop propagation.
+                                            // (ret & 4) - stop immediate propagation.
+
+                                            if ((ret & 1) && !e.defaultPrevented) {
+                                                e.preventDefault();
+                                            }
+
+                                            if (ret & 4) {
+                                                return;
+                                            }
+                                            /* jshint +W016 */
                                         }
-
-                                        if (ret & 4) {
-                                            return;
-                                        }
-                                        /* jshint +W016 */
                                     }
                                 }
+
+                                /* jshint -W016 */
+                                if (ret & 2) {
+                                    break;
+                                }
+                                /* jshint +W016 */
+                                node = node.parentNode;
                             }
+                        }),
+                            event in captureEvents
+                    );
 
-                            /* jshint -W016 */
-                            if (ret & 2) {
-                                break;
-                            }
-                            /* jshint +W016 */
-                            node = node.parentNode;
-                        }
-                    }),
-                    event in captureEvents
-                );
+                    eventHandlers[event] = {
+                        count: 1,
+                        cb: cb
+                    };
+                }
 
-                eventHandlers[event] = {
-                    count: 1,
-                    cb: cb
-                };
-            }
+                self.events[event] = true;
 
-            self.events[event] = true;
+                if (!(meta = self.node._coo)) {
+                    meta = self.node._coo = {};
+                }
 
-            if (!(meta = self.node._coo)) {
-                meta = self.node._coo = {};
-            }
+                if (event in meta) {
+                    meta = meta[event];
+                } else {
+                    meta = meta[event] = {};
+                }
 
-            if (event in meta) {
-                meta = meta[event];
-            } else {
-                meta = meta[event] = {};
-            }
-
-            if (self.id in meta) {
-                meta[self.id].cb.push(callback);
-            } else {
-                meta[self.id] = {
-                    parent: self.parent,
-                    cb: [callback]
-                };
+                if (self.id in meta) {
+                    meta[self.id].cb.push(callback);
+                } else {
+                    meta[self.id] = {
+                        parent: self.parent,
+                        cb: [callback]
+                    };
+                }
             }
 
             return self;
