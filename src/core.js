@@ -2079,8 +2079,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                 },
                 ...
             },
-            init: true,
-            destroy: true,
+            init: true, // constructor and destructor are allowed.
             properties: true, // allow custom properties.
             methods: true, // allow custom methods.
         }
@@ -2418,9 +2417,7 @@ function cooObjectBase(cmdDesc, declExt, commandExt) {
                         });
                     }
                 };
-            }
 
-            if (declExt.destroy) {
                 patterns.destruct = function() {
                     return processMethod('destruct', {
                         actualName: '__destruct',

@@ -14,7 +14,7 @@
     CooCoo.Collection = {};
 
     CooCoo.CollectionBase = CooCoo.Base.extend({
-        init: function(/*parent, ...*/) {
+        init: function(parent, items/*, ...*/) {
             var self = this;
 
             // Collection items.
@@ -25,10 +25,6 @@
             self.__a = {};
 
             CooCoo.CollectionBase.__super__.init.apply(self, arguments);
-        },
-
-        __construct: function(items) {
-            var self = this;
 
             self
                 .add(items)
@@ -185,6 +181,13 @@
                 ret = new this.constructor(parent);
             ret.add(items);
             return ret;
+        },
+
+        item: function(index) {
+            var items = this.__i,
+                ids = getKeys(items);
+
+            return items[ids[+index]];
         }
     });
 

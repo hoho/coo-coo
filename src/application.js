@@ -9,7 +9,6 @@
         },
         {
             init: true,
-            destroy: true,
             properties: true,
             methods: true
         },
