@@ -259,7 +259,7 @@
 
     CooCooDOM.trigger = function(node, name/*, ...*/) {
         unwrapArguments(arguments);
-        if ((name === 'focus' || name === 'blur') && node[name]) {
+        if ((name === 'focus' || name === 'blur' || name === 'reset') && node[name]) {
             node[name]();
         } else {
             var e = document.createEvent('HTMLEvents');
