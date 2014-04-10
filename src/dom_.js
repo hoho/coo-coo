@@ -147,11 +147,16 @@
                                             // (ret & 2) - stop propagation.
                                             // (ret & 4) - stop immediate propagation.
 
-                                            if ((ret & 1) && !e.defaultPrevented) {
+                                            if (ret & 1) {
                                                 e.preventDefault();
                                             }
 
+                                            if (ret & 2) {
+                                                e.stopPropagation();
+                                            }
+
                                             if (ret & 4) {
+                                                e.stopImmediatePropagation();
                                                 return;
                                             }
                                             /* jshint +W016 */
