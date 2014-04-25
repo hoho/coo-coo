@@ -4,11 +4,11 @@
     var currentBindings,
         currentParent;
 
-    $C.define('trigger', function(item, index, arr, args) {
+    $C.on(function(key) {
         var funcs,
             i;
 
-        if ((funcs = currentBindings[args[0]])) {
+        if ((funcs = currentBindings[key])) {
             for (i = 0; i < funcs.length; i++) {
                 funcs[i].call(currentParent, this);
             }
@@ -47,8 +47,8 @@
 
         apply: function() {
             var self = this,
-                args = [null],
                 i,
+                args = [],
                 prevBindings = currentBindings,
                 prevParent = currentParent;
 

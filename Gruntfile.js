@@ -55,8 +55,11 @@ module.exports = function(grunt) {
 
         conkitty: {
             compile: {
-                files: {
-                    'test/test-tpl.js': ['test/test.ctpl']
+                src: ['test/test.ctpl'],
+                dest: {
+                    common: 'test/test-tpl-common.js',
+                    templates: 'test/test-tpl.js',
+                    deps: 'tmp/tpldeps'
                 }
             }
         },
