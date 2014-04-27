@@ -1,6 +1,6 @@
 /*!
  * coo-coo, https://github.com/hoho/coocoo
- * (c) 2013 Marat Abdullin, MIT license
+ * (c) 2013-2014 Marat Abdullin, MIT license
  */
 var fs = require('fs'),
     util = require('./util.js'),

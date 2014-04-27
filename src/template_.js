@@ -4,13 +4,13 @@
     var currentBindings,
         currentParent;
 
-    $C.on(function(key) {
+    $C.on(function(key, val) {
         var funcs,
             i;
 
         if ((funcs = currentBindings[key])) {
             for (i = 0; i < funcs.length; i++) {
-                funcs[i].call(currentParent, this);
+                funcs[i].call(currentParent, val === undefined ? this : val);
             }
         }
     });
