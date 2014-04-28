@@ -14,7 +14,12 @@
     CooCoo.Collection = {};
 
     CooCoo.CollectionBase = CooCoo.Base.extend({
-        init: function(parent, items/*, ...*/) {
+        __construct: function(items) {
+            // Default constructor, might be overriden.
+            this.add(items);
+        },
+
+        init: function(/*parent, items, ...*/) {
             var self = this;
 
             // Collection items.
@@ -27,7 +32,6 @@
             CooCoo.CollectionBase.__super__.init.apply(self, arguments);
 
             self
-                .add(items)
                 .on('destroy',
                     function(model) {
                         if (model) {
