@@ -172,7 +172,7 @@
                                 node = node.parentNode;
                             }
                         }),
-                            event in captureEvents
+                        event in captureEvents
                     );
 
                     eventHandlers[event] = {
